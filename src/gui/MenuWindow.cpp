@@ -408,8 +408,8 @@ void MenuWindow::ShowAppExplanation()
         "random! It seems like players can do nothing about that fact.\n\n"
         "Please understand that there could be bugs in this app. If you find "
         "any, please report them in the \"Issues\" tab on the project's "
-        "website, where you should have downloaded this app from (on GitHub "
-        "or GitLab, I haven't decided yet).\nYou can also send me bug reports "
+        "website (github.com/lacyyy/DZSimulator), where you should have "
+        "downloaded this app from.\nYou can also send me bug reports "
         "and feedback through my Twitter DMs: https://twitter.com/lacyyycs"
     );
 }

@@ -1,11 +1,11 @@
 ## Checklists for making releases and updating libraries or fonts
 
 ### Setting up public DZSimulator repo:
-- Add Magnum tag to GitHub/GitLab repo
+- Add Magnum tag to GitHub repo
 
 ### Releasing a new major/minor/patch/tweak update
 1. Increase project version in top-level CMakeLists.txt
-1. Write changelogs for GitHub/GitLab and ingame display
+1. Write changelogs for GitHub and ingame display
 1. In the parent directory of the repo, run:
        `tar --exclude="DZSimulator/.git" --exclude="DZSimulator/.vs" --exclude="DZSimulator/out" -zcvf "DZSimulator-vX.X.X-Source-code-with-submodules.tar.gz" DZSimulator`
 1. In Visual Studio, right-click top-level CMakeLists.txt > Configure DZSimulatorProject

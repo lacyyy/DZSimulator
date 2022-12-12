@@ -115,7 +115,7 @@
         - Don't allow (higher CPU usage) [busy sleep]
     - Option to disable interpolation
 - **MISCELLANEOUS / NICE TO HAVE**
-    - On startup, check for new released versions on GitHub/GitLab and inform the user
+    - On startup, check for new released versions on GitHub and inform the user
     - On startup, check for MOTD (message of the day) set by DZSim's maintainer (use GitHub pages to distribute MOTD?)
     - Add Discord Rich Presence
     - Add CSGO Danger Zone Map cycle info / announcer
