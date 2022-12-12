@@ -1,23 +1,12 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
-- [X] Refactoring / Cleanup
-- [X] UI features
-- [X] Graphics
-- [X] CSGO map parsing
-- [ ] Legal stuff
-    - [X] Decide on what license to use for DZSim. MIT? Sort out "Source SDK 2013" code separately into "thirdparty" folder?
-    - [ ] Add a CONTRIBUTING.md file? Note that contributors must be fine with anyone using their code in any way?
-- [ ] Documentation
-    - [ ] Tidy up all files under "docs"
-    - [ ] Create rough UML diagram of project's class structure
-    - [ ] Create presentable README.md, explain each repo folder, add Downloads statistic (Shields)
-    - [ ] Create presentable BUILDING.md
-- [X] Other
-
-## TASK LIST FOR THE RELEASED VERSION AFTER THAT:
 - [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
 - [ ] Improve glidability surface coloring algorithm
 - [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
+
+## TASK LIST FOR THE RELEASED VERSION AFTER THAT:
+
+- [ ] ...
 
 ## KNOWN ISSUES, PRIORITIZED:
 
