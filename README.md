@@ -1,8 +1,8 @@
-TODO: Shields for version and downloads statistic
-
 # DANGER ZONE SIMULATOR
 
-----
+![Latest Version](https://img.shields.io/github/v/tag/lacyyy/DZSimulator?label=version)
+![Latest Release Date](https://img.shields.io/github/release-date/lacyyy/DZSimulator)
+![Total Downloads](https://img.shields.io/github/downloads/lacyyy/DZSimulator/total?label=total%20downloads)
 
 A standalone app that partially loads maps from Counter-Strike:Global Offensive and makes practicing rampsliding and using "Bump Mines" in CSGO's "Danger Zone" gamemode much easier!
 
