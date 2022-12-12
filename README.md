@@ -49,7 +49,7 @@ Hence, you can't get VAC-banned for using DZSimulator.
 
 **Please note that this is a very early version and can contain bugs! If you encounter any, please report them to me through this page's "Issues" tab or through my [Twitter DMs](https://twitter.com/lacyyycs)!**
 
-You can download the newest version of DZSimulator for Windows **[here TODO add link]()**.
+You can download the newest version of DZSimulator for Windows [**here**](https://github.com/lacyyy/DZSimulator/releases/latest).
 
 Adding a download for GNU/Linux machines is planned in the future!
 Using DZSimulator in the web browser might be possible in the future too!
