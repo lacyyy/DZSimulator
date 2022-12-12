@@ -7,13 +7,18 @@
 1. Increase project version in top-level CMakeLists.txt
 1. Write changelogs for GitHub/GitLab and ingame display
 1. In the parent directory of the repo, run:
-       `tar --exclude="DZSimulator/.git" --exclude="DZSimulator/.vs" --exclude="DZSimulator/out" -zcvf "DZSimulator-X.X.X Source code with submodules.tar.gz" DZSimulator`
-1. Right-Click top-level CMakeLists.txt > Configure DZSimulatorProject
-1. Build everything.
-1. Rename executable and source code archive with new version number
+       `tar --exclude="DZSimulator/.git" --exclude="DZSimulator/.vs" --exclude="DZSimulator/out" -zcvf "DZSimulator-vX.X.X-Source-code-with-submodules.tar.gz" DZSimulator`
+1. In Visual Studio, right-click top-level CMakeLists.txt > Configure DZSimulatorProject
+1. Build executable
+1. Rename executable("DZSimulator-vX.X.X.exe") and source code archive with new version number
 1. Make sure in-app build timestamp is correctly updated
-1. Commit and add a "vX.X.X" tag in Git repo to it, then do git push origin
-1. Make a release on GitHub/GitLab, write changes and attach source code archive and the executable(s)
+1. Commit new version tag and push it:
+    ```
+    git commit -m "Bumped DZSimulator version to X.X.X"
+    git tag vX.X.X
+    git push origin --tags
+    ```
+1. Make a release on GitHub, write changes and attach source code archive and the executable(s)
 
 ### Updating any of Magnum/Corrade repos
 1. If project suddenly stops building after a Magnum upgrade, see https://doc.magnum.graphics/magnum/troubleshooting.html
