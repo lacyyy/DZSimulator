@@ -1,0 +1,21 @@
+[submodule "thirdparty/asio"]
+	path = thirdparty/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "thirdparty/corrade"]
+	path = thirdparty/corrade
+	url = https://github.com/mosra/corrade.git
+[submodule "thirdparty/imgui"]
+	path = thirdparty/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "thirdparty/magnum"]
+	path = thirdparty/magnum
+	url = https://github.com/mosra/magnum.git
+[submodule "thirdparty/magnum-integration"]
+	path = thirdparty/magnum-integration
+	url = https://github.com/mosra/magnum-integration.git
+[submodule "thirdparty/magnum-plugins"]
+	path = thirdparty/magnum-plugins
+	url = https://github.com/mosra/magnum-plugins.git
+[submodule "thirdparty/SDL"]
+	path = thirdparty/SDL
+	url = https://github.com/libsdl-org/SDL.git
