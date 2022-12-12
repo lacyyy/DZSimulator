@@ -286,15 +286,30 @@ void MenuWindow::Draw()
             ShowKnownIssues();
 
         ImGui::Text("");
+
         ImGui::Separator();
+
         ImGui::Text("\"Danger Zone Simulator\" version %s (%s)",
             build_info::GetVersionStr(),
             build_info::GetBuildTimeStr());
+
+        ImGui::Separator();
+
+        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
+        ImGui::Text("");
+        ImGui::Text("Note that DZSimulator updates and source code are available at:");
+        ImGui::Text("    github.com/lacyyy/DZSimulator");
+        ImGui::Text("");
+        ImGui::PopStyleColor(1);
+
+        ImGui::Separator();
+
         ImGui::Text("made by lacyyy");
         ImGui::BulletText("https://github.com/lacyyy");
         ImGui::BulletText("https://twitter.com/lacyyycs");
         ImGui::BulletText("https://twitch.tv/lacyyycs");
         ImGui::BulletText("https://steamcommunity.com/profiles/76561198162669616");
+
         ImGui::Separator();
         ImGui::Text("");
 
