@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20) 
 
-set(DZSIM_VERSION 0.0.0.1) # Change this on each release
+set(DZSIM_VERSION 0.0.1) # Change this on each release
 string(TIMESTAMP DZSIM_BUILD_TIME "%Y-%m-%d %H:%M UTC" UTC)
 
 # Set convenience directory variables
