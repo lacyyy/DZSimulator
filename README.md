@@ -80,20 +80,20 @@ Most software in this repo is licensed under permissive licenses. One notable ex
 DZSimulator source code that is not part of any third party software is available under the [MIT License](LICENSE.txt). See the notes in [LICENSE.txt](LICENSE.txt) to know how to distinguish DZSimulator source code from third party software.
 
 **List of all currently used third party software (Name - Description - Corresponding license):**
-- [SDL](https://www.libsdl.org) - Multimedia library - [zlib License](thirdparty/SDL/LICENSE.txt)
-- [Corrade](https://github.com/mosra/corrade) - Utility base of Magnum - [MIT License](thirdparty/corrade/COPYING)
-- [Magnum](https://github.com/mosra/magnum) - Graphics middleware - [MIT License](thirdparty/magnum/COPYING)
-- [Magnum Integration](https://github.com/mosra/magnum-integration) - Dear ImGui integration - [MIT License](thirdparty/magnum-integration/COPYING)
-- [Magnum Plugins](https://github.com/mosra/magnum-plugins) - Plugins for Magnum - [MIT License](thirdparty/magnum-plugins/COPYING)
-- [flextGL](https://github.com/mosra/flextgl) - Used by Magnum's OpenGL wrapping layer - [MIT License](https://github.com/mosra/flextgl/blob/master/COPYING)
-- [Dear ImGui](https://github.com/ocornut/imgui) - GUI library - [MIT License](thirdparty/imgui/LICENSE.txt)
-- [podgorskiy/fsal](https://github.com/podgorskiy/fsal) - File reading (VPK archive support) - [MIT License](thirdparty/fsal_modified/fsal/LICENSE)
-- [Asio](https://think-async.com/Asio/) - Networking library - [Boost Software License](thirdparty/asio/asio/LICENSE_1_0.txt)
-- [cpp-httplib](https://github.com/yhirose/cpp-httplib) - HTTP server and client library - [MIT License](thirdparty/cpp-httplib/LICENSE)
-- [nlohmann/json](https://github.com/nlohmann/json) - JSON parsing library - [MIT License](thirdparty/json/LICENSE.MIT)
-- [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) - GUI dialogs library - [DWTFYWT License](thirdparty/portable-file-dialogs/COPYING)
-- [Noto Sans fonts](https://fonts.google.com/noto/specimen/Noto+Sans) - In-app fonts - [SIL Open Font License](res/fonts/OFL.txt)
-- [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Game engine SDK - [Source 1 SDK License](LICENSES-THIRD-PARTY.txt)
+- [SDL](https://www.libsdl.org) - Multimedia library - **zlib License** (see `thirdparty/SDL/LICENSE.txt`)
+- [Corrade](https://github.com/mosra/corrade) - Utility base of Magnum - **MIT License** (see `thirdparty/corrade/COPYING`)
+- [Magnum](https://github.com/mosra/magnum) - Graphics middleware - **MIT License** (see `thirdparty/magnum/COPYING`)
+- [Magnum Integration](https://github.com/mosra/magnum-integration) - Dear ImGui integration - **MIT License** (see `thirdparty/magnum-integration/COPYING`)
+- [Magnum Plugins](https://github.com/mosra/magnum-plugins) - Plugins for Magnum - **MIT License** (see `thirdparty/magnum-plugins/COPYING`)
+- [flextGL](https://github.com/mosra/flextgl) - Used by Magnum's OpenGL wrapping layer - [**MIT License**](https://github.com/mosra/flextgl/blob/master/COPYING)
+- [Dear ImGui](https://github.com/ocornut/imgui) - GUI library - **MIT License** (see `thirdparty/imgui/LICENSE.txt`)
+- [podgorskiy/fsal](https://github.com/podgorskiy/fsal) - File reading (VPK archive support) - [**MIT License**](thirdparty/fsal_modified/fsal/LICENSE)
+- [Asio](https://think-async.com/Asio/) - Networking library - **Boost Software License** (see `thirdparty/asio/asio/LICENSE_1_0.txt`)
+- [cpp-httplib](https://github.com/yhirose/cpp-httplib) - HTTP server and client library - [**MIT License**](thirdparty/cpp-httplib/LICENSE)
+- [nlohmann/json](https://github.com/nlohmann/json) - JSON parsing library - [**MIT License**](thirdparty/json/LICENSE.MIT)
+- [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) - GUI dialogs library - [**DWTFYWT License**](thirdparty/portable-file-dialogs/COPYING)
+- [Noto Sans fonts](https://fonts.google.com/noto/specimen/Noto+Sans) - In-app fonts - [**SIL Open Font License**](res/fonts/OFL.txt)
+- [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Game engine SDK - [**Source 1 SDK License**](LICENSES-THIRD-PARTY.txt)
 - The third party software that is used and isn't listed here was released into the public domain.
 
 NOTE: If you're going to use additional libraries from Magnum or Corrade, make sure to comply to their third-party components' license terms if they depend on any:
