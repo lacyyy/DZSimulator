@@ -1,0 +1,11 @@
+// Useful CMake variables that get turned into macros to be accessed by the source code
+
+#define DZ_SIM_BUILD_TYPE @CMAKE_BUILD_TYPE@
+
+#define DZ_SIM_BUILD_TIME @DZSIM_BUILD_TIME@
+
+#define DZ_SIM_VERSION       @PROJECT_VERSION@
+#define DZ_SIM_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define DZ_SIM_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define DZ_SIM_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define DZ_SIM_VERSION_TWEAK @PROJECT_VERSION_TWEAK@

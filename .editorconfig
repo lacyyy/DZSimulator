@@ -1,0 +1,12 @@
+# Topmost EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+# VS extension "Editor Guidelines" by Paul Harrington required for guidelines
+guidelines = 80 1px dotted gray

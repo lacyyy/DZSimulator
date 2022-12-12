@@ -1,0 +1,138 @@
+## TASK LIST FOR THE NEXT RELEASED VERSION:
+
+- [X] Refactoring / Cleanup
+- [X] UI features
+- [X] Graphics
+- [X] CSGO map parsing
+- [ ] Legal stuff
+    - [X] Decide on what license to use for DZSim. MIT? Sort out "Source SDK 2013" code separately into "thirdparty" folder?
+    - [ ] Add a CONTRIBUTING.md file? Note that contributors must be fine with anyone using their code in any way?
+- [ ] Documentation
+    - [ ] Tidy up all files under "docs"
+    - [ ] Create rough UML diagram of project's class structure
+    - [ ] Create presentable README.md, explain each repo folder, add Downloads statistic (Shields)
+    - [ ] Create presentable BUILDING.md
+- [X] Other
+
+## TASK LIST FOR THE RELEASED VERSION AFTER THAT:
+- [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
+- [ ] Improve glidability surface coloring algorithm
+- [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
+
+## KNOWN ISSUES, PRIORITIZED:
+
+- [ ] Fix brush parsing, missing/invalid faces, present at:
+    - Catfjsh's "bump_release" map
+    - Vineyard big stair playerclip brush outside to the right of the big catacombs entrance
+    - Missing face at blacksite's thin shack wall as well, but in CSGO too? parse error? nodraw face?
+    - https://github.com/wfowler1/Unity3D-BSP-Importer useful code?
+    - https://github.com/magcius/noclip.website useful code?
+    - Ladder brush doesn't get parsed as such on Insertion@Houses, is it clip brush and ladder at the same time?
+- [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
+- [ ] Disgusting brush mesh Z fighting
+- [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type. Draw water as the last thing?
+- [ ] Visuals, Fix vertical water face on Sirocco at "Tower One" and on Ember at "Rock Pool C"
+- [ ] dz_arctic has terrible FPS, why?
+- [ ] Low priority: Handle props with AABB collision correctly (get AABB from MDL? HullMins / Maxs?). On DZ maps, currently only present with curtains on vineyard
+
+## FEATURE IDEAS, PRIORITIZED PER CATEGORY:
+- **PRACTICE FUNCTIONALITIES**
+    - Does DZSim's visualisation take into account if player is crouching? Is that detectable through getpos / getpos_exact commands?
+    - Visualize player trajectory with and without space boost
+        - Draw them green when they end up in glidable surface
+        - Draw post-collision move direction
+    - Show player's AABB of recent ticks leading up to a collision
+    - Visualize player velocity, shown as colored bar, overlaying:
+        - e.g.: gray bar for vel from 0 to 500, yellow bar from 500 to 1000, etc., each bar starts filling up on their own, overlayed
+    - Save and visualize certain jump lineups/trajectories
+    - Add visualization mode: Surface Inclination ?
+    - Parse and visualize entities/values not yet parsed from map file (sorted by priority):
+        - trigger_push
+        - prop_dynamic (e.g. motor boats at Sirocco's and Blacksite's rescue zones)
+        - Horizontal sun angle for diffuse lighting (On Blacksite it should be ~ 135 degrees)
+        - The trigger that insta-kills on County
+        - Whatever disables fall dmg in the haystack on vineyard
+        - func_breakable / func_breakable_surf (breakable windows)
+        - func_occluder ??? (are they solid or are they always inside other solid brushes?)
+        - trigger_teleport / trigger_teleport_relative
+    - When connected to CSGO and CSGO changes map, show a popup: Warn the user if currently loaded map in dzsim is different from map in csgo. Add UI option to try automatically loading CSGO's map (ON by default)
+    - Rewind time! Rewind failed jump by two seconds, continue flying from there again
+    - Show harsh displacement edge connections, the harsher and more likely it stops a slide, the more intensive the visualization
+    - Failed slide statistic: e.g., "for a slide you needed 24% more speed or a 10% steeper angle"
+    - Visualize surface collision direction that gives a slide at maximum outgoing speed
+    - Option to show popups about boost amount, e.g., "3x trigger_push boost of 40" or "Bump Mine boost: 10% up, 90% horizontal"
+    - Visualize how optimally the player is strafing (check out community servers, how do they do it?)
+        - Average the player's strafe efficiency over time and determine glidable surfaces with that? (or set efficiency with user setting)
+    - Add bots that walk around for practicing stomp and knife kills
+    - Implement the entire CSGO player movement as accurately as possible (without using leaked CSGO source code!)
+        - What implementation details of that are missing from source-sdk-2013 code?
+            - TraceLine? Can that be used with the sdk's DLL files?
+                - Can DLL files be compiled into DZSim statically? If it's big, can certain functions be extracted from the DLL?
+        - Simulate one/multiple slides and detect upcoming obstacles, visualize to avoid in advance
+        - Bunnyhop fail visualisation: show how many ticks too late/early the jump was?!
+    - Add ability to slow down time?
+    - Droppable bumpmines that can be picked up again? (Respecting CSGO's +use selection mechanic)
+- **VISUALS**
+    - Add crosshair
+    - Visualize when space gives boost and when not
+    - Visualize "specific horizontal player speed" by drawing objects moving at that speed
+    - Visualize arming state of bump mine (charge up animation?)
+    - Get bumpmine orientation and show trigger area
+    - Add some texture to every surface
+    - Visualize water depth better with deeper surfaces turning darker/more blue
+        - Simple hack instead of costly shader: Draw more transparent water faces beneath the water surface in steps -> transparency effects dominate more the deeper a ground surface is!
+        - Distinctly visualize surfaces with a water depth at which players start swimming aka enter "water movement mode" -> Useful to find water-rampgliding spots!
+    - Separate walkable and not walkable surfaces with different colors
+    - Color objects depending on surface property/type
+    - Make playerclip brushes transparent to tell the player that Bump Mines go through them? Disable face culling for playerclips?
+    - Bump Mine position indicator (edge of screen indicator)
+    - Show important objects(bump mines, ladders) through walls with special graphical effect (hachured?)
+    - Option to switch dark/light mode: Dark/bright terrain and sky
+    - Interpolate more precisely at collisions: pos A before collision, pos B after collision, use velocity at A and B to get collision point X in between, with that, interpolate between A and X, then between X and B
+    - Add stretched 4:3 or 16:10 (?) setting (for 4:3, make FOV smaller) https://youtu.be/frsp7VIKTuY
+    - Add user option to change MSAA sample count
+    - Add SMAA or FXAA Postprocessing (fast MSAA alternative) (https://youtu.be/Z9bYzpwVINA)
+    - Split polygons into triangles with the same algorithm as CSGO:
+        - maybe it's this (edge length minimization): https://www.geeksforgeeks.org/minimum-cost-polygon-triangulation/
+        - https://en.wikipedia.org/wiki/Minimum-weight_triangulation
+    - Use Stratum2 font?
+    - Only draw outline lines of adjacent triangles that have the exact same orientation (??? I forgot the reasons for this)
+    - Add fog?
+    - Add shadows?
+- **UI**
+    - Option to disable glidability visualization
+    - Option to show input visualization (wasd, jump key, crouch key)
+    - Option to rebind keys
+        - Options: walk mode toggle/hold, duck mode toggle/hold, reverse mouse on/off
+    - FOV slider
+    - Fun game setting options: gravity, airaccel, bumpboost, ...
+    - Allow user to favorite maps to appear at the top of the map list
+- **CSGO INTEGRATION**
+    - Smooth / Interpolate / Optimize CSGO integration (does it lag with many placed BMs?, use VScript functions to compress data printed into console output?)
+    - Option to automatically let CSGO record POV demos when joining a match
+    - Replay demo files from game dir https://github.com/ValveSoftware/csgo-demoinfo
+    - Detect if CSGO process is running, react in UI when CSGO is required
+    - Fix random slide fails by setting ConVar "sv_standable_normal" to a high value once player is in the air and resetting it when failing a glide? Seems like this enables gliding where it shouldn't be possible though...
+- **CSGO PARSING**
+    - Parse "csgo/gameinfo.txt" and get SearchPaths, use those to retrieve csgo assets
+        - Make sure files get loaded correctly if SearchPath has Unicode chars!
+            - Seems like Unicode SearchPaths can be opened with char strings, but might need a uint8_t -> char conversion, or the opposite.
+- **DEBUG / PERFORMANCE FUNCTIONALITY**
+    - Somehow determine VRAM usage
+    - Show detailed RAM usage, also of each BspMap member?
+    - Show server perf issues: high tick duration/high sleep deviation
+    - Options for server sleep technique (sleep or busy sleep):
+        - Allow rare simulation variance(lower CPU usage)
+        - Don't allow (higher CPU usage) [busy sleep]
+    - Option to disable interpolation
+- **MISCELLANEOUS / NICE TO HAVE**
+    - On startup, check for new released versions on GitHub/GitLab and inform the user
+    - On startup, check for MOTD (message of the day) set by DZSim's maintainer (use GitHub pages to distribute MOTD?)
+    - Add Discord Rich Presence
+    - Add CSGO Danger Zone Map cycle info / announcer
+    - Add ingame respawn announcer (like DZMonitor)?
+    - Determine player spawns with navmesh (found in game dir or extracted from bsp file) ?
+
+
+## TESTING / REQUIREMENTS RESEARCH
+- Interview experienced and beginner bumpers. Figure out what they want and how they practice.

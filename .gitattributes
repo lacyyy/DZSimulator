@@ -1,0 +1,31 @@
+## Set default behaviour to automatically normalize line endings of files
+## that Git thinks are text files.
+*     text=auto
+
+## Explicitly declare text files we want to always be normalized and converted
+## to native line endings on checkout.
+*.txt text
+
+## Declare files that will always have CRLF line endings.
+# Windows command scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+# Windows resource scripts
+*.rc  text eol=crlf
+
+## Declare files that will always have LF line endings.
+# Unix bash scripts
+*.sh  text eol=lf
+
+## Declare files that are binary and will be ignored by line ending normalization.
+*.ico binary
+*.jpg binary
+*.png binary
+*.ttf binary
+
+## Declare library files that will be ignored by line ending normalization.
+## Do this in a final step to override previous text attributes.
+## We do not intend to modify them and try to keep them unaltered so that
+## someone that only has the DZSimulator source code can add the original
+## library versions to have a working project.
+/thirdparty/** -text

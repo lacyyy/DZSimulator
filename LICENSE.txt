@@ -1,0 +1,45 @@
+NOTE
+
+Third party software found under 'thirdparty/' and 'res/fonts/' is accompanied
+by their corresponding licensing information!
+Everything else in this repository falls into one of two categories:
+
+    1. Software from https://github.com/ValveSoftware/source-sdk-2013 licensed
+       under the 'SOURCE 1 SDK LICENSE'. You can find the license and its
+       requirements under 'LICENSES-THIRD-PARTY.txt'. Using this software
+       requires you to distribute anything derived from it for free!
+       Software from this category is clearly marked with comments like
+       'taken from source-sdk-2013/<...>'.
+
+    2. Software not from 'thirdparty/', not from 'res/fonts/' and not marked
+       as taken from source-sdk-2013 is available solely under the MIT License
+       as displayed below.
+
+Please contact lacyyy at lacyyycs[at]gmail[dot]com if you need further details
+about which category certain parts of the source code belong to.
+
+
+
+
+
+MIT License
+
+Copyright (c) 2022 lacyyy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

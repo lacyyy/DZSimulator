@@ -1,0 +1,65 @@
+{
+    "version": 2,
+    "configurePresets": [
+        {
+            "name": "win-x64-debug",
+            "displayName": "Windows x64 Debug",
+            "description": "Target Windows x64 in Debug mode",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [
+                        "Windows"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "win-x64-release-static",
+            "displayName": "Windows x64 Release",
+            "description": "Target Windows x64 in Release mode, compile Magnum statically and disable application console window.",
+            "inherits": "win-x64-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "MAGNUM_BUILD_STATIC": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "MAGNUM_BUILD_PLUGINS_STATIC": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "CORRADE_BUILD_STATIC": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "DZSIM_DISABLE_CONSOLE_WINDOW": {
+                    "type": "BOOL",
+                    "value": "ON"
+                }
+            }
+        },
+        {
+            "name": "win-x64-release-static-debuggable",
+            "displayName": "Windows x64 Release +Console +DebugInfo",
+            "description": "Target Windows x64 in Release mode, compile Magnum statically and enable debug info.",
+            "inherits": "win-x64-release-static",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "DZSIM_DISABLE_CONSOLE_WINDOW": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                }
+            }
+        }
+    ]
+}

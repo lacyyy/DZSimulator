@@ -1,0 +1,14 @@
+# Build results (leading '/' to only match top-level 'out'-directory)
+/out/
+
+# Binary version of resource script file from the resource compiler
+*.aps
+
+# Visual Studio files
+.vs/
+.vscode/
+#!.vscode/settings.json
+#!.vscode/tasks.json
+#!.vscode/launch.json
+#!.vscode/extensions.json
+*.code-workspace
