@@ -8,7 +8,7 @@
 #include <Magnum/versionIntegration.h> // repo version of "magnum-integration"
 #include <Magnum/versionPlugins.h>     // repo version of "magnum-plugins"
 #include <asio/version.hpp>            // version of "asio"
-#include <httplib.h>                   // version of "cpp-httplib"
+#include <httplib.h>                   // version of "cpp-httplib" (Note: Include httplib.h before Windows.h or include Windows.h by defining WIN32_LEAN_AND_MEAN beforehand.)
 #include <imgui.h>                     // version of "imgui"
 #include <json.hpp>                    // version of "json"
 #include <SDL_version.h>               // version of "SDL"
@@ -86,6 +86,11 @@ const char* build_info::thirdparty::GetFsalVersionStr()
     return "(modified from commit 43a10da)";
 }
 
+const char* build_info::thirdparty::GetOpenSSLVersionStr()
+{
+    return MACRO_TO_STR(DZ_SIM_OPENSSL_VERSION);
+}
+
 void build_info::print() {
 
     Debug{} << "Build settings:" << GetBuildTypeStr();
@@ -98,11 +103,12 @@ void build_info::print() {
     Debug{} << " - SDL" << thirdparty::GetSdlVersionStr();
     Debug{} << " - Dear ImGui" << thirdparty::GetImGuiVersionStr();
     Debug{} << " - Asio" << thirdparty::GetAsioVersionStr();
+    Debug{} << " - OpenSSL" << thirdparty::GetOpenSSLVersionStr();
     Debug{} << " - cpp-httplib" << thirdparty::GetCppHttpLibVersionStr();
     Debug{} << " - nlohmann/json" << thirdparty::GetJsonVersionStr();
     Debug{} << " - podgorskiy/fsal" << thirdparty::GetFsalVersionStr();
-    
 
+    
     // All CORRADE_* macros found inside <Corrade/Corrade.h>
     // All MAGNUM_* macros found inside <Magnum/Magnum.h>
 

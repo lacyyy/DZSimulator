@@ -54,8 +54,6 @@ You can download the newest version of DZSimulator for Windows [**here**](https:
 Adding a download for GNU/Linux machines is planned in the future!
 Using DZSimulator in the web browser might be possible in the future too!
 
-I've got many useful features planned, so visit this page again in a couple weeks to check for updates!
-
 ## You can stop reading here if you just want to try out DZSimulator! 
 
 ----
@@ -89,6 +87,7 @@ DZSimulator source code that is not part of any third party software is availabl
 - [Dear ImGui](https://github.com/ocornut/imgui) - GUI library - **MIT License** (see `thirdparty/imgui/LICENSE.txt`)
 - [podgorskiy/fsal](https://github.com/podgorskiy/fsal) - File reading (VPK archive support) - [**MIT License**](thirdparty/fsal_modified/fsal/LICENSE)
 - [Asio](https://think-async.com/Asio/) - Networking library - **Boost Software License** (see `thirdparty/asio/asio/LICENSE_1_0.txt`)
+- [OpenSSL](https://github.com/openssl/openssl) - TLS library used by cpp-httplib - [**OpenSSL License and SSLeay License**](thirdparty/openssl-1.1.1s-bin/LICENSE)
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib) - HTTP server and client library - [**MIT License**](thirdparty/cpp-httplib/LICENSE)
 - [nlohmann/json](https://github.com/nlohmann/json) - JSON parsing library - [**MIT License**](thirdparty/json/LICENSE.MIT)
 - [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) - GUI dialogs library - [**DWTFYWT License**](thirdparty/portable-file-dialogs/COPYING)
@@ -100,6 +99,10 @@ NOTE: If you're going to use additional libraries from Magnum or Corrade, make s
 - [Magnum's third party components](https://doc.magnum.graphics/magnum/credits-third-party.html)
 - [Corrade's third party components](https://doc.magnum.graphics/corrade/corrade-credits-third-party.html)
 
+### Acknowledgements
+
+- This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit (http://www.openssl.org/)
+- This product includes cryptographic software written by Eric Young (eay@cryptsoft.com)
 
 ### Building DZSimulator
 

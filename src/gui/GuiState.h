@@ -19,6 +19,8 @@ public:
 
     // Misc
     bool app_exit_requested = false;
+    bool OUT_dzsim_update_available = false; // New release on GitHub
+    bool IN_open_downloads_page_in_browser = false; // GitHub releases page
 
     // Window opening / closing
     bool show_window_legal_notices = false;

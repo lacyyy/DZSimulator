@@ -1,11 +1,14 @@
 ## This app currently only runs on Windows. Porting this app to WASM/WebGL (Emscripten), Linux or Mac OS is planned. This is a list of things to consider and test on those platforms.
 
+`@PORTING` tag is used in source code to mark relevant code.
+
 ### ON ALL PLATFORMS:
 - FIRST, CHECK SDL abilities!
     - Cross-platform message boxes? (SDL_ShowSimpleMessageBox)
     - See if app window is focused?
     - File dialogs?
 - Setting game server thread priority? Currently on Windows set with WinAPI.
+- Opening a website in the default browser? Currently on Windows done with WinAPI.
 - Reduce fps limit once app isn't focused? Cross-platform method for detecting that?
 - (excluding WebGL?) Make sure CSGO's install dir is automatically detected (what about unicode paths?)
     - https://www.reddit.com/r/GlobalOffensive/comments/cjhcpy/game_state_integration_a_very_large_and_indepth/

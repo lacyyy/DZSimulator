@@ -7,18 +7,26 @@
 1. Increase project version in top-level CMakeLists.txt
 1. Write changelogs for GitHub and ingame display
 1. In the parent directory of the repo, run:
-       `tar --exclude="DZSimulator/.git" --exclude="DZSimulator/.vs" --exclude="DZSimulator/out" -zcvf "DZSimulator-vX.X.X-Source-code-with-submodules.tar.gz" DZSimulator`
+       `tar --exclude="DZSimulator/.git" --exclude="DZSimulator/.vs" --exclude="DZSimulator/out" -zcvf "DZSimulator-vX.Y.Z-Source-code-with-submodules.tar.gz" DZSimulator`
 1. In Visual Studio, right-click top-level CMakeLists.txt > Configure DZSimulatorProject
 1. Build executable
-1. Rename executable("DZSimulator-vX.X.X.exe") and source code archive with new version number
+1. Rename executable("DZSimulator-vX.Y.Z.exe") and source code archive with new version number
 1. Make sure in-app build timestamp is correctly updated
 1. Commit new version tag and push it:
+
+    **CAUTION: The git tag's name must follow strict rules in order for the new release to be detected by by previous DZSimulator versions!**
+    - Tag name MUST be of the format `vX.Y.Z` where X, Y and Z are positive integers.
+    - When comparing the new tag name to the tag name of all previous releases, one of the following must be true:
+        - The new X is greater than the old X
+        - Both X values are equal and the new Y is greater than the old Y
+        - Both X values are equal, both Y values are equal and the new Z is greater than the old Z
     ```
-    git commit -m "Bumped DZSimulator version to X.X.X"
-    git tag vX.X.X
+    git commit -m "Bumped DZSimulator version to X.Y.Z"
+    git tag vX.Y.Z
     git push origin --tags
     ```
 1. Make a release on GitHub, write changes and attach source code archive and the executable(s)
+1. Test if new GitHub release is detected by previously released DZSimulator versions
 
 ### Updating any of Magnum/Corrade repos
 1. If project suddenly stops building after a Magnum upgrade, see https://doc.magnum.graphics/magnum/troubleshooting.html

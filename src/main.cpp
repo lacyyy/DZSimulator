@@ -27,6 +27,7 @@
 #include "rendering/BigTextRenderer.h"
 #include "rendering/WorldRenderer.h"
 #include "sim/Server.h"
+#include "GitHubChecker.h"
 
 // Attempt to create window with this mode on startup
 #define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED)
@@ -93,6 +94,8 @@ class DZSimApplication: public Platform::Application {
         csgo_integration::Gsi _gsi;
         csgo_integration::GsiState _latest_gsi_state;
         size_t _num_received_gsi_states = 0;
+
+        GitHubChecker _update_checker;
 
         rendering::WorldRenderer _world_renderer;
 
@@ -429,6 +432,8 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 
     ConfigureGameKeyBindings();
     CalcViewProjTransformation();
+
+    _update_checker.StartAsyncUpdateAndMotdCheck();
 
     _gameServer.ChangeSimulationTimeScale(1.0);// 0.015625);
     _gameServer.Start();
@@ -779,6 +784,51 @@ void DZSimApplication::tickEvent() {
     // Let GUI know about the current input mode
     _gui_state.ctrl_help.OUT_first_person_control_active =
         _user_input_mode == UserInputMode::FIRST_PERSON;
+
+    // Handle DZSimulator GitHub update checking
+    if (_gui_state.IN_open_downloads_page_in_browser) {
+        _gui_state.IN_open_downloads_page_in_browser = false;
+        GitHubChecker::OpenDZSimUpdatePageInBrowser();
+    }
+    if (!_update_checker.IsAsyncUpdateAndMotdCheckFinished()) {
+        _gui_state.OUT_dzsim_update_available = false;
+    }
+    else {
+        static bool s_was_check_result_processed = false;
+        if (!s_was_check_result_processed) {
+            s_was_check_result_processed = true;
+
+            std::string motd = _update_checker.GetMotd();
+            if (!motd.empty())
+                _gui_state.popup.QueueMsgInfo(motd);
+
+            switch (_update_checker.GetUpdateStatus()) {
+            case GitHubChecker::UpdateStatus::UPDATE_AVAILABLE:
+                Debug{} << "New update available on GitHub!";
+                _gui_state.popup.QueueMsgInfo("NEW UPDATE AVAILABLE!\n\n"
+                    "A new version of DZSimulator was published on GitHub (It "
+                    "might have new useful features).\n\n"
+                    "To check it out, press the \"Open downloads page\" button "
+                    "in the menu.\n\n"
+                    "Alternatively, you can visit "
+                    "https://github.com/lacyyy/DZSimulator/releases");
+                _gui_state.OUT_dzsim_update_available = true;
+                break;
+            case GitHubChecker::UpdateStatus::NOT_CHECKED:
+            case GitHubChecker::UpdateStatus::NO_UPDATE_AVAILABLE:
+                Debug{} << "No update available on GitHub!";
+                _gui_state.OUT_dzsim_update_available = false;
+                break;
+            case GitHubChecker::UpdateStatus::UPDATE_CHECK_FAILED:
+            default:
+                Debug{} << "An error occurred while checking for updates on "
+                    "GitHub";
+                _gui_state.OUT_dzsim_update_available = false;
+                break;
+            }
+        }
+    }
+
 
     auto window_flags = SDL_GetWindowFlags(this->window());
     bool window_focused = window_flags & SDL_WINDOW_INPUT_FOCUS;

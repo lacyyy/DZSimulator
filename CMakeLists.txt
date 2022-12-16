@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20) 
 
-set(DZSIM_VERSION 0.0.1) # Change this on each release
+# Project version MUST have format: X.Y.Z
+set(DZSIM_VERSION 0.0.1) # Increase this on each release
+
 string(TIMESTAMP DZSIM_BUILD_TIME "%Y-%m-%d %H:%M UTC" UTC)
 
 # Set convenience directory variables
@@ -17,13 +19,13 @@ set(DZSIM_JSON_DIR               thirdparty/json)
 set(DZSIM_MAGNUM_DIR             thirdparty/magnum)
 set(DZSIM_MAGNUM_PLUGINS_DIR     thirdparty/magnum-plugins)
 set(DZSIM_MAGNUM_INTEGRATION_DIR thirdparty/magnum-integration)
+set(DZSIM_OPENSSL_DIR            thirdparty/openssl-1.1.1s-bin/win-x64-static)
 set(DZSIM_PFD_DIR                thirdparty/portable-file-dialogs)
 set(DZSIM_SDL_DIR                thirdparty/SDL)
 
 
 # Set the project name and version
 project(DZSimulatorProject VERSION ${DZSIM_VERSION})
-configure_file(${DZSIM_DIR}/cmake_build_settings.h.in ${DZSIM_CMAKE_INCLUDE_DIR}/cmake_build_settings.h)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -31,8 +33,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/${DZSIM_CMAKE_MODULES}/" ${CMAKE_MODULE_PATH})
 
-# Set Dear ImGui path
-set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/${DZSIM_IMGUI_DIR})
+# Enable useful compiler warnings (breaks compile if disabled?!)
+set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
 # Enable features
 set(MAGNUM_WITH_IMGUI            ON CACHE BOOL "" FORCE)
@@ -63,15 +65,15 @@ set(SDL_THREADS    OFF CACHE BOOL "" FORCE)
 set(SDL_SHARED     OFF CACHE BOOL "" FORCE)
 add_subdirectory(${DZSIM_SDL_DIR}                EXCLUDE_FROM_ALL)
 
+# Set Dear ImGui path
+set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/${DZSIM_IMGUI_DIR})
+
 # Add subprojects
 add_subdirectory(${DZSIM_CORRADE_DIR}            EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_DIR}             EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_PLUGINS_DIR}     EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_INTEGRATION_DIR} EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_FSAL_DIR}               EXCLUDE_FROM_ALL)
-
-# Enable useful compiler warnings (breaks compile if disabled?!)
-set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
 find_package(Corrade REQUIRED
     Utility
@@ -88,6 +90,14 @@ find_package(MagnumIntegration REQUIRED
 find_package(MagnumPlugins REQUIRED
     StbImageImporter
     StbTrueTypeFont)
+
+# Find OpenSSL
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+set(OPENSSL_ROOT_DIR "${PROJECT_SOURCE_DIR}/${DZSIM_OPENSSL_DIR}")
+find_package(OpenSSL REQUIRED)
+
+# Configure must happen after finding OpenSSL
+configure_file(${DZSIM_DIR}/cmake_build_settings.h.in ${DZSIM_CMAKE_INCLUDE_DIR}/cmake_build_settings.h)
 
 # Take resource files and let Corrade put them into a cpp file that gets compiled in
 corrade_add_resource(DZSIM_RESOURCES res/resources.conf)
@@ -114,7 +124,20 @@ target_link_libraries(DZSimulator PRIVATE
     Magnum::Trade
     MagnumIntegration::ImGui
     MagnumPlugins::StbImageImporter
-    MagnumPlugins::StbTrueTypeFont)
+    MagnumPlugins::StbTrueTypeFont
+    OpenSSL::SSL
+    OpenSSL::Crypto
+# OpenSSL::applink might be needed to compile OpenSSL into projects under MSVC
+# (see its CMake documentation for details)
+    #OpenSSL::applink 
+)
+
+# The cpp-httplib library requires CPPHTTPLIB_OPENSSL_SUPPORT to be defined
+# before all occurrences of its "httplib.h" being included!
+# OpenSSL is required to access HTTPS-only APIs.
+target_compile_definitions(DZSimulator PUBLIC
+    CPPHTTPLIB_OPENSSL_SUPPORT
+)
 
 target_include_directories(DZSimulator PUBLIC
     "${PROJECT_BINARY_DIR}/${DZSIM_CMAKE_INCLUDE_DIR}" # Add generated CMake files(configure_file) from the binary dir
@@ -135,7 +158,7 @@ if(CORRADE_TARGET_WINDOWS)
 endif()
 
 # If you add new cpp-files to the project, add their path to this list!
-target_sources(DZSimulator PRIVATE ${DZSIM_EXTRA_SOURCES} "src/main.cpp" "src/csgo_parsing/BrushSeparation.cpp" "src/GlobalVars.cpp" "src/InputHandler.cpp" "src/rendering/_unused_VertBufUpdateDemo.cpp" "src/rendering/WorldRenderer.cpp"  "src/csgo_parsing/BspMap.cpp"  "src/csgo_parsing/BspMapParsing.cpp" "src/sim/Server.cpp" "src/sim/WorldState.cpp"    "src/build_info.cpp" "src/gui/Gui.cpp" "src/rendering/BigTextRenderer.cpp" "src/utils_3d.cpp"   "src/csgo_integration/Gsi.cpp" "src/rendering/GlidabilityShader3D.cpp" "src/csgo_integration/RemoteConsole.cpp" "src/csgo_integration/Handler.cpp" "src/csgo_parsing/AssetFinder.cpp" "src/csgo_parsing/PhyModelParsing.cpp" "src/csgo_parsing/AssetFileReader.cpp"  "src/csgo_parsing/utils.cpp" "src/rendering/WorldCreation.cpp" "src/gui/MenuWindow.cpp" "src/gui/Popup.cpp")
+target_sources(DZSimulator PRIVATE ${DZSIM_EXTRA_SOURCES} "src/main.cpp" "src/csgo_parsing/BrushSeparation.cpp" "src/GlobalVars.cpp" "src/InputHandler.cpp" "src/rendering/_unused_VertBufUpdateDemo.cpp" "src/rendering/WorldRenderer.cpp"  "src/csgo_parsing/BspMap.cpp"  "src/csgo_parsing/BspMapParsing.cpp" "src/sim/Server.cpp" "src/sim/WorldState.cpp"    "src/build_info.cpp" "src/gui/Gui.cpp" "src/rendering/BigTextRenderer.cpp" "src/utils_3d.cpp"   "src/csgo_integration/Gsi.cpp" "src/rendering/GlidabilityShader3D.cpp" "src/csgo_integration/RemoteConsole.cpp" "src/csgo_integration/Handler.cpp" "src/csgo_parsing/AssetFinder.cpp" "src/csgo_parsing/PhyModelParsing.cpp" "src/csgo_parsing/AssetFileReader.cpp"  "src/csgo_parsing/utils.cpp" "src/rendering/WorldCreation.cpp" "src/gui/MenuWindow.cpp" "src/gui/Popup.cpp" "src/GitHubChecker.cpp")
 
 # Make the executable a default target to build & run in Visual Studio (doesn't work?)
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT DZSimulator)

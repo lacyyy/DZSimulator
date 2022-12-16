@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <Corrade/Utility/Debug.h>
+// Include httplib.h before Windows.h or include Windows.h by defining
+// WIN32_LEAN_AND_MEAN beforehand.
 #include <httplib.h>
 #include <json.hpp>
 #include <Magnum/Magnum.h>

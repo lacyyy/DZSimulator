@@ -14,6 +14,7 @@
     - Catfjsh's "bump_release" map
     - Vineyard big stair playerclip brush outside to the right of the big catacombs entrance
     - Missing face at blacksite's thin shack wall as well, but in CSGO too? parse error? nodraw face?
+    - player clip stairs in Dust2's tunnels 
     - https://github.com/wfowler1/Unity3D-BSP-Importer useful code?
     - https://github.com/magcius/noclip.website useful code?
     - Ladder brush doesn't get parsed as such on Insertion@Houses, is it clip brush and ladder at the same time?
@@ -30,6 +31,7 @@
     - Visualize player trajectory with and without space boost
         - Draw them green when they end up in glidable surface
         - Draw post-collision move direction
+    - Somehow indicate if player's speed is increasing or decreasing to show if airstrafing is helping or not
     - Show player's AABB of recent ticks leading up to a collision
     - Visualize player velocity, shown as colored bar, overlaying:
         - e.g.: gray bar for vel from 0 to 500, yellow bar from 500 to 1000, etc., each bar starts filling up on their own, overlayed
@@ -99,7 +101,7 @@
 - **CSGO INTEGRATION**
     - Smooth / Interpolate / Optimize CSGO integration (does it lag with many placed BMs?, use VScript functions to compress data printed into console output?)
     - Option to automatically let CSGO record POV demos when joining a match
-    - Replay demo files from game dir https://github.com/ValveSoftware/csgo-demoinfo
+    - Replay demo files from game dir, see https://github.com/ValveSoftware/csgo-demoinfo and https://github.com/markus-wa/demoinfocs-golang
     - Detect if CSGO process is running, react in UI when CSGO is required
     - Fix random slide fails by setting ConVar "sv_standable_normal" to a high value once player is in the air and resetting it when failing a glide? Seems like this enables gliding where it shouldn't be possible though...
 - **CSGO PARSING**
@@ -115,8 +117,6 @@
         - Don't allow (higher CPU usage) [busy sleep]
     - Option to disable interpolation
 - **MISCELLANEOUS / NICE TO HAVE**
-    - On startup, check for new released versions on GitHub and inform the user
-    - On startup, check for MOTD (message of the day) set by DZSim's maintainer (use GitHub pages to distribute MOTD?)
     - Add Discord Rich Presence
     - Add CSGO Danger Zone Map cycle info / announcer
     - Add ingame respawn announcer (like DZMonitor)?

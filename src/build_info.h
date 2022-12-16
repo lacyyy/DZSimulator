@@ -23,6 +23,7 @@ namespace build_info {
         const char* GetCppHttpLibVersionStr();
         const char* GetJsonVersionStr();
         const char* GetFsalVersionStr();
+        const char* GetOpenSSLVersionStr();
 
 
     }

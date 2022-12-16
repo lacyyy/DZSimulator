@@ -51,6 +51,19 @@ void MenuWindow::Draw()
         return;
     }
 
+    // Draw notification if update is available on GitHub
+    if (_gui_state.OUT_dzsim_update_available) {
+        ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 1.0f, 0.0f, 1.0f });
+        ImGui::Text("A new version of DZSimulator is available for download!");
+        ImGui::PopStyleColor(1);
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.4f, 0.0f, 1.0f));
+        if (ImGui::Button("Open downloads page in webbrowser"))
+            _gui_state.IN_open_downloads_page_in_browser = true;
+        ImGui::PopStyleColor(1);
+        ImGui::Text("");
+    }
+
     DrawMapSelection(); // MAP LOAD SELECTION
 
     const ImVec4 MENU_ELEM_COLOR = ImVec4(0.145f, 0.667f, 0.757f, 0.584f);
@@ -293,16 +306,7 @@ void MenuWindow::Draw()
             build_info::GetVersionStr(),
             build_info::GetBuildTimeStr());
 
-        ImGui::Separator();
-
-        ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.7f, 0.0f, 1.0f });
         ImGui::Text("");
-        ImGui::Text("Note that DZSimulator updates and source code are available at:");
-        ImGui::Text("    github.com/lacyyy/DZSimulator");
-        ImGui::Text("");
-        ImGui::PopStyleColor(1);
-
-        ImGui::Separator();
 
         ImGui::Text("made by lacyyy");
         ImGui::BulletText("https://github.com/lacyyy");
@@ -325,7 +329,7 @@ void MenuWindow::Draw()
 
             ImGui::Text("");
 
-            ImGui::Text("Used thirdparty libraries:");
+            ImGui::Text("Some of the used thirdparty libraries:");
             ImGui::PushFont(_gui._font_mono); // Select monospace font for build info
             ImGui::BulletText("Corrade            %s",
                 build_info::thirdparty::GetCorradeVersionStr());
@@ -341,6 +345,8 @@ void MenuWindow::Draw()
                 build_info::thirdparty::GetImGuiVersionStr());
             ImGui::BulletText("Asio %s",
                 build_info::thirdparty::GetAsioVersionStr());
+            ImGui::BulletText("OpenSSL %s",
+                build_info::thirdparty::GetOpenSSLVersionStr());
             ImGui::BulletText("cpp-httplib %s",
                 build_info::thirdparty::GetCppHttpLibVersionStr());
             ImGui::BulletText("nlohmann/json %s",
@@ -352,6 +358,18 @@ void MenuWindow::Draw()
 
             ImGui::TreePop();
         }
+
+        if (ImGui::TreeNode("Acknowledgements"))
+        {
+            ImGui::Text("");
+            ImGui::Text("This product includes software developed by the "
+                "OpenSSL Project\n"
+                "for use in the OpenSSL Toolkit(http://www.openssl.org/)");
+
+            ImGui::TreePop();
+        }
+
+        ImGui::Text("");
 
         if (ImGui::Button("Show third party legal notices"))
             _gui_state.show_window_legal_notices ^= true;
@@ -408,8 +426,8 @@ void MenuWindow::ShowAppExplanation()
         "random! It seems like players can do nothing about that fact.\n\n"
         "Please understand that there could be bugs in this app. If you find "
         "any, please report them in the \"Issues\" tab on the project's "
-        "website (github.com/lacyyy/DZSimulator), where you should have "
-        "downloaded this app from.\nYou can also send me bug reports "
+        "website (https://github.com/lacyyy/DZSimulator), where you should "
+        "have downloaded this app from.\nYou can also send me bug reports "
         "and feedback through my Twitter DMs: https://twitter.com/lacyyycs"
     );
 }
