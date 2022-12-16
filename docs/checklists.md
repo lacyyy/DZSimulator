@@ -23,6 +23,7 @@
     ```
     git commit -m "Bumped DZSimulator version to X.Y.Z"
     git tag vX.Y.Z
+    git push origin
     git push origin --tags
     ```
 1. Make a release on GitHub, write changes and attach source code archive and the executable(s)
