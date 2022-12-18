@@ -1,12 +1,20 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
-- [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
+- [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
+    - confirm with vscript again!
+    - small arrows that float up
+    - left and right edge of the screen: Z velocity scale from 1000 (bottom end) to 0 (top end)
+    - highlighted range between 500 and 100
+- [ ] Visualize 1, sometimes 2 player trajectories: no exo boost and full exo boost
+    - Only draw downwards part of trajectory? No culling? Precompile into mesh that gets scaled?
+- [ ] Visualize player velocity, shown as colored bar, overlaying:
+    - e.g.: gray bar for vel from 0 to 500, yellow bar from 500 to 1000, etc., each bar starts filling up on their own, overlayed
+- [ ] Somehow indicate if player's speed is increasing or decreasing to show if airstrafing is helping or not
+    - green/red glow around hori speed indicator
+    - vertical separators for discrete sections
 - [ ] Improve glidability surface coloring algorithm
+- [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
 - [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
-
-## TASK LIST FOR THE RELEASED VERSION AFTER THAT:
-
-- [ ] ...
 
 ## KNOWN ISSUES, PRIORITIZED:
 
@@ -28,13 +36,10 @@
 ## FEATURE IDEAS, PRIORITIZED PER CATEGORY:
 - **PRACTICE FUNCTIONALITIES**
     - Does DZSim's visualisation take into account if player is crouching? Is that detectable through getpos / getpos_exact commands?
-    - Visualize player trajectory with and without space boost
+    - Player trajectories:
         - Draw them green when they end up in glidable surface
         - Draw post-collision move direction
-    - Somehow indicate if player's speed is increasing or decreasing to show if airstrafing is helping or not
     - Show player's AABB of recent ticks leading up to a collision
-    - Visualize player velocity, shown as colored bar, overlaying:
-        - e.g.: gray bar for vel from 0 to 500, yellow bar from 500 to 1000, etc., each bar starts filling up on their own, overlayed
     - Save and visualize certain jump lineups/trajectories
     - Add visualization mode: Surface Inclination ?
     - Parse and visualize entities/values not yet parsed from map file (sorted by priority):
@@ -65,7 +70,6 @@
     - Droppable bumpmines that can be picked up again? (Respecting CSGO's +use selection mechanic)
 - **VISUALS**
     - Add crosshair
-    - Visualize when space gives boost and when not
     - Visualize "specific horizontal player speed" by drawing objects moving at that speed
     - Visualize arming state of bump mine (charge up animation?)
     - Get bumpmine orientation and show trigger area
