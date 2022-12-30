@@ -39,8 +39,10 @@
     - Player trajectories:
         - Draw them green when they end up in glidable surface
         - Draw post-collision move direction
+    - Show predicted Bump Mine projectile trajectory (or just the position it would end up in)
     - Show player's AABB of recent ticks leading up to a collision
     - Save and visualize certain jump lineups/trajectories
+        - Draw rings/zones that the player must move through to perform a trick (e.g. like this https://youtu.be/X_-eoDyhIjM?t=183)
     - Add visualization mode: Surface Inclination ?
     - Parse and visualize entities/values not yet parsed from map file (sorted by priority):
         - trigger_push
