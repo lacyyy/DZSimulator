@@ -22,4 +22,7 @@
 - Don't clear color buffer? (skybox is always present)
 - Resolution scaling option
 - Grenade and player clip brushes in the same space should be converted into a normal solid brush
-- Limit FPS at 10 when window isn't in focus, and halt time? Also halt game server (Decrease server thread priority?)
+- Halt time when window isn't in focus? Also halt game server (Decrease server thread priority?)
+- Reduce DZSim's overlay lag when connected to csgo
+    - Really bad lag seems to be caused by the server not being able to keep up. Does `host_thread_mode 1` help? This command is hidden in CSGO (https://github.com/saul/cvar-unhide)
+        - Does this allow to periodically send `getpos` at a higher frequency into the console for a smoother overlay? Right now spamming getpos is only effective when sent at 64 Hz.

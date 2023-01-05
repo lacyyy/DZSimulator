@@ -30,8 +30,8 @@ public:
     void LoadBspMapGeometry(std::shared_ptr<const csgo_parsing::BspMap> bsp_map);
 
     void Draw(const Magnum::Matrix4& view_proj_transformation,
-        const Magnum::Vector3& player_position,
-        const Magnum::Vector3& player_velocity,
+        const Magnum::Vector3& player_feet_pos,
+        float hori_player_speed,
         const std::vector<Magnum::Vector3>& bump_mine_positions);
 
 private:

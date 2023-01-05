@@ -19,6 +19,8 @@ namespace gui {
         void ShowKnownIssues();
         void ShowPlannedFeatures();
 
+        void ShowOverlayLagAdvice();
+
         void DrawMapSelection();
 
         void DrawVideoSettings();

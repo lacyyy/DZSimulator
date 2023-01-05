@@ -1,5 +1,6 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
+- [ ] Add advice to change notes about reducing fps_max to 128 or 64 of overlay is laggy
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
     - confirm with vscript again!
     - small arrows that float up
@@ -15,6 +16,7 @@
 - [ ] Improve glidability surface coloring algorithm
 - [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
 - [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
+- [ ] Add hotkeys for frequent UI actions (e.g. toggling overlay mode, visualization mode, connecting to csgo, show displacement edges)
 
 ## KNOWN ISSUES, PRIORITIZED:
 
@@ -31,6 +33,8 @@
 - [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type. Draw water as the last thing?
 - [ ] Visuals, Fix vertical water face on Sirocco at "Tower One" and on Ember at "Rock Pool C"
 - [ ] dz_arctic has terrible FPS, why?
+- [ ] Investigate "DISP_VPHYSICS found bad displacement collision face" error that makes displacements non-solid, what are the exact criteria for that?
+    - Make DZSim visualize those "error displacements" in a special way?
 - [ ] Low priority: Handle props with AABB collision correctly (get AABB from MDL? HullMins / Maxs?). On DZ maps, currently only present with curtains on vineyard
 
 ## FEATURE IDEAS, PRIORITIZED PER CATEGORY:
@@ -40,6 +44,7 @@
         - Draw them green when they end up in glidable surface
         - Draw post-collision move direction
     - Show predicted Bump Mine projectile trajectory (or just the position it would end up in)
+    - UI option to enable/disable overlay erratically to improve remembering hill geometry
     - Show player's AABB of recent ticks leading up to a collision
     - Save and visualize certain jump lineups/trajectories
         - Draw rings/zones that the player must move through to perform a trick (e.g. like this https://youtu.be/X_-eoDyhIjM?t=183)
@@ -54,6 +59,7 @@
         - func_occluder ??? (are they solid or are they always inside other solid brushes?)
         - trigger_teleport / trigger_teleport_relative
     - When connected to CSGO and CSGO changes map, show a popup: Warn the user if currently loaded map in dzsim is different from map in csgo. Add UI option to try automatically loading CSGO's map (ON by default)
+        - Console command `host_map` or `script printl(GetMapName())` might be useful
     - Rewind time! Rewind failed jump by two seconds, continue flying from there again
     - Show harsh displacement edge connections, the harsher and more likely it stops a slide, the more intensive the visualization
     - Failed slide statistic: e.g., "for a slide you needed 24% more speed or a 10% steeper angle"
@@ -97,7 +103,7 @@
     - Add fog?
     - Add shadows?
 - **UI**
-    - Option to disable glidability visualization
+    - Option to try to automatically connect to CSGO when needed
     - Option to show input visualization (wasd, jump key, crouch key)
     - Option to rebind keys
         - Options: walk mode toggle/hold, duck mode toggle/hold, reverse mouse on/off

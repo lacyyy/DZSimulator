@@ -58,8 +58,8 @@ void WorldRenderer::LoadBspMapGeometry(
 }
 
 void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
-    const Vector3& player_position,
-    const Vector3& player_velocity,
+    const Vector3& player_feet_pos,
+    float hori_player_speed,
     const std::vector<Vector3>& bump_mine_positions)
 {
     Deg hori_light_angle{ _gui_state.vis.IN_hori_light_angle };
@@ -76,13 +76,8 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_AT_SPECIFIC_SPEED &&
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_OF_CSGO_SESSION;
 
-    float player_hori_speed =
-        (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) ?
-        player_velocity.xy().length() :
-        _gui_state.vis.IN_specific_glid_vis_hori_speed;
-
-    if (player_hori_speed < 1.0)
-        player_hori_speed = 1.0;
+    if (hori_player_speed < 1.0)
+        hori_player_speed = 1.0;
 
     // Set some uniforms for both glidability shaders
     for (size_t i = 0; i < 2; i++) {
@@ -94,8 +89,8 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
 
         glid_shader
             .SetLightDirection(light_dir)
-            .SetPlayerPosition(player_position)
-            .SetHorizontalPlayerSpeed(player_hori_speed);
+            .SetPlayerPosition(player_feet_pos)
+            .SetHorizontalPlayerSpeed(hori_player_speed);
 
         // Game settings
         glid_shader

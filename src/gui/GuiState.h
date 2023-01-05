@@ -69,8 +69,8 @@ public:
 
         enum GeometryVisualizationMode {
             GEO_TYPE,
-            GLID_AT_SPECIFIC_SPEED,
-            GLID_OF_CSGO_SESSION
+            GLID_AT_SPECIFIC_SPEED, // glidability at specific player speed
+            GLID_OF_CSGO_SESSION  // glidability for player in local csgo session
         } IN_geo_vis_mode = GLID_AT_SPECIFIC_SPEED;
 
         // Only used in GLID_AT_SPECIFIC_SPEED mode

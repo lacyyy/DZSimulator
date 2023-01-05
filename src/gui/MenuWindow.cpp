@@ -155,7 +155,7 @@ void MenuWindow::Draw()
                 "Don't know the value? In CS:GO, run \"cl_showpos 1\" in an offline game\n"
                 "and read the \"vel\" value in the top left screen corner. That's the\n"
                 "current in-game horizontal player speed.");
-            if (_gui_state.vis.IN_specific_glid_vis_hori_speed < 1) // Avoid divide by 0
+            if (_gui_state.vis.IN_specific_glid_vis_hori_speed < 1) // Avoid division by 0
                 _gui_state.vis.IN_specific_glid_vis_hori_speed = 1;
         }
         // GLID_OF_CSGO_SESSION VIS MODE SETTINGS
@@ -202,6 +202,14 @@ void MenuWindow::Draw()
                 ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
                     _gui_state.rcon.OUT_fail_msg.c_str());
 
+            ImGui::Text("");
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f,0.86f,0.46f,0.4f));
+            if (ImGui::Button("How to fix lag when used as CSGO overlay"))
+                ShowOverlayLagAdvice();
+            ImGui::PopStyleColor(1);
+
+            ImGui::Separator();
             ImGui::Text("");
 
             ImGui::ColorEdit3("Bump Mine Color",
@@ -413,7 +421,7 @@ void MenuWindow::ShowAppExplanation()
         "\"Speed in Excess\" by \"catfjsh?\" on YouTube: "
         "https://youtu.be/xmAYeyYd4AE )\n\n"
         "One of the difficulties of that playstyle is figuring out which "
-        "parts of surfaces are suitable for rampgliding. That's what this "
+        "parts of surfaces are suitable for rampsliding. That's what this "
         "app tries to make easy.\n\n"
         "NOTE: This is NOT a CS:GO cheat and can't get your account VAC-banned."
         " The CS:GO-movement tracking feature only works on servers where "
@@ -438,14 +446,14 @@ void MenuWindow::ShowTechnicalities()
         "This program is NOT a CS:GO cheat and can't get your account "
         "VAC-banned.\n\n"
         "Instead, it is a standalone graphics application that's able to load "
-        "CS:GO map elements that are relevant to rampgliding (and more) and "
+        "CS:GO map elements that are relevant to rampsliding (and more) and "
         "show the 3D world on screen.\n\n"
         "It has one feature that seems to be a cheat, but isn't: The ability "
         "to copy the player's movement from within a CS:GO game and then "
         "show the world in DZSimulator from that player's point of view. "
         "(ONLY WORKS IN OFFLINE MATCHES)\n\n"
         "That's very useful as it allows for a transparent overlay on top of "
-        "CS:GO with helpful rampgliding information.\n\n"
+        "CS:GO with helpful rampsliding information.\n\n"
         "This is possible through a feature built into CS:GO : The "
         "\"netconport\" launch option. With it, DZSimulator can connect to "
         "CS:GO's console, try to run \"sv_cheats 1\" and if that was allowed, "
@@ -464,7 +472,6 @@ void MenuWindow::ShowKnownIssues()
         "  - Some triangles of some brush geometry are missing/broken\n"
         "  - Some transparent objects disappear when looking through certain "
         "other transparent objects\n"
-        "  - When used as an overlay for CS:GO, there is substantial input delay\n"
     );
 }
 
@@ -485,6 +492,37 @@ void MenuWindow::ShowPlannedFeatures()
         "queuing (This feature is probably A LOT of work)\n"
         "  - Show Bump Mine's arming process/progress\n"
         "  - Load and view CS:GO demo recordings"
+    );
+}
+
+void gui::MenuWindow::ShowOverlayLagAdvice()
+{
+    _gui_state.popup.QueueMsgInfo(
+        "When you use DZSimulator as an overlay on top of CSGO, you might "
+        "encounter a noticable visual delay between CSGO and the overlay, on "
+        "some maps worse than on others. Try reducing it with these steps:\n\n"
+
+        "1. Reduce CSGO's FPS limit (preferably to 128 or 64). As you decrease "
+        "it, the overlay should get smoother. For example, you can set the FPS "
+        "limit to 64 by entering this into CSGO's console:\n\n"
+        "    fps_max 64\n\n"
+
+        "2. If step 1 didn't help enough, make sure your local server is "
+        "running at a tick rate of 64. It's likely your machine lacks the "
+        "power to smoothly run a local server (especially with a DZ map) on a "
+        "tick rate of 128.\n"
+        "To make sure you're on 64, Go to your Steam library, right-click "
+        "CSGO, go to \"Properties\" > \"General\" > \"Launch Options\". "
+        "There, remove any \"-tickrate XXX\" option and restart CSGO. If you "
+        "don't have it, your tick rate is already at 64.\n\n"
+
+        "3. If your machine is powerful enough to smoothly run a high tick "
+        "rate local DZ server (this can depend on the map), switching to a tick"
+        "rate of 128 can actually make the overlay smoother! To do that, add "
+        "the launch option \"-tickrate 128\" and restart CSGO.\n\n"
+
+        "4. If the overlay is still too laggy, try some other maps that might "
+        "give a smoother overlay, sorry!"
     );
 }
 

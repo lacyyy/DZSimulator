@@ -135,7 +135,7 @@ const float CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MAX = 500.0f;
 
 
 // https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/gamemovement.cpp#L4591-L4594
-// This value is irrelevant to rampgliding: If you are currently in walk mode
+// This value is irrelevant to rampsliding: If you are currently in walk mode
 // (on the ground) and start to move upwards faster than this, you enter air mode.
 // In walk mode, your vertical speed always gets set to 0 and you stick to the ground
 // (see gamemovement.cpp lines 2095-2097). All this does not impact the ground

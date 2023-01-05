@@ -90,6 +90,8 @@ class DZSimApplication: public Platform::Application {
 
         csgo_integration::RemoteConsole _csgo_rcon; // Needs to be declared before _csgo_handler
         csgo_integration::Handler _csgo_handler;
+        csgo_integration::Handler::CsgoServerTickData _latest_csgo_server_data;
+        csgo_integration::Handler::CsgoClientsideData _latest_csgo_client_data;
 
         csgo_integration::Gsi _gsi;
         csgo_integration::GsiState _latest_gsi_state;
@@ -211,7 +213,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _gui{ *this , _resources, _gui_state }
     , _gameServer{ CSGO_TICKRATE }
     , _big_text_renderer { *this,  _font_plugin_mgr }
-    , _csgo_handler { _csgo_rcon }
+    , _csgo_handler { _resources, _csgo_rcon, _gui_state }
     , _world_renderer { _resources, _gui_state }
     , _user_input_mode { UserInputMode::MENU }
 {
@@ -744,10 +746,61 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
 void DZSimApplication::tickEvent() {
     // All mouse and key events have been processed right before calling
     // tickEvent() -> Save the time point when the game input was sampled
-    _currentGameInput.time = sim::Clock::now();
+    auto current_time = sim::Clock::now();
+    _currentGameInput.time = current_time;
 
     if (_gui_state.app_exit_requested) // Exit if user requested it
-        this->exit(); // CAUTION: With this, exitEvent() doesn't get called!
+        this->exit(); // CAUTION: This way, exitEvent() doesn't get called!
+
+    auto window_flags = SDL_GetWindowFlags(this->window());
+    bool is_window_focused = window_flags & SDL_WINDOW_INPUT_FOCUS;
+
+    // When we're in "sparing low latency draw mode" the following happens:
+    //   - Targeted main loop frequency is set to 1000 Hz (i.e. tickEvent() rate)
+    //   - VSync is disabled, ignoring user setting
+    //   - A new frame is only drawn when needed (e.g. once new data has arrived)
+    //   - When frames are not required to be drawn frequently enough, they're
+    //     drawn at a fixed, low frame rate
+    //
+    // This is useful for 2 situations: In order to reduce visual delay between
+    // CSGO and DZSimulator when it's used as an overlay on top of CSGO, we want
+    // to draw a new frame ASAP after new movement data from CSGO was received.
+    // Apart from that, this mode saves computer resources by drawing frames at
+    // a low rate when nothing important needs to be drawn and DZSimulator's
+    // window is not focused.
+    //
+    // When we're NOT in "sparing low latency draw mode" the following happens:
+    //   - New frames are always drawn
+    //   - VSync and FPS limit are enabled/set according to user settings
+    bool is_sparing_low_latency_draw_mode_enabled = !is_window_focused;
+
+    // If a new frame must be drawn after this tickEvent()
+    bool redraw_needed = false;
+
+    if (!is_sparing_low_latency_draw_mode_enabled)
+        redraw_needed = true; // Here, always draw new frames
+
+    // Communicate with csgo console if connected and process its data
+    _csgo_handler.Update();
+    {
+        auto csgo_server_data_q = _csgo_handler.DequeNewCsgoServerTicksData();
+        auto csgo_client_data_q = _csgo_handler.DequeNewCsgoClientsideData();
+
+        // In low latency draw mode, draw a new frame only when necessary
+        if (is_sparing_low_latency_draw_mode_enabled)
+            // Draw a new frame once we have new client-side position and view
+            // angles from CSGO
+            if (!csgo_client_data_q.empty())
+                redraw_needed = true;
+
+        // Process new CSGO server ticks
+        for (auto& server_tick_data : csgo_server_data_q)
+            _latest_csgo_server_data = std::move(server_tick_data);
+
+        // Process new CSGO client-side data
+        for (auto& clientside_data : csgo_client_data_q)
+            _latest_csgo_client_data = std::move(clientside_data);
+    }
 
     bool esc_pressed = _inputs.GetKeyPressCountAndReset_keyboard("Escape");
     bool leaving_first_person_mode = false;
@@ -829,14 +882,10 @@ void DZSimApplication::tickEvent() {
         }
     }
 
-
-    auto window_flags = SDL_GetWindowFlags(this->window());
-    bool window_focused = window_flags & SDL_WINDOW_INPUT_FOCUS;
-
     float wanted_transparency = 0.0f;
     if (_gui_state.video.IN_overlay_mode_enabled) {
         if (_gui_state.video.IN_overlay_transparency_is_being_adjusted
-            || !window_focused) // Use setting value when previewing or when not focused
+            || !is_window_focused) // Use setting value when previewing or when not focused
             wanted_transparency = _gui_state.video.IN_overlay_transparency;
         else // Very subtle indicator for user that shows we are in overlay mode
             wanted_transparency = 10.0f;
@@ -877,7 +926,7 @@ void DZSimApplication::tickEvent() {
         else {
             // Make window "click-through" in overlay mode
             bool want_click_through =
-                _gui_state.video.IN_overlay_mode_enabled && !window_focused;
+                _gui_state.video.IN_overlay_mode_enabled && !is_window_focused;
 
             if (want_click_through && !is_window_click_through) {
                 // GWL_EXSTYLE must have WS_EX_LAYERED and WS_EX_TRANSPARENT flags
@@ -1031,24 +1080,37 @@ void DZSimApplication::tickEvent() {
     _gui_state.rcon.OUT_has_connect_failed = _csgo_rcon.HasFailedToConnect();
     _gui_state.rcon.OUT_is_disconnecting = _csgo_rcon.IsDisconnecting();
     _gui_state.rcon.OUT_fail_msg = _csgo_rcon.GetLastErrorMessage();
-    // Read / write to/from csgo console, parse data from it
-    _csgo_handler.Update();
 
-    // Set FPS limit (takes effect if VSync is off)
-    this->setMinimalLoopPeriod(_gui_state.video.IN_min_loop_period);
+    
+    // Set max main loop frequency (value only takes effect if VSync is off)
+    if (is_sparing_low_latency_draw_mode_enabled) {
+        // Set targeted main loop frequency to 1000 Hz for low latency drawing
+        this->setMinimalLoopPeriod(1); // Not 0, don't want to hog the CPU!
+    }
+    else {
+        // Respect user setting for the FPS limit
+        this->setMinimalLoopPeriod(_gui_state.video.IN_min_loop_period);
+    }
+    
+    // Enable / disable VSync if required
+    static bool s_vsync_error = false; // If setting VSync has failed previously
+    if (!s_vsync_error) {
+        bool want_vsync = is_sparing_low_latency_draw_mode_enabled ?
+            false : _gui_state.video.IN_vsync_enabled;
 
-    // Enable/Disable VSync if GUI setting changed
-    if (_gui_state.video.IN_vsync_enabled != cur_vsync_enabled) {
-        int interval = _gui_state.video.IN_vsync_enabled ? 1 : 0;
-        if (!this->setSwapInterval(interval)) {
-            // Driver error. Set GUI to previous VSync state
-            _gui_state.video.IN_vsync_enabled = cur_vsync_enabled;
-            Warning{} << "ERROR: setSwapInterval() failed.";
-            if (interval == 0) _gui_state.popup.QueueMsgError("Failed to disable VSync!");
-            else               _gui_state.popup.QueueMsgError("Failed to enable VSync!");
-        }
-        else { // Success. Update VSync state.
-            cur_vsync_enabled = _gui_state.video.IN_vsync_enabled;
+        if (want_vsync != cur_vsync_enabled) {
+            int interval = want_vsync ? 1 : 0;
+            if (!this->setSwapInterval(interval)) {
+                // Driver error. Set GUI to previous VSync state
+                s_vsync_error = true; // Don't attempt to set VSync again
+                _gui_state.video.IN_vsync_enabled = cur_vsync_enabled;
+                Warning{} << "ERROR: setSwapInterval() failed.";
+                if (interval == 0) _gui_state.popup.QueueMsgError("Failed to disable VSync!");
+                else               _gui_state.popup.QueueMsgError("Failed to enable VSync!");
+            }
+            else { // Success. Update VSync state.
+                cur_vsync_enabled = want_vsync;
+            }
         }
     }
 
@@ -1145,7 +1207,7 @@ void DZSimApplication::tickEvent() {
     // Override with CSGO camera angles if we're connected to CSGO's console
     if (_csgo_rcon.IsConnected() &&
         _gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
-        _cam_ang = _csgo_handler.GetPlayerAngles();
+        _cam_ang = _latest_csgo_client_data.player_angles;
     }
     // Override camera angles if GSI cam imitation is enabled
     else if (_gui_state.gsi.IN_imitate_spec_cam) {
@@ -1262,7 +1324,10 @@ void DZSimApplication::tickEvent() {
     // Override with CS:GO camera position if we're connected to CSGO's console
     if (_csgo_rcon.IsConnected() &&
         _gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
-        _cam_pos = _csgo_handler.GetPlayerEyePosition();
+
+        // When we are in overlay mode, the client-side eye position makes for
+        // a smoother overlay compared to the server-side eye position!
+        _cam_pos = _latest_csgo_client_data.player_pos_eye;
     }
     // Override camera position if GSI cam imitation is enabled
     else if(_gui_state.gsi.IN_imitate_spec_cam) {
@@ -1287,8 +1352,25 @@ void DZSimApplication::tickEvent() {
     /*if (!latestWorldStates.empty())
         ACQUIRE_COUT(Debug{} << m_currentWorldState.player.position.z();)*/
 
-    CalcViewProjTransformation();
-    redraw();
+    // When in "sparing low latency draw mode", force a frame redraw if the last
+    // redraw was too long ago
+    static sim::Clock::time_point s_last_redraw_time = current_time;
+    if (is_sparing_low_latency_draw_mode_enabled && !redraw_needed) {
+        // Caution: Setting the min FPS target above 64 worsens visual delay
+        // between CSGO and DZSim when used as an overlay!
+        const int MIN_FPS_TARGET = 15;
+        const auto MAX_FRAME_INTERVAL =
+            std::chrono::microseconds(1'000'000 / MIN_FPS_TARGET);
+
+        if (current_time - s_last_redraw_time > MAX_FRAME_INTERVAL)
+            redraw_needed = true;
+    }
+
+    if (redraw_needed) {
+        s_last_redraw_time = current_time; // Remember last redraw time
+        CalcViewProjTransformation();
+        redraw();
+    }
 }
 
 // CSGO's vertical FOV is fixed. CSGO's horizontal FOV depends on the screen's
@@ -1303,7 +1385,8 @@ Matrix4 CalcCsgoPerspectiveProjection(float aspect_ratio) {
 
 void DZSimApplication::CalcViewProjTransformation() {
     Matrix4 view_transformation =
-        Matrix4::rotationX(Deg{ _cam_ang.x() } - 90.0_degf) * // camera pitch
+        Matrix4::rotationZ(Deg{  (_cam_ang.z()) }            ) * // camera roll
+        Matrix4::rotationX(Deg{  (_cam_ang.x()) } - 90.0_degf) * // camera pitch
         Matrix4::rotationZ(Deg{ -(_cam_ang.y()) } + 90.0_degf) * // camera yaw
         Matrix4::translation(-_cam_pos);
 
@@ -1321,12 +1404,33 @@ void DZSimApplication::drawEvent() {
 
     if (_bsp_map) {
         GL::Renderer::enable(GL::Renderer::Feature::Blending);
-        Vector3 vis_player_pos =
-            _cam_pos - Vector3(0.0f, 0.0f, CSGO_PLAYER_HEIGHT_STANDING);
-        _world_renderer.Draw(_view_proj_transformation,
-            vis_player_pos,
-            _csgo_handler.GetPlayerVelocity(),
-            _csgo_handler.GetBumpMines());
+
+        Vector3 player_feet_pos;
+        float hori_player_speed;
+
+        if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+            // World renderer needs server-side player position and velocity to
+            // optimally visualize surface slidability
+            player_feet_pos = _latest_csgo_server_data.player_pos_feet;
+            hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
+        }
+        else {
+            player_feet_pos = _cam_pos - Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
+            hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+        }
+
+        std::vector<Vector3> bump_mine_positions;
+        bump_mine_positions.reserve(_latest_csgo_server_data.bump_mines.size());
+        for (const auto& [id, bump_mine_data] : _latest_csgo_server_data.bump_mines) {
+            bump_mine_positions.push_back(bump_mine_data.pos);
+        }
+
+        _world_renderer.Draw(
+            _view_proj_transformation,
+            player_feet_pos,
+            hori_player_speed,
+            bump_mine_positions);
+
         GL::Renderer::disable(GL::Renderer::Feature::Blending);
     }
 

@@ -20,7 +20,7 @@ namespace csgo_integration {
         std::optional<Magnum::Vector3> spec_forward;
     };
 
-
+    // CSGO's Game State Integration
     class Gsi {
     public:
         Gsi();

@@ -30,8 +30,6 @@ If DZSimulator is used as a CSGO overlay (works only in local server), make sure
 - In DZSimulator's "Visualizations" menu, "Glidability for player in local CS:GO session" is enabled and you pressed "CONNECT" once CSGO was started
 - In DZSimulator's "Video Settings" menu, overlay mode is enabled
 
-The overlay is slightly laggy right now, I will hopefully improve that in the future. For now, try decreasing CSGO's `fps_max` value if you encounter overlay lag!
-
 To get started with practicing Bump Mines, I recommend watching [this](https://youtu.be/IPWxlnEsLkQ) and [this](https://youtu.be/YblZkx7mXFM) video!
 
 
