@@ -253,7 +253,10 @@ void Gui::Draw()
 
     ////// START GUI ELEMENTS
     _menu_window.Draw();
-    DrawCtrlHelpWindow();
+
+    // Only show control help if camera isn't controlled by CSGO data
+    if (state.vis.IN_geo_vis_mode != state.vis.GLID_OF_CSGO_SESSION)
+        DrawCtrlHelpWindow();
     
     if (state.show_window_legal_notices)
         DrawLegalNoticesWindow();

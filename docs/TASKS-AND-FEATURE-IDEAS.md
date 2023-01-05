@@ -1,6 +1,5 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
-- [ ] Add advice to change notes about reducing fps_max to 128 or 64 of overlay is laggy
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
     - confirm with vscript again!
     - small arrows that float up
