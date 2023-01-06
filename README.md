@@ -26,7 +26,7 @@ DZSimulator can be used by just itself to explore maps, but it can also act as a
 If DZSimulator is used as a CSGO overlay (works only in local server), make sure that:
 - CSGO is in "Fullscreen Windowed mode"
 - CSGO was started with the launch option `-netconport 34755`
-- CSGO loaded a map locally (e.g. with console commands `game_mode 0;game_type 6;map dz_sirocco`) and DZSimulator has the same map loaded
+- CSGO loaded a map locally (e.g. with console commands `game_mode 0;game_type 6;map dz_blacksite`) and DZSimulator has the same map loaded
 - In DZSimulator's "Visualizations" menu, "Glidability for player in local CS:GO session" is enabled and you pressed "CONNECT" once CSGO was started
 - In DZSimulator's "Video Settings" menu, overlay mode is enabled
 
