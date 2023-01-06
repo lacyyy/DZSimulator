@@ -211,7 +211,15 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
 
     // ANYTHING BEING DRAWN AFTER HERE WILL NOT BE VISIBLE BEHIND
     // TRANSPARENT BRUSHES
-    
+
+    // Draw trigger_push entities that can push players
+    _glid_shader_non_instanced
+        .SetFinalTransformationMatrix(view_proj_transformation)
+        .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_trigger_push))
+        .SetColorOverrideEnabled(true)
+        .SetDiffuseLightingEnabled(true)
+        .draw(_map_geo->trigger_push_meshes);
+
 }
 
 Magnum::Color4 rendering::WorldRenderer::CvtImguiCol4(float* im_col4)

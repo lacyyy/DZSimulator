@@ -281,6 +281,23 @@ public:
         bool IsSolid() const;
     };
 
+    struct Ent_trigger_push {
+        std::string model;
+        Magnum::Vector3 origin;
+        Magnum::Vector3 angles;
+        Magnum::Vector3 pushdir;
+        uint32_t spawnflags;
+        bool start_disabled;
+        float speed; // units per second
+        bool only_falling_players; // Only push players if they are falling (and not pressing jump)
+        float falling_speed_threshold; // Player must be falling this fast for push to happen
+
+        bool CanPushPlayers() const;
+        // Not tested if this property affects the push mechanic. It's present
+        // in dz_ember's geyser push triggers.
+        bool CorrectlyAccountsForObjectMass() const;
+    };
+
     // worldspawn entity
     Magnum::Vector3 world_mins, world_maxs; // describe player area, but water towers still go above maxs[2]
     int32_t map_version; // same as map_revision in bsp file header
@@ -291,7 +308,8 @@ public:
     // Parsed from info_player_terrorist and info_player_counterterrorist entities
     std::vector<PlayerSpawn> player_spawns;
 
-    std::vector<Ent_func_brush> entities_func_brush;
+    std::vector<Ent_func_brush>   entities_func_brush;
+    std::vector<Ent_trigger_push> entities_trigger_push;
 
 
     // --------------------------------------------------------------------------

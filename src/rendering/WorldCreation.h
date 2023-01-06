@@ -21,9 +21,12 @@ namespace rendering {
         // Mesh for each brush category
         std::map<csgo_parsing::BrushSeparation::Category, Magnum::GL::Mesh> brush_category_meshes;
 
+        // Mesh of all trigger_push entities that can push players
+        Magnum::GL::Mesh trigger_push_meshes { Magnum::NoCreate };
+
         // Displacement meshes
-        Magnum::GL::Mesh mesh_displacements{ Magnum::NoCreate };
-        Magnum::GL::Mesh mesh_displacement_boundaries{ Magnum::NoCreate };
+        Magnum::GL::Mesh mesh_displacements { Magnum::NoCreate };
+        Magnum::GL::Mesh mesh_displacement_boundaries { Magnum::NoCreate };
 
         // Collision model meshes of solid static props
         std::vector<Magnum::GL::Mesh> instanced_static_prop_meshes;

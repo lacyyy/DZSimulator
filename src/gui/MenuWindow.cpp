@@ -86,6 +86,14 @@ void MenuWindow::Draw()
             (float*)&cols.IN_col_sky, picker_flags);
         ImGui::ColorEdit3("Ladder Color",
             (float*)&cols.IN_col_ladders, picker_flags);
+        ImGui::ColorEdit4("Push Trigger Color",
+            (float*)&cols.IN_col_trigger_push, picker_flags);
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> This settings sets the color of all trigger_push entities "
+            "that can\n"
+            "push players. Some always push players, some only when you "
+            "fall into\n"
+            "them while NOT pressing jump!");
         ImGui::ColorEdit4("Water Color",
             (float*)&cols.IN_col_water, picker_flags);
         ImGui::ColorEdit4("Grenade Clip Color",

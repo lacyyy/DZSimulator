@@ -1,5 +1,7 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
+- [ ] Visualize push direction, power, type and activation of trigger_push
+- [ ] Fix Z-fighting between water and push triggers
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
     - confirm with vscript again!
     - small arrows that float up
@@ -49,7 +51,6 @@
         - Draw rings/zones that the player must move through to perform a trick (e.g. like this https://youtu.be/X_-eoDyhIjM?t=183)
     - Add visualization mode: Surface Inclination ?
     - Parse and visualize entities/values not yet parsed from map file (sorted by priority):
-        - trigger_push
         - prop_dynamic (e.g. motor boats at Sirocco's and Blacksite's rescue zones)
         - Horizontal sun angle for diffuse lighting (On Blacksite it should be ~ 135 degrees)
         - The trigger that insta-kills on County
@@ -132,6 +133,7 @@
     - Add CSGO Danger Zone Map cycle info / announcer
     - Add ingame respawn announcer (like DZMonitor)?
     - Determine player spawns with navmesh (found in game dir or extracted from bsp file) ?
+        - Or use the "trigger_survival_playarea" entity, it marks the playable area, right?
 
 
 ## TESTING / REQUIREMENTS RESEARCH

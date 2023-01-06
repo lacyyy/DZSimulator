@@ -233,7 +233,7 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
     std::set<size_t>& worldspawn_brush_indices = bmodel_brush_indices[0];
 
     Debug{} << "Calculating func_brush rotation transformations";
-    // Calculate rotation transformation for every SOLID func_brush entity (whose angles are not { 0, 0, 0 })
+    // Calculate rotation transformation for every SOLID func_brush entity, whose angles are not { 0, 0, 0 }
     std::map<const csgo_parsing::BspMap::Ent_func_brush*, Matrix4> func_brush_rot_transformations;
     for (size_t i = 0; i < bsp_map->entities_func_brush.size(); ++i) {
         auto& func_brush = bsp_map->entities_func_brush[i];
@@ -281,17 +281,20 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
             std::string idxStr = func_brush.model.substr(1);
             int64_t modelIdx = csgo_parsing::utils::ParseIntFromString(idxStr, -1);
             if (modelIdx <= 0 || modelIdx >= (int64_t)bsp_map->models.size()) {
-                Error{} << "[ERR] WorldGeometry::parseBSPMap() invalid func_brush.model =" << modelIdx;
+                error_msgs += "Failed to load func_brush at origin=("
+                    + std::to_string((int64_t)func_brush.origin.x()) + ","
+                    + std::to_string((int64_t)func_brush.origin.y()) + ","
+                    + std::to_string((int64_t)func_brush.origin.z()) + "), "
+                    "it has an invalid model idx.\n";
                 continue;
             }
-
 
             auto& brush_indices = bmodel_brush_indices[modelIdx];
             auto faces_from_func_brush = bsp_map->GetBrushFaceVertices(brush_indices,
                 testFuncs.first, testFuncs.second);
             if (faces_from_func_brush.size() == 0) continue;
 
-            // Rotate and translate every vertex with func_brush's origin and angle!
+            // Rotate and translate every vertex with func_brush's origin and angle
             bool is_func_brush_rotated = func_brush.angles[0] != 0.0f || func_brush.angles[1] != 0.0f || func_brush.angles[2] != 0.0f;
             Matrix4* rotTransformation = is_func_brush_rotated ? &func_brush_rot_transformations[&func_brush] : nullptr;
             for (auto& face : faces_from_func_brush) {
@@ -323,6 +326,48 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
         geo->brush_category_meshes[brushCat] =
             GenMeshWithVertAttr_Position_Normal(faces);
     }
+
+    // ----- trigger_push BRUSHES (only use those that push players)
+    std::vector<std::vector<Vector3>> trigger_push_faces;
+    for (const auto& trigger_push : bsp_map->entities_trigger_push) {
+        if (!trigger_push.CanPushPlayers())
+            continue;
+        if (trigger_push.model.size() == 0 || trigger_push.model[0] != '*')
+            continue;
+        std::string idx_str = trigger_push.model.substr(1);
+        int64_t model_idx = csgo_parsing::utils::ParseIntFromString(idx_str, -1);
+        if (model_idx <= 0 || model_idx >= (int64_t)bsp_map->models.size()) {
+            error_msgs += "Failed to load trigger_push at origin=("
+                + std::to_string((int64_t)trigger_push.origin.x()) + ","
+                + std::to_string((int64_t)trigger_push.origin.y()) + ","
+                + std::to_string((int64_t)trigger_push.origin.z()) + "), "
+                "it has an invalid model idx.\n";
+            continue;
+        }
+        auto& brush_indices = bmodel_brush_indices[model_idx];
+        auto faces_from_trigger_push = bsp_map->GetBrushFaceVertices(brush_indices);
+        if (faces_from_trigger_push.size() == 0) continue;
+
+        // Rotate and translate model of trigger_push.
+        // Elevate above water surface to fix Z fighting with the water
+        const Vector3 Z_FIGHTING_RESOLVER = {0.0f, 0.0f, 0.1f};
+        Matrix4 trigger_push_transf = utils_3d::CalcModelTransformationMatrix(
+            trigger_push.origin + Z_FIGHTING_RESOLVER,
+            trigger_push.angles
+        );
+        for (auto& face : faces_from_trigger_push) {
+            for (auto& v : face) {
+                v = trigger_push_transf.transformPoint(v);
+            }
+        }
+
+        trigger_push_faces.insert(trigger_push_faces.end(),
+            std::make_move_iterator(faces_from_trigger_push.begin()),
+            std::make_move_iterator(faces_from_trigger_push.end()));
+    }
+    geo->trigger_push_meshes =
+        GenMeshWithVertAttr_Position_Normal(trigger_push_faces);
+
 
     if (dest_errors)
         *dest_errors = std::move(error_msgs);

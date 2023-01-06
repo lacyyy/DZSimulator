@@ -64,7 +64,8 @@ public:
         float IN_col_solid_other_brushes[4] = { 1.000f, 0.929f, 0.000f, 1.000f }; // solid, non-sky, non-water, non-ladder
         float IN_col_water              [4] = { 0.000f, 0.644f, 1.000f, 0.258f };
         float IN_col_player_clip        [4] = { 0.407f, 0.570f, 0.000f, 0.869f };
-        float IN_col_grenade_clip       [4] = { 0.407f, 0.219f, 1.000f, 0.352f };
+        float IN_col_grenade_clip       [4] = { 1.000f, 1.000f, 1.000f, 0.500f };
+        float IN_col_trigger_push       [4] = { 0.400f, 0.000f, 1.000f, 0.500f };
         float IN_col_bump_mine          [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
 
         enum GeometryVisualizationMode {

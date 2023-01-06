@@ -142,6 +142,64 @@ bool ParseEntity_func_brush(std::multimap<std::string, std::string>& key_values,
     return true;
 }
 
+bool ParseEntity_trigger_push(std::multimap<std::string, std::string>& key_values, BspMap& in_out)
+{
+    BspMap::Ent_trigger_push tp;
+    std::multimap<std::string, std::string>::iterator kv;
+
+    kv = key_values.find("model");
+    if (kv != key_values.end()) tp.model = kv->second;
+    else                        tp.model = "";
+
+    kv = key_values.find("origin");
+    if (kv == key_values.end()) return false; // 'origin' is required
+    std::vector<float> origin_vals = utils::ParseFloatsFromString(kv->second);
+    if (origin_vals.size() < 3) return false;
+    tp.origin = { origin_vals[0], origin_vals[1], origin_vals[2] };
+
+    kv = key_values.find("pushdir");
+    if (kv == key_values.end()) return false;  // 'pushdir' is required
+    std::vector<float> pushdir_vals = utils::ParseFloatsFromString(kv->second);
+    if (pushdir_vals.size() < 3) return false;
+    tp.pushdir = { pushdir_vals[0], pushdir_vals[1], pushdir_vals[2] };
+
+    kv = key_values.find("angles");
+    if (kv != key_values.end()) {
+        std::vector<float> angle_vals = utils::ParseFloatsFromString(kv->second);
+        if (angle_vals.size() < 3) return false;
+        tp.angles = { angle_vals[0], angle_vals[1], angle_vals[2] };
+    }
+    else {
+        tp.angles = { 0.0f, 0.0f, 0.0f };
+    }
+
+    kv = key_values.find("speed");
+    if (kv == key_values.end()) return false; // 'speed' is required
+    tp.speed = utils::ParseFloatFromString(kv->second, -1.0f);
+
+    kv = key_values.find("spawnflags");
+    if (kv != key_values.end()) tp.spawnflags = utils::ParseIntFromString(kv->second, 0);
+    else                        tp.spawnflags = 0;
+
+    kv = key_values.find("StartDisabled");
+    if (kv != key_values.end()) tp.start_disabled = utils::ParseIntFromString(kv->second, 0) != 0;
+    else                        tp.start_disabled = false;
+
+    kv = key_values.find("OnlyFallingPlayers");
+    if (kv != key_values.end()) tp.only_falling_players = utils::ParseIntFromString(kv->second, 0) != 0;
+    else                        tp.only_falling_players = false;
+
+    kv = key_values.find("FallingSpeedThreshold");
+    if (kv != key_values.end()) tp.falling_speed_threshold = utils::ParseFloatFromString(kv->second, 0.0f);
+    else                        tp.falling_speed_threshold = 0.0f;
+
+    // There's also an "alternateticksfix" KeyValue. We ignore it as it's only
+    // relevant when sv_alternateticks is set to 1.
+
+    in_out.entities_trigger_push.push_back(std::move(tp));
+    return true;
+}
+
 
 bool ParseEntity(std::multimap<std::string, std::string>& key_values, BspMap& in_out)
 {
@@ -154,7 +212,8 @@ bool ParseEntity(std::multimap<std::string, std::string>& key_values, BspMap& in
         || (cn == "worldspawn"                   && !ParseEntity_worldspawn                  (key_values, in_out))
         || (cn == "info_player_terrorist"        && !ParseEntity_info_player_terrorist       (key_values, in_out))
         || (cn == "info_player_counterterrorist" && !ParseEntity_info_player_counterterrorist(key_values, in_out))
-        || (cn == "func_brush"                   && !ParseEntity_func_brush                  (key_values, in_out)))
+        || (cn == "func_brush"                   && !ParseEntity_func_brush                  (key_values, in_out))
+        || (cn == "trigger_push"                 && !ParseEntity_trigger_push                (key_values, in_out)))
         return false;
 
     return true;

@@ -681,3 +681,6 @@ bool BspMap::DispInfo::HasFlag_UNKNOWN_2()       const { return flags & ((uint32
 bool BspMap::StaticProp::IsNotSolid()          const { return solid == 0; }
 bool BspMap::StaticProp::IsSolidWithAABB()     const { return solid == 2; }
 bool BspMap::StaticProp::IsSolidWithVPhysics() const { return solid == 6; }
+
+bool BspMap::Ent_trigger_push::CanPushPlayers()                 const { return spawnflags & ((uint32_t)1 <<  0); }
+bool BspMap::Ent_trigger_push::CorrectlyAccountsForObjectMass() const { return spawnflags & ((uint32_t)1 << 12); }
