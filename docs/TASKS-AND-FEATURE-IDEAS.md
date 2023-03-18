@@ -28,6 +28,7 @@
     - player clip stairs in Dust2's tunnels 
     - https://github.com/wfowler1/Unity3D-BSP-Importer useful code?
     - https://github.com/magcius/noclip.website useful code?
+    - https://github.com/Metapyziks/SourceUtils/ useful code?
     - Ladder brush doesn't get parsed as such on Insertion@Houses, is it clip brush and ladder at the same time?
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
 - [ ] Disgusting brush mesh Z fighting
@@ -65,7 +66,9 @@
     - Show harsh displacement edge connections, the harsher and more likely it stops a slide, the more intensive the visualization
     - Failed slide statistic: e.g., "for a slide you needed 24% more speed or a 10% steeper angle"
     - Visualize surface collision direction that gives a slide at maximum outgoing speed
-    - Option to show popups about boost amount, e.g., "3x trigger_push boost of 40" or "Bump Mine boost: 10% up, 90% horizontal"
+    - Option to show popups about:
+        - Boost amount, e.g., "3x trigger_push boost of 40" or "Bump Mine boost: 10% up, 90% horizontal"
+        - Activation precision, e.g. "activating the Bump Mine had a chance of 60% from the maximum 80%. Precision of 75%."
     - Visualize how optimally the player is strafing (check out community servers, how do they do it?)
         - Average the player's strafe efficiency over time and determine glidable surfaces with that? (or set efficiency with user setting)
     - Add bots that walk around for practicing stomp and knife kills

@@ -346,6 +346,7 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
 // https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/utils/vbsp/brushbsp.cpp#L1048
 // to finally fix incorrect brush faces?!
 // is this useful? https://github.com/magcius/noclip.website
+// or this? https://github.com/Metapyziks/SourceUtils/
 // Use Plane type here?! Might be useful for brush vertex parsing:
 //      https://developer.valvesoftware.com/wiki/Source_BSP_File_Format#Plane
 // Returns faces with clockwise vertex winding
