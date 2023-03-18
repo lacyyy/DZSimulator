@@ -30,8 +30,8 @@
 #include "GitHubChecker.h"
 
 // Attempt to create window with this mode on startup
-#define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED)
-//#define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::WINDOWED)
+//#define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED)
+#define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::WINDOWED)
 
 // Allow window on a resolution of 800x600
 #define MIN_WINDOW_WIDTH  768
@@ -1080,7 +1080,6 @@ void DZSimApplication::tickEvent() {
     _gui_state.rcon.OUT_has_connect_failed = _csgo_rcon.HasFailedToConnect();
     _gui_state.rcon.OUT_is_disconnecting = _csgo_rcon.IsDisconnecting();
     _gui_state.rcon.OUT_fail_msg = _csgo_rcon.GetLastErrorMessage();
-
     
     // Set max main loop frequency (value only takes effect if VSync is off)
     if (is_sparing_low_latency_draw_mode_enabled) {
@@ -1091,7 +1090,24 @@ void DZSimApplication::tickEvent() {
         // Respect user setting for the FPS limit
         this->setMinimalLoopPeriod(_gui_state.video.IN_min_loop_period);
     }
-    
+
+    // Detect exojump boost
+    _gui_state.hud.OUT_show_exo_boost_available = false;
+    if (_csgo_rcon.IsConnected()) {
+        _gui_state.hud.OUT_hori_player_speed =
+            _latest_csgo_server_data.player_vel.xy().length();
+        _gui_state.hud.OUT_show_speedometer = true;
+        static Vector3 prev_vel = { 0.0f, 0.0f , 0.0f };
+        Vector3 vel = _latest_csgo_server_data.player_vel;
+        if (1
+            && vel.z() >= CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MIN
+            && vel.z() <= CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MAX)
+        {
+            _gui_state.hud.OUT_show_exo_boost_available = true;
+        }
+        prev_vel = vel; // Remember for next tick
+    }
+
     // Enable / disable VSync if required
     static bool s_vsync_error = false; // If setting VSync has failed previously
     if (!s_vsync_error) {
@@ -1406,17 +1422,19 @@ void DZSimApplication::drawEvent() {
         GL::Renderer::enable(GL::Renderer::Feature::Blending);
 
         Vector3 player_feet_pos;
-        float hori_player_speed;
+        Vector3 player_vel;
 
         if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
             // World renderer needs server-side player position and velocity to
             // optimally visualize surface slidability
             player_feet_pos = _latest_csgo_server_data.player_pos_feet;
-            hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
+            player_vel      = _latest_csgo_server_data.player_vel;
         }
         else {
             player_feet_pos = _cam_pos - Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
-            hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+            // In this case, velocity direction, is irrelevant. Magnitude does matter.
+            player_vel =
+                Vector3(_gui_state.vis.IN_specific_glid_vis_hori_speed, 0.0f, 0.0f);
         }
 
         std::vector<Vector3> bump_mine_positions;
@@ -1428,7 +1446,7 @@ void DZSimApplication::drawEvent() {
         _world_renderer.Draw(
             _view_proj_transformation,
             player_feet_pos,
-            hori_player_speed,
+            player_vel,
             bump_mine_positions);
 
         GL::Renderer::disable(GL::Renderer::Feature::Blending);

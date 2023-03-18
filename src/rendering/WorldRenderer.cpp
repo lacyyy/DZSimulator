@@ -1,5 +1,6 @@
 #include "WorldRenderer.h"
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,7 @@
 #include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Matrix4.h>
 
+#include "CsgoConstants.h"
 #include "csgo_parsing/BrushSeparation.h"
 #include "CSGOConstants.h"
 #include "utils_3d.h"
@@ -59,7 +61,7 @@ void WorldRenderer::LoadBspMapGeometry(
 
 void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
     const Vector3& player_feet_pos,
-    float hori_player_speed,
+    const Vector3& player_velocity,
     const std::vector<Vector3>& bump_mine_positions)
 {
     Deg hori_light_angle{ _gui_state.vis.IN_hori_light_angle };
@@ -76,8 +78,9 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_AT_SPECIFIC_SPEED &&
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_OF_CSGO_SESSION;
 
-    if (hori_player_speed < 1.0)
-        hori_player_speed = 1.0;
+    float glid_shader_hori_speed = player_velocity.xy().length();
+    if (glid_shader_hori_speed < 1.0)
+        glid_shader_hori_speed = 1.0;
 
     // Set some uniforms for both glidability shaders
     for (size_t i = 0; i < 2; i++) {
@@ -90,7 +93,7 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         glid_shader
             .SetLightDirection(light_dir)
             .SetPlayerPosition(player_feet_pos)
-            .SetHorizontalPlayerSpeed(hori_player_speed);
+            .SetHorizontalPlayerSpeed(glid_shader_hori_speed);
 
         // Game settings
         glid_shader
@@ -100,6 +103,7 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
             .SetStandableNormal(CSGO_CVAR_SV_STANDABLE_NORMAL);
     }
 
+    GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
     GL::Renderer::setFrontFace(GL::Renderer::FrontFace::ClockWise);
     GL::Renderer::setPolygonMode(GL::Renderer::PolygonMode::Fill);
     //GL::Renderer::setPolygonMode(GL::Renderer::PolygonMode::Line);
@@ -207,6 +211,39 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
             .SetColorOverrideEnabled(visualize_glidability == false)
             .SetDiffuseLightingEnabled(has_brush_mesh_diffuse_lighting)
             .draw(_map_geo->brush_category_meshes[b_cat]);
+    }
+
+    // Draw player trajectories
+    {
+        GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
+        float traj_yaw = 0.0f;
+        float player_vel_hori = player_velocity.xy().length();
+        if (player_vel_hori > 0.01f)
+            traj_yaw = std::atan2(player_velocity.y(), player_velocity.x());
+
+        // Determine future or past apex of the player trajectory
+        const float PREDICT_TICK_RATE = 64.0f;
+        const float PREDICT_TICK_LENGTH = 1.0f / PREDICT_TICK_RATE; // seconds
+        Vector3 pos = player_feet_pos;
+        Vector3 vel = player_velocity.z() > 0.0f ? player_velocity : -player_velocity;
+        while (vel.z() > 0.0f) {
+            pos += PREDICT_TICK_LENGTH * vel;
+            vel.z() += PREDICT_TICK_LENGTH * -CSGO_CVAR_SV_GRAVITY;
+        }
+        Vector3 trajectory_apex = pos;
+
+        Matrix4 traj_transformation =
+            view_proj_transformation *
+            Matrix4::translation(trajectory_apex) *
+            Matrix4::rotationZ(Rad(traj_yaw)) *
+            Matrix4::scaling(Vector3(player_vel_hori, 1.0f, 1.0f));
+        _glid_shader_non_instanced
+            .SetFinalTransformationMatrix(traj_transformation)
+            .SetOverrideColor({0.5f, 0.0f, 1.0f})
+            .SetColorOverrideEnabled(true)
+            .SetDiffuseLightingEnabled(false)
+            .draw(_map_geo->unit_trajectory_mesh);
+        GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
     }
 
     // ANYTHING BEING DRAWN AFTER HERE WILL NOT BE VISIBLE BEHIND

@@ -22,6 +22,7 @@ Gui::Gui(Platform::Sdl2Application& app, Utility::Resource& res, GuiState& state
         { (int)std::ceil(MIN_TOTAL_GUI_SCALING_FACTOR * 100.0f) }
     , _menu_window{ *this }
     , _popup{ *this }
+    , _hud { *this }
 {
     // Make sure only one GUI instance is ever created
     static size_t s_gui_instance_cnt = 0;
@@ -257,6 +258,8 @@ void Gui::Draw()
     // Only show control help if camera isn't controlled by CSGO data
     if (state.vis.IN_geo_vis_mode != state.vis.GLID_OF_CSGO_SESSION)
         DrawCtrlHelpWindow();
+
+    _hud.Draw();
     
     if (state.show_window_legal_notices)
         DrawLegalNoticesWindow();

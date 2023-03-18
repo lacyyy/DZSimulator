@@ -124,6 +124,13 @@ public:
         std::string OUT_latest_json_payload = "";
     } gsi;
 
+    struct Hud {
+        float OUT_hori_player_speed = 0.0f;
+        bool OUT_show_speedometer = false;
+        bool OUT_show_exo_boost_available = false; // when the player could get exo boost when pressing jump
+        bool OUT_show_exo_boost_detector = false; // when the player is getting exo boost
+    } hud;
+
     struct TestSettings { // Settings that can only be adjusted in Debug builds
         float IN_slider1 = 0.1f;
         float IN_slider2 = 0.1f;

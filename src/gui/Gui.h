@@ -12,6 +12,7 @@
 
 #include "gui/GuiState.h"
 
+#include "gui/Hud.h"
 #include "gui/MenuWindow.h"
 #include "gui/Popup.h"
 
@@ -104,11 +105,13 @@ private:
     // -------- GUI modules --------
     MenuWindow _menu_window;
     Popup _popup;
+    Hud _hud;
 
 
     // Let modules access this class's private members
     friend class MenuWindow;
     friend class Popup;
+    friend class Hud;
 };
 
 } // namespace gui

@@ -13,6 +13,7 @@
 #include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/MeshData.h>
 
+#include "CsgoConstants.h"
 #include "csgo_parsing/AssetFileReader.h"
 #include "csgo_parsing/AssetFinder.h"
 #include "csgo_parsing/PhyModelParsing.h"
@@ -367,6 +368,35 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
     }
     geo->trigger_push_meshes =
         GenMeshWithVertAttr_Position_Normal(trigger_push_faces);
+
+
+    // Construct player trajectory
+    const float TRAJ_TICK_RATE = 64.0f;
+    const float TRAJ_TICK_LENGTH = 1.0f / TRAJ_TICK_RATE; // seconds
+    const size_t TRAJ_TICK_COUNT = 6 * TRAJ_TICK_RATE;
+    const float TRAJ_WIDTH = 20.0f;
+    float vel_z = 0.0f;
+    float pos_z = 0.0f;
+    std::vector<std::vector<Vector3>> traj_triangles;
+    traj_triangles.reserve(2 * TRAJ_TICK_COUNT);
+
+    for (size_t tick = 0; tick < TRAJ_TICK_COUNT; tick++) {
+        float new_vel_z = vel_z + TRAJ_TICK_LENGTH * -CSGO_CVAR_SV_GRAVITY;
+        float new_pos_z = pos_z + TRAJ_TICK_LENGTH * vel_z;
+
+        Vector3 top1 = Vector3(TRAJ_TICK_LENGTH * tick, -0.5f * TRAJ_WIDTH, pos_z );
+        Vector3 top2 = Vector3(TRAJ_TICK_LENGTH * tick, +0.5f * TRAJ_WIDTH, pos_z );
+        Vector3 bot1 = Vector3(TRAJ_TICK_LENGTH * (tick + 1), -0.5f * TRAJ_WIDTH, new_pos_z );
+        Vector3 bot2 = Vector3(TRAJ_TICK_LENGTH * (tick + 1), +0.5f * TRAJ_WIDTH, new_pos_z );
+
+        traj_triangles.emplace_back(std::vector<Vector3>{ top1, top2, bot1 });
+        traj_triangles.emplace_back(std::vector<Vector3>{ top2, bot2, bot1 });
+
+        vel_z = new_vel_z;
+        pos_z = new_pos_z;
+    }
+
+    geo->unit_trajectory_mesh = GenMeshWithVertAttr_Position(traj_triangles);
 
 
     if (dest_errors)

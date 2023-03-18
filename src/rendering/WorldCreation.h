@@ -30,6 +30,9 @@ namespace rendering {
 
         // Collision model meshes of solid static props
         std::vector<Magnum::GL::Mesh> instanced_static_prop_meshes;
+
+        // Mesh for predicted player trajectory
+        Magnum::GL::Mesh unit_trajectory_mesh;
     };
 
     // Namespace that is mainly responsible for GL::Mesh creation
