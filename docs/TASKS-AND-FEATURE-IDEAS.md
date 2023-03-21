@@ -1,5 +1,13 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
+- [ ] Improve accessibility for colorblind people
+    - Focus on "Deuteranomaly Severe"
+    - Use patterns for surfaces instead of colors?
+- [ ] FOV slider
+    - black bars at top and bottom?
+- [ ] Add crosshair (changeable size?)
+- [ ] Show horizontal player speed beneath crosshair
+- [ ] Save and load user setting to/from file
 - [ ] Visualize push direction, power, type and activation of trigger_push
 - [ ] Fix Z-fighting between water and push triggers
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
@@ -81,7 +89,6 @@
     - Add ability to slow down time?
     - Droppable bumpmines that can be picked up again? (Respecting CSGO's +use selection mechanic)
 - **VISUALS**
-    - Add crosshair
     - Visualize "specific horizontal player speed" by drawing objects moving at that speed
     - Visualize arming state of bump mine (charge up animation?)
     - Get bumpmine orientation and show trigger area
@@ -111,7 +118,6 @@
     - Option to show input visualization (wasd, jump key, crouch key)
     - Option to rebind keys
         - Options: walk mode toggle/hold, duck mode toggle/hold, reverse mouse on/off
-    - FOV slider
     - Fun game setting options: gravity, airaccel, bumpboost, ...
     - Allow user to favorite maps to appear at the top of the map list
 - **CSGO INTEGRATION**
