@@ -24,6 +24,7 @@ namespace build_info {
         const char* GetJsonVersionStr();
         const char* GetFsalVersionStr();
         const char* GetOpenSSLVersionStr();
+        const char* GetJoltPhysicsVersionStr();
 
 
     }

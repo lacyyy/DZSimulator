@@ -32,7 +32,7 @@ const char* build_info::thirdparty::GetMagnumVersionStr() {
 #ifdef MAGNUM_VERSION_STRING
     return MAGNUM_VERSION_STRING;
 #else
-    return "version unknown";
+    return "(version unknown)";
 #endif
 }
 
@@ -40,7 +40,7 @@ const char* build_info::thirdparty::GetMagnumPluginsVersionStr() {
 #ifdef MAGNUMPLUGINS_VERSION_STRING
     return MAGNUMPLUGINS_VERSION_STRING;
 #else
-    return "version unknown";
+    return "(version unknown)";
 #endif
 }
 
@@ -48,7 +48,7 @@ const char* build_info::thirdparty::GetMagnumIntegrationVersionStr() {
 #ifdef MAGNUMINTEGRATION_VERSION_STRING
     return MAGNUMINTEGRATION_VERSION_STRING;
 #else
-    return "version unknown";
+    return "(version unknown)";
 #endif
 }
 
@@ -56,7 +56,7 @@ const char* build_info::thirdparty::GetCorradeVersionStr() {
 #ifdef CORRADE_VERSION_STRING
     return CORRADE_VERSION_STRING;
 #else
-    return "version unknown";
+    return "(version unknown)";
 #endif
 }
 
@@ -91,6 +91,11 @@ const char* build_info::thirdparty::GetOpenSSLVersionStr()
     return MACRO_TO_STR(DZ_SIM_OPENSSL_VERSION);
 }
 
+const char* build_info::thirdparty::GetJoltPhysicsVersionStr()
+{
+    return "(version unknown)";
+}
+
 void build_info::print() {
 
     Debug{} << "Build settings:" << GetBuildTypeStr();
@@ -107,6 +112,7 @@ void build_info::print() {
     Debug{} << " - cpp-httplib" << thirdparty::GetCppHttpLibVersionStr();
     Debug{} << " - nlohmann/json" << thirdparty::GetJsonVersionStr();
     Debug{} << " - podgorskiy/fsal" << thirdparty::GetFsalVersionStr();
+    Debug{} << " - Jolt Physics" << thirdparty::GetJoltPhysicsVersionStr();
 
     
     // All CORRADE_* macros found inside <Corrade/Corrade.h>

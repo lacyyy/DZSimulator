@@ -35,6 +35,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git submodule add https://github.com/chriskohlhoff/asio.git thirdparty/asio/
     git submodule add https://github.com/mosra/corrade.git thirdparty/corrade/
     git submodule add https://github.com/ocornut/imgui.git thirdparty/imgui/
+    git submodule add https://github.com/jrouwe/JoltPhysics.git thirdparty/JoltPhysics
     git submodule add https://github.com/mosra/magnum.git thirdparty/magnum/
     git submodule add https://github.com/mosra/magnum-integration.git thirdparty/magnum-integration/
     git submodule add https://github.com/mosra/magnum-plugins.git thirdparty/magnum-plugins/
@@ -42,6 +43,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git -C thirdparty/asio/ checkout asio-1-23-0
     git -C thirdparty/corrade/ checkout f6eef8a2d4e151693dbf35621876ec074a8b7003
     git -C thirdparty/imgui/ checkout v1.88
+    git -C thirdparty/JoltPhysics/ checkout v2.0.1
     git -C thirdparty/magnum/ checkout 9c4f2ceea279dc9bdc17a55ef565136f602c9ac3
     git -C thirdparty/magnum-integration/ checkout 79747545dbe711055f7f06bcf6ac5c76541ab6c0
     git -C thirdparty/magnum-plugins/ checkout 03c597c7b2098326e472af62702b6d09beaf67c7
@@ -49,6 +51,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     ```
 1. Check if the newly installed submodules have the right version by running `git submodule status`. The library versions are correct if you see the following hash values for each one:
     ```
+    69fcdfe02e7f3a9917fb1a5c3e3e4859d3bc3134 thirdparty/JoltPhysics (v2.0.1)
     53dea9830964eee8b5c2a7ee0a65d6e268dc78a1 thirdparty/SDL (release-2.0.22)
     4915cfd8a1653c157a1480162ae5601318553eb8 thirdparty/asio (asio-1-23-0)
     f6eef8a2d4e151693dbf35621876ec074a8b7003 thirdparty/corrade (v2020.06-847-gf6eef8a2)

@@ -15,6 +15,7 @@ set(DZSIM_CORRADE_DIR            thirdparty/corrade)
 set(DZSIM_CPP_HTTPLIB_DIR        thirdparty/cpp-httplib)
 set(DZSIM_FSAL_DIR               thirdparty/fsal_modified/fsal)
 set(DZSIM_IMGUI_DIR              thirdparty/imgui)
+set(DZSIM_JOLT_DIR               thirdparty/JoltPhysics)
 set(DZSIM_JSON_DIR               thirdparty/json)
 set(DZSIM_MAGNUM_DIR             thirdparty/magnum)
 set(DZSIM_MAGNUM_PLUGINS_DIR     thirdparty/magnum-plugins)
@@ -27,9 +28,6 @@ set(DZSIM_SDL_DIR                thirdparty/SDL)
 # Set the project name and version
 project(DZSimulatorProject VERSION ${DZSIM_VERSION})
 
-# Specify the C++ standard
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/${DZSIM_CMAKE_MODULES}/" ${CMAKE_MODULE_PATH})
 
@@ -91,6 +89,17 @@ find_package(MagnumPlugins REQUIRED
     StbImageImporter
     StbTrueTypeFont)
 
+# Set up Jolt
+set(PHYSICS_REPO_ROOT ${PROJECT_SOURCE_DIR}/${DZSIM_JOLT_DIR})
+include(${PHYSICS_REPO_ROOT}/Jolt/Jolt.cmake)
+# Jolt uses C++17
+set_target_properties(Jolt PROPERTIES
+    CXX_STANDARD 17
+    CMAKE_CXX_STANDARD_REQUIRED True
+)
+# @PORTING To compile Jolt on different platforms, look inside:
+# "${DZSIM_JOLT_DIR}/Build/CMakeLists.txt"
+
 # Find OpenSSL
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 set(OPENSSL_ROOT_DIR "${PROJECT_SOURCE_DIR}/${DZSIM_OPENSSL_DIR}")
@@ -111,10 +120,17 @@ else()
     add_executable(DZSimulator ${DZSIM_RESOURCES})
 endif()
 
+# DZSimulator uses C++20
+set_target_properties(DZSimulator PROPERTIES
+    CXX_STANDARD 20
+    CMAKE_CXX_STANDARD_REQUIRED True
+)
+
 target_link_libraries(DZSimulator PRIVATE
     Corrade::Main
     Corrade::Utility
     fsal
+    Jolt
     Magnum::Application
     Magnum::GL
     Magnum::Magnum
@@ -158,7 +174,35 @@ if(CORRADE_TARGET_WINDOWS)
 endif()
 
 # If you add new cpp-files to the project, add their path to this list!
-target_sources(DZSimulator PRIVATE ${DZSIM_EXTRA_SOURCES} "src/main.cpp" "src/csgo_parsing/BrushSeparation.cpp" "src/GlobalVars.cpp" "src/InputHandler.cpp" "src/rendering/_unused_VertBufUpdateDemo.cpp" "src/rendering/WorldRenderer.cpp"  "src/csgo_parsing/BspMap.cpp"  "src/csgo_parsing/BspMapParsing.cpp" "src/sim/Server.cpp" "src/sim/WorldState.cpp"    "src/build_info.cpp" "src/gui/Gui.cpp" "src/rendering/BigTextRenderer.cpp" "src/utils_3d.cpp"   "src/csgo_integration/Gsi.cpp" "src/rendering/GlidabilityShader3D.cpp" "src/csgo_integration/RemoteConsole.cpp" "src/csgo_integration/Handler.cpp" "src/csgo_parsing/AssetFinder.cpp" "src/csgo_parsing/PhyModelParsing.cpp" "src/csgo_parsing/AssetFileReader.cpp"  "src/csgo_parsing/utils.cpp" "src/rendering/WorldCreation.cpp" "src/gui/MenuWindow.cpp" "src/gui/Popup.cpp" "src/GitHubChecker.cpp")
+target_sources(DZSimulator PRIVATE
+    ${DZSIM_EXTRA_SOURCES}
+    "src/build_info.cpp"
+    "src/csgo_integration/Gsi.cpp"
+    "src/csgo_integration/Handler.cpp"
+    "src/csgo_integration/RemoteConsole.cpp"
+    "src/csgo_parsing/AssetFileReader.cpp"
+    "src/csgo_parsing/AssetFinder.cpp"
+    "src/csgo_parsing/BrushSeparation.cpp"
+    "src/csgo_parsing/BspMap.cpp"
+    "src/csgo_parsing/BspMapParsing.cpp"
+    "src/csgo_parsing/PhyModelParsing.cpp"
+    "src/csgo_parsing/utils.cpp"
+    "src/GlobalVars.cpp"
+    "src/GitHubChecker.cpp"
+    "src/gui/Gui.cpp"
+    "src/gui/MenuWindow.cpp"
+    "src/gui/Popup.cpp"
+    "src/InputHandler.cpp"
+    "src/main.cpp"
+    "src/rendering/_unused_VertBufUpdateDemo.cpp"
+    "src/rendering/BigTextRenderer.cpp"
+    "src/rendering/GlidabilityShader3D.cpp"
+    "src/rendering/WorldCreation.cpp"
+    "src/rendering/WorldRenderer.cpp"
+    "src/sim/Server.cpp"
+    "src/sim/WorldState.cpp"
+    "src/utils_3d.cpp"
+)
 
 # Make the executable a default target to build & run in Visual Studio (doesn't work?)
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT DZSimulator)

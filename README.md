@@ -85,6 +85,7 @@ DZSimulator source code that is not part of any third party software is availabl
 - [Dear ImGui](https://github.com/ocornut/imgui) - GUI library - **MIT License** (see `thirdparty/imgui/LICENSE.txt`)
 - [podgorskiy/fsal](https://github.com/podgorskiy/fsal) - File reading (VPK archive support) - [**MIT License**](thirdparty/fsal_modified/fsal/LICENSE)
 - [Asio](https://think-async.com/Asio/) - Networking library - **Boost Software License** (see `thirdparty/asio/asio/LICENSE_1_0.txt`)
+- [Jolt Physics](https://github.com/jrouwe/JoltPhysics) - Physics library for games - **MIT License** (see `thirdparty/JoltPhysics/LICENSE`)
 - [OpenSSL](https://github.com/openssl/openssl) - TLS library used by cpp-httplib - [**OpenSSL License and SSLeay License**](thirdparty/openssl-1.1.1s-bin/LICENSE)
 - [cpp-httplib](https://github.com/yhirose/cpp-httplib) - HTTP server and client library - [**MIT License**](thirdparty/cpp-httplib/LICENSE)
 - [nlohmann/json](https://github.com/nlohmann/json) - JSON parsing library - [**MIT License**](thirdparty/json/LICENSE.MIT)

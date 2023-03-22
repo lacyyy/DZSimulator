@@ -369,6 +369,8 @@ void MenuWindow::Draw()
                 build_info::thirdparty::GetJsonVersionStr());
             ImGui::BulletText("podgorskiy/fsal %s",
                 build_info::thirdparty::GetFsalVersionStr());
+            ImGui::BulletText("Jolt Physics %s",
+                build_info::thirdparty::GetJoltPhysicsVersionStr());
 
             ImGui::PopFont();
 
