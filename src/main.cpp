@@ -1375,12 +1375,11 @@ void DZSimApplication::tickEvent() {
 
 // CSGO's vertical FOV is fixed. CSGO's horizontal FOV depends on the screen's
 // aspect ratio (which is width/height)
-Matrix4 CalcCsgoPerspectiveProjection(float aspect_ratio) {
+Matrix4 CalcCsgoPerspectiveProjection(float aspect_ratio, Magnum::Deg vert_fov) {
     const float near =     8.0f; // might not be the same as CSGO
     const float far  = 30000.0f; // might not be the same as CSGO
-    const Math::Rad<float> vert_fov = CSGO_VERT_FOV;
     return Matrix4::perspectiveProjection(
-        2.0f * near * std::tan(float(vert_fov) * 0.5f) * Vector2::xScale(aspect_ratio), near, far);
+        2.0f * near * std::tan(float(Rad{ vert_fov }) * 0.5f) * Vector2::xScale(aspect_ratio), near, far);
 }
 
 void DZSimApplication::CalcViewProjTransformation() {
@@ -1390,10 +1389,15 @@ void DZSimApplication::CalcViewProjTransformation() {
         Matrix4::rotationZ(Deg{ -(_cam_ang.y()) } + 90.0_degf) * // camera yaw
         Matrix4::translation(-_cam_pos);
 
+    Deg vertical_fov = _gui_state.video.IN_use_custom_fov ?
+        Deg{ _gui_state.video.IN_custom_vert_fov_degrees } : CSGO_VERT_FOV;
+
     // Get exact same projection like CSGO to make DZSim's image accurate when
     // used as a CSGO overlay
-    Matrix4 projection_transformation =
-        CalcCsgoPerspectiveProjection(Vector2{ windowSize() }.aspectRatio());
+    Matrix4 projection_transformation = CalcCsgoPerspectiveProjection(
+        Vector2{ windowSize() }.aspectRatio(),
+        vertical_fov
+    );
 
     _view_proj_transformation = projection_transformation * view_transformation;
 }

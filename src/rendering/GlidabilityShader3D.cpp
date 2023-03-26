@@ -68,6 +68,10 @@ GlidabilityShader3D::GlidabilityShader3D(bool use_instanced_transformation,
     _uniform_player_pos        = uniformLocation("player_pos");
     _uniform_player_speed_hori = uniformLocation("player_speed_hori");
 
+    _uniform_slide_success_color     = uniformLocation("slide_success_color");
+    _uniform_slide_almost_fail_color = uniformLocation("slide_almost_fail_color");
+    _uniform_slide_fail_color        = uniformLocation("slide_fail_color");
+
     _uniform_gravity = uniformLocation("gravity");
     _uniform_min_no_ground_checks_vel_z
         = uniformLocation("min_no_ground_checks_vel_z");
@@ -124,6 +128,24 @@ GlidabilityShader3D&
 GlidabilityShader3D::SetHorizontalPlayerSpeed(float player_speed_hori)
 {
     setUniform(_uniform_player_speed_hori, player_speed_hori);
+    return *this;
+}
+
+GlidabilityShader3D& rendering::GlidabilityShader3D::SetSlideSuccessColor(const Magnum::Color4& c)
+{
+    setUniform(_uniform_slide_success_color, c);
+    return *this;
+}
+
+GlidabilityShader3D& rendering::GlidabilityShader3D::SetSlideAlmostFailColor(const Magnum::Color4& c)
+{
+    setUniform(_uniform_slide_almost_fail_color, c);
+    return *this;
+}
+
+GlidabilityShader3D& rendering::GlidabilityShader3D::SetSlideFailColor(const Magnum::Color4& c)
+{
+    setUniform(_uniform_slide_fail_color, c);
     return *this;
 }
 

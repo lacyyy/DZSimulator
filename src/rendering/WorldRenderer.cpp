@@ -90,7 +90,10 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         glid_shader
             .SetLightDirection(light_dir)
             .SetPlayerPosition(player_feet_pos)
-            .SetHorizontalPlayerSpeed(hori_player_speed);
+            .SetHorizontalPlayerSpeed(hori_player_speed)
+            .SetSlideSuccessColor   (CvtImguiCol4(_gui_state.vis.IN_col_slide_success))
+            .SetSlideAlmostFailColor(CvtImguiCol4(_gui_state.vis.IN_col_slide_almost_fail))
+            .SetSlideFailColor      (CvtImguiCol4(_gui_state.vis.IN_col_slide_fail));
 
         // Game settings
         glid_shader

@@ -19,6 +19,10 @@ uniform lowp vec4 override_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform highp vec3 player_pos = vec3(0.0, 0.0, 0.0);
 uniform highp float player_speed_hori = 1.0;
 
+uniform lowp vec4 slide_success_color;
+uniform lowp vec4 slide_almost_fail_color;
+uniform lowp vec4 slide_fail_color;
+
 uniform highp float gravity = 0.0; // sv_gravity
 uniform highp float min_no_ground_checks_vel_z = 0.0;
 uniform highp float max_vel = 999999.0; // sv_maxvelocity
@@ -67,14 +71,12 @@ void CalcVertexColor(in vec4 csgo_vert_pos, in vec3 csgo_vert_normal) {
         return;
     }
 
-    const vec4 irrelevant_col = vec4(0.4, 0.4, 0.4, 1.0);
-
     // Calculate trajectory of player ending up in the vertex position
     vec2 hori_vec = csgo_vert_pos.xy - player_pos.xy;
     float vert_dist = csgo_vert_pos.z - player_pos.z;
     float hori_dist = length(hori_vec);
     if (hori_dist < 0.01) { // Avoid division by zero
-        UseVertexColor(irrelevant_col, csgo_vert_normal);
+        UseVertexColor(slide_fail_color, csgo_vert_normal);
         return;
     }
     float impact_time = hori_dist / player_speed_hori;
@@ -85,7 +87,7 @@ void CalcVertexColor(in vec4 csgo_vert_pos, in vec3 csgo_vert_normal) {
 
     // Abort if vertical speed becomes illegally high
     if (abs(initial_upwards_speed) > max_vel) {
-        UseVertexColor(irrelevant_col, csgo_vert_normal);
+        UseVertexColor(slide_fail_color, csgo_vert_normal);
         return;
     }
 
@@ -96,7 +98,7 @@ void CalcVertexColor(in vec4 csgo_vert_pos, in vec3 csgo_vert_normal) {
     // If cosine of the angle between surface normal and incoming player
     // direction is positive, the player approaches the surface from behind
     if (dot(impact_vec, csgo_vert_normal) > 0.0) {
-        UseVertexColor(irrelevant_col, csgo_vert_normal);
+        UseVertexColor(slide_fail_color, csgo_vert_normal);
         return;
     }
 
@@ -105,7 +107,7 @@ void CalcVertexColor(in vec4 csgo_vert_pos, in vec3 csgo_vert_normal) {
 
     // We want to move upwards after surface collisions
     if (post_coll_vel.z < 0.0) {
-        UseVertexColor(irrelevant_col, csgo_vert_normal);
+        UseVertexColor(slide_fail_color, csgo_vert_normal);
         return;
     }
 
@@ -115,7 +117,7 @@ void CalcVertexColor(in vec4 csgo_vert_pos, in vec3 csgo_vert_normal) {
     if (csgo_vert_normal.z > standable_normal) {
         // If our z velocity is too small, the rampslide fails
         if (post_coll_vel.z < min_no_ground_checks_vel_z) {
-            UseVertexColor(irrelevant_col, csgo_vert_normal);
+            UseVertexColor(slide_fail_color, csgo_vert_normal);
             return;
         }
         // If we are close to being ground checked -> warning color
@@ -132,8 +134,16 @@ void CalcVertexColor(in vec4 csgo_vert_pos, in vec3 csgo_vert_normal) {
         glidability = 1.0;
     if (glidability < 0.2)
         glidability = 0.2;
-    
-    UseVertexColor(vec4(0.7 * warn_amount, glidability, 0.0, 1.0), csgo_vert_normal);
+
+    vec3 glidability_col = glidability * slide_success_color.xyz;
+
+    float phase = warn_amount * warn_amount;
+
+    vec3 final_col =
+        phase * slide_almost_fail_color.xyz +
+        (1.0 - phase) * glidability_col;
+
+    UseVertexColor(vec4(final_col, 1.0), csgo_vert_normal);
 }
 
 void main() {

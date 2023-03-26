@@ -37,6 +37,10 @@ namespace rendering {
         GlidabilityShader3D& SetPlayerPosition(const Magnum::Vector3& player_pos);
         GlidabilityShader3D& SetHorizontalPlayerSpeed(float player_speed_hori);
 
+        GlidabilityShader3D& SetSlideSuccessColor(const Magnum::Color4& c);
+        GlidabilityShader3D& SetSlideAlmostFailColor(const Magnum::Color4& c);
+        GlidabilityShader3D& SetSlideFailColor(const Magnum::Color4& c);
+
         GlidabilityShader3D& SetGravity(float gravity);
         GlidabilityShader3D& SetMinNoGroundChecksVelZ(float min_vel_z);
         GlidabilityShader3D& SetMaxVelocity(float max_v_per_axis);
@@ -55,6 +59,10 @@ namespace rendering {
 
         Magnum::Int _uniform_player_pos = -1;
         Magnum::Int _uniform_player_speed_hori = -1;
+
+        Magnum::Int _uniform_slide_success_color = -1;
+        Magnum::Int _uniform_slide_almost_fail_color = -1;
+        Magnum::Int _uniform_slide_fail_color = -1;
 
         Magnum::Int _uniform_gravity = -1;
         Magnum::Int _uniform_min_no_ground_checks_vel_z = -1;

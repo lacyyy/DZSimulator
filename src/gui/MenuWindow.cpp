@@ -153,7 +153,32 @@ void MenuWindow::Draw()
         ImGui::Text("");
         ImGui::Separator();
 
-        // GLID_AT_SPECIFIC_SPEED VIS MODE SETTINGS
+        // GLID_AT_SPECIFIC_SPEED and GLID_OF_CSGO_SESSION mode settings
+        if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
+            || geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+
+            ImGui::ColorEdit3("Slide Success Color",
+                (float*)&cols.IN_col_slide_success, picker_flags);
+            ImGui::SameLine(); _gui.HelpMarker(
+                ">>>> Under current conditions, rampsliding is possible on\n"
+                "surfaces with this color.");
+            ImGui::ColorEdit3("Slide Almost-Fail Color",
+                (float*)&cols.IN_col_slide_almost_fail, picker_flags);
+            ImGui::SameLine(); _gui.HelpMarker(
+                ">>>> Under current conditions, rampsliding is possible on\n"
+                "surfaces with this color, but the slightest change in speed\n"
+                "and impact angle might cause you to fail the rampslide.");
+            ImGui::ColorEdit3("Slide Fail Color",
+                (float*)&cols.IN_col_slide_fail, picker_flags);
+            ImGui::SameLine(); _gui.HelpMarker(
+                ">>>> Under current conditions, rampsliding isn't possible\n"
+                "on surfaces with this color.");
+
+            ImGui::Text("");
+            ImGui::Separator();
+        }
+
+        // GLID_AT_SPECIFIC_SPEED vis mode settings
         if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED) {
             ImGui::SliderInt("Horizontal Speed",
                 &_gui_state.vis.IN_specific_glid_vis_hori_speed, 100, 5000, "%d");
@@ -166,7 +191,7 @@ void MenuWindow::Draw()
             if (_gui_state.vis.IN_specific_glid_vis_hori_speed < 1) // Avoid division by 0
                 _gui_state.vis.IN_specific_glid_vis_hori_speed = 1;
         }
-        // GLID_OF_CSGO_SESSION VIS MODE SETTINGS
+        // GLID_OF_CSGO_SESSION vis mode settings
         else if (geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
             ImGui::Text(
                 "This visualization mode only works if you connect to a local CS:GO\n"
@@ -223,7 +248,7 @@ void MenuWindow::Draw()
             ImGui::ColorEdit3("Bump Mine Color",
                 (float*)&cols.IN_col_bump_mine, picker_flags);
         }
-        // GEO_TYPE VIS MODE SETTINGS
+        // GEO_TYPE vis mode settings
         else if (geo_vis_mode == _gui_state.vis.GEO_TYPE) {
             ImGui::Text("Further color settings:");
             ImGui::ColorEdit3("Solid Displacement Color",
@@ -588,6 +613,28 @@ void MenuWindow::DrawMapSelection()
 void MenuWindow::DrawVideoSettings()
 {
     auto& win_mode = _gui_state.video.IN_window_mode;
+
+    { // FOV setting
+        ImGui::Checkbox("Use a custom FOV value", &_gui_state.video.IN_use_custom_fov);
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> Enable this to increase or decrease DZSimulator's Field of "
+            "View (FOV).");
+
+        if (!_gui_state.video.IN_use_custom_fov)
+            ImGui::BeginDisabled();
+
+        ImGui::SliderFloat("Custom Vertical FOV",
+            &_gui_state.video.IN_custom_vert_fov_degrees, 5.0f, 170.0f, "%.1f");
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> By default, CSGO's vertical FOV is fixed to 73.7 degrees.\n"
+            "Note: The values of CSGO's console command \"fov_cs_debug\" do\n"
+            "not correspond to their corresponding vertical FOV value!");
+
+        if (!_gui_state.video.IN_use_custom_fov)
+            ImGui::EndDisabled();
+    }
+
+    ImGui::Text("");
 
     { // VSync setting
         ImGui::Checkbox("Enable VSync", &_gui_state.video.IN_vsync_enabled);

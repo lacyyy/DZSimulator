@@ -1,10 +1,5 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
-- [ ] Improve accessibility for colorblind people
-    - Focus on "Deuteranomaly Severe"
-    - Use patterns for surfaces instead of colors?
-- [ ] FOV slider
-    - black bars at top and bottom?
 - [ ] Add crosshair (changeable size?)
 - [ ] Show horizontal player speed beneath crosshair
 - [ ] Save and load user setting to/from file
@@ -113,6 +108,7 @@
     - Only draw outline lines of adjacent triangles that have the exact same orientation (??? I forgot the reasons for this)
     - Add fog?
     - Add shadows?
+    - Option for black bars at top+bottom / left+right
 - **UI**
     - Option to try to automatically connect to CSGO when needed
     - Option to show input visualization (wasd, jump key, crouch key)

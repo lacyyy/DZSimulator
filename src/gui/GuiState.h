@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "CsgoConstants.h"
+
 namespace gui {
 
 // Important interface between the GUI and the rest of the application.
@@ -67,6 +69,10 @@ public:
         float IN_col_grenade_clip       [4] = { 1.000f, 1.000f, 1.000f, 0.500f };
         float IN_col_trigger_push       [4] = { 0.400f, 0.000f, 1.000f, 0.500f };
         float IN_col_bump_mine          [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
+        float IN_col_slide_success      [4] = { 0.000f, 1.000f, 0.000f, 1.000f };
+        float IN_col_slide_almost_fail  [4] = { 0.800f, 0.400f, 0.150f, 1.000f };
+        float IN_col_slide_fail         [4] = { 0.400f, 0.400f, 0.400f, 1.000f };
+
 
         enum GeometryVisualizationMode {
             GEO_TYPE,
@@ -79,6 +85,9 @@ public:
     } vis;
 
     struct VideoSettings {
+        bool IN_use_custom_fov = false;
+        float IN_custom_vert_fov_degrees = float(Magnum::Deg{ CSGO_VERT_FOV });
+
         enum WindowMode {
             WINDOWED,
             FULLSCREEN_WINDOWED // Windowed, but covering an entire display
