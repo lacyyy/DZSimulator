@@ -1,7 +1,6 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
 - [ ] Add crosshair (changeable size?)
-- [ ] Show horizontal player speed beneath crosshair
 - [ ] Save and load user setting to/from file
 - [ ] Visualize push direction, power, type and activation of trigger_push
 - [ ] Fix Z-fighting between water and push triggers

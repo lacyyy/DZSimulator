@@ -1406,22 +1406,24 @@ void DZSimApplication::drawEvent() {
     GL::defaultFramebuffer.clear(
         GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 
+
+    Vector3 player_feet_pos;
+    float hori_player_speed;
+
+    if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+        // World renderer needs server-side player position and velocity to
+        // optimally visualize surface slidability
+        player_feet_pos = _latest_csgo_server_data.player_pos_feet;
+        hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
+    }
+    else {
+        player_feet_pos = _cam_pos - Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
+        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+    }
+
+
     if (_bsp_map) {
         GL::Renderer::enable(GL::Renderer::Feature::Blending);
-
-        Vector3 player_feet_pos;
-        float hori_player_speed;
-
-        if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
-            // World renderer needs server-side player position and velocity to
-            // optimally visualize surface slidability
-            player_feet_pos = _latest_csgo_server_data.player_pos_feet;
-            hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
-        }
-        else {
-            player_feet_pos = _cam_pos - Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
-            hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
-        }
 
         std::vector<Vector3> bump_mine_positions;
         bump_mine_positions.reserve(_latest_csgo_server_data.bump_mines.size());
@@ -1444,6 +1446,22 @@ void DZSimApplication::drawEvent() {
     GL::Renderer::enable(GL::Renderer::Feature::ScissorTest);
     GL::Renderer::disable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
+
+    // Draw prominent horizontal velocity number
+    if (_bsp_map && _gui_state.vis.IN_display_hori_vel_text) {
+        switch (_gui_state.vis.IN_geo_vis_mode) {
+            case _gui_state.vis.GLID_OF_CSGO_SESSION:
+            case _gui_state.vis.GLID_AT_SPECIFIC_SPEED:
+                float* imgui_col4 = _gui_state.vis.IN_col_hori_vel_text;
+                Color4 c = { imgui_col4[0], imgui_col4[1], imgui_col4[2], imgui_col4[3]};
+                _big_text_renderer.DrawNumber(
+                    hori_player_speed,
+                    c,
+                    _gui.GetTotalGuiScaling() * _gui_state.vis.IN_hori_vel_text_size,
+                    _gui_state.vis.IN_hori_vel_text_pos
+                );
+        }
+    }
 
     // Show disclaimer when retrieving CSGO movement
     if(_csgo_rcon.IsConnected())

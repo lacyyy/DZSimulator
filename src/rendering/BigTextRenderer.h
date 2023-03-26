@@ -5,7 +5,9 @@
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/PluginManager/Manager.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
+#include <Magnum/Math/Vector2.h>
 #include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Shaders/DistanceFieldVectorGL.h>
 #include <Magnum/Text/AbstractFont.h>
@@ -26,6 +28,9 @@ namespace rendering {
 
         void DrawDisclaimer(float gui_scaling);
 
+        // pos is between (-0.5, -0.5) to (0.5, 0.5)
+        void DrawNumber(int number, const Magnum::Color4& col, float scaling, Magnum::Vector2 pos);
+
     private:
         Magnum::Platform::Sdl2Application& _app;
         Corrade::PluginManager::Manager<Magnum::Text::AbstractFont>& _font_plugin_mgr;
@@ -40,8 +45,8 @@ namespace rendering {
         Magnum::GL::Buffer _indices{ Magnum::NoCreate };
         Magnum::GL::Mesh _disclaimer_text_mesh{ Magnum::NoCreate };
 
-        //Corrade::Containers::Pointer<Magnum::Text::Renderer2D> _text_dynamic;
-        //Magnum::Matrix3 _transformation_projection_text_dynamic;
+        Corrade::Containers::Pointer<Magnum::Text::Renderer2D> _number_text;
+        Magnum::Matrix3 _transformation_projection_number_text;
     };
 
 } // namespace rendering

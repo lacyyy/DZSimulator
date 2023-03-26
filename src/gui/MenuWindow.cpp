@@ -127,7 +127,7 @@ void MenuWindow::Draw()
 
         auto& geo_vis_mode = _gui_state.vis.IN_geo_vis_mode;
 
-        if (ImGui::RadioButton("Glidability at specific player speed",
+        if (ImGui::RadioButton("Glidability at simulated player speed",
             geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED))
             geo_vis_mode = _gui_state.vis.GLID_AT_SPECIFIC_SPEED;
         ImGui::SameLine(); _gui.HelpMarker(
@@ -157,6 +157,7 @@ void MenuWindow::Draw()
         if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
             || geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
 
+            // Surface slide colors
             ImGui::ColorEdit3("Slide Success Color",
                 (float*)&cols.IN_col_slide_success, picker_flags);
             ImGui::SameLine(); _gui.HelpMarker(
@@ -176,11 +177,29 @@ void MenuWindow::Draw()
 
             ImGui::Text("");
             ImGui::Separator();
+
+            // Horizontal player velocity text
+            ImGui::Checkbox("Show Horizontal Speed Display",
+                &_gui_state.vis.IN_display_hori_vel_text);
+            if (_gui_state.vis.IN_display_hori_vel_text) {
+                ImGui::SliderFloat("Speed Display Size",
+                    &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
+                ImGui::ColorEdit3("Speed Display Color",
+                    (float*)&cols.IN_col_hori_vel_text, picker_flags);
+                ImGui::SliderFloat("Speed Display X Position",
+                    &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.2f");
+                ImGui::SliderFloat("Speed Display Y Position",
+                    &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.2f");
+            }
+
+            ImGui::Text("");
+            ImGui::Separator();
+
         }
 
         // GLID_AT_SPECIFIC_SPEED vis mode settings
         if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED) {
-            ImGui::SliderInt("Horizontal Speed",
+            ImGui::SliderInt("Simulated Horizontal Speed",
                 &_gui_state.vis.IN_specific_glid_vis_hori_speed, 100, 5000, "%d");
             ImGui::SameLine(); _gui.HelpMarker(
                 ">>>> Depending on the player's speed, surfaces change their glidability.\n"
@@ -868,10 +887,10 @@ void gui::MenuWindow::DrawTestSettings()
         _gui_state.show_window_demo ^= true;
 
     ImGui::SliderFloat("Slider 1",
-        &_gui_state.testing.IN_slider1, 0.0f, 0.2f, "%.3f");
+        &_gui_state.testing.IN_slider1, 0.0f, 0.5f, "%.3f");
 
     ImGui::SliderFloat("Slider 2",
-        &_gui_state.testing.IN_slider2, 0.0f, 0.5f, "%.3f");
+        &_gui_state.testing.IN_slider2, 0.0f, 5.0f, "%.3f");
 
     ImGui::SliderFloat("Slider 3",
         &_gui_state.testing.IN_slider3, 0.0f, 10.0f, "%.3f");

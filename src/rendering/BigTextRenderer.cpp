@@ -1,5 +1,7 @@
 #include "BigTextRenderer.h"
 
+#include <string>
+
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Complex.h>
@@ -11,6 +13,7 @@ using namespace Math::Literals;
 using namespace rendering;
 
 #define DISCLAIMER_MSG "THIS IS NOT A CHEAT!\n(requires sv_cheats 1)"
+#define NUMBER_TEXT_GLYPHS "0123456789"
 
 BigTextRenderer::BigTextRenderer(Platform::Sdl2Application& app,
     PluginManager::Manager<Text::AbstractFont>& font_plugin_mgr)
@@ -49,6 +52,7 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
     // Keep the number of unique glyphs as low as possible!
     std::string drawable_chars =
         DISCLAIMER_MSG
+        NUMBER_TEXT_GLYPHS
         //"abcdefghijklmnopqrstuvwxyz"
         //"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         //"0123456789 :-+,.!°%&/()=?`*'#~;_<>|"
@@ -67,13 +71,14 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
     );
     
     // Can we move the cache into the renderer constructor for optimization?
-    //_text_dynamic.reset(
-    //    new Text::Renderer2D(*_font, *_cache, 32.0f, Text::Alignment::TopRight));
-    //_text_dynamic->reserve(40, GL::BufferUsage::DynamicDraw,
-    //    GL::BufferUsage::StaticDraw);
-    //_transformation_projection_text_dynamic =
-    //    Matrix3::projection(Vector2{ _app.windowSize() }) *
-    //    Matrix3::translation(Vector2{ _app.windowSize() }*0.5f);
+    size_t number_text_glyph_cnt = std::strlen(NUMBER_TEXT_GLYPHS);
+    _number_text.reset(
+        new Text::Renderer2D(*_font, *_cache, 50.0f, Text::Alignment::MiddleCenter));
+    _number_text->reserve(number_text_glyph_cnt, GL::BufferUsage::DynamicDraw,
+        GL::BufferUsage::StaticDraw);
+    _transformation_projection_number_text =
+        Matrix3::projection(Vector2{ _app.windowSize() }) *
+        Matrix3::translation(Vector2{ _app.windowSize() }*0.5f);
 }
 
 void BigTextRenderer::HandleViewportEvent(
@@ -84,19 +89,8 @@ void BigTextRenderer::HandleViewportEvent(
 
 void BigTextRenderer::DrawDisclaimer(float gui_scaling)
 {
-    //_transformation_projection_text_dynamic =
-    //    Matrix3::projection(Vector2{ _app.windowSize() }) *
-    //    Matrix3::translation(Vector2{ _app.windowSize() }*0.5f);
-    //float rotation_degrees = 333.3f;
-    //_text_dynamic->render(Utility::formatString(
-    //    "Rotation: {:.2}°\nScale: {:.2}",
-    //    rotation_degrees,
-    //    _transformation_text_rotating.uniformScaling()));
-
-
     Vector2i window_size = _app.windowSize();
     
-
     float disclaimer_text_scale = 1.0f * gui_scaling;
 
     // Position in pixels. (0,0) is top left screen corner
@@ -132,11 +126,35 @@ void BigTextRenderer::DrawDisclaimer(float gui_scaling)
         .setSmoothness(smoothness)
         .draw(_disclaimer_text_mesh);
 
-    //_shader
-    //    .bindVectorTexture(_cache->texture())
-    //    .setTransformationProjectionMatrix(_transformation_projection_text_dynamic)
-    //    .setColor(0xffffff_rgbf)
-    //    //.setOutlineRange(0.5f, 0.2f)
-    //    //.setSmoothness(0.01f)
-    //    .draw(_text_dynamic->mesh());
+    
+}
+
+void rendering::BigTextRenderer::DrawNumber(
+    int number, const Magnum::Color4& col, float scaling, Vector2 pos)
+{
+    Vector2i window_size = _app.windowSize();
+
+    Vector2 offset = {
+        window_size.x() * pos.x(),
+        window_size.y() * pos.y()
+    };
+
+    _transformation_projection_number_text =
+        Matrix3::projection(Vector2{ window_size }) *
+        Matrix3::translation(offset) *
+        Matrix3::scaling(Vector2{ scaling });
+
+    _number_text->render(std::to_string(number));
+
+    // Too high smoothness makes edges blurry, too small value makes edges aliased.
+    float smoothness = 0.15f / scaling; // Bigger text needs less smoothing
+
+    _shader
+        .bindVectorTexture(_cache->texture())
+        .setTransformationProjectionMatrix(_transformation_projection_number_text)
+        .setColor(col)
+        .setOutlineColor(col)
+        .setOutlineRange(0.5f, 0.4f) // make text *slightly* bold with same-color outline 
+        .setSmoothness(smoothness)
+        .draw(_number_text->mesh());
 }
