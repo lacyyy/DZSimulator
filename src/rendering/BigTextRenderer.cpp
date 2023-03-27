@@ -12,7 +12,7 @@ using namespace Magnum;
 using namespace Math::Literals;
 using namespace rendering;
 
-#define DISCLAIMER_MSG "THIS IS NOT A CHEAT!\n(requires sv_cheats 1)"
+#define DISCLAIMER_MSG "THIS IS NOT A CHEAT\n(requires sv_cheats 1)"
 #define NUMBER_TEXT_GLYPHS "0123456789"
 
 BigTextRenderer::BigTextRenderer(Platform::Sdl2Application& app,
