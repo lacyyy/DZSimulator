@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector2.h>
 
 #include "CsgoConstants.h"
@@ -23,6 +24,7 @@ public:
 
     // Misc
     bool app_exit_requested = false;
+    bool show_intro_msg_on_startup = true;
     bool OUT_dzsim_update_available = false; // New release on GitHub
     bool IN_open_downloads_page_in_browser = false; // GitHub releases page
 
@@ -61,15 +63,15 @@ public:
 
         // RGBA colors
         float IN_col_sky                [4] = { 0.422f, 0.645f, 1.000f, 1.000f };
-        float IN_col_solid_displacements[4] = { 0.747f, 0.621f, 0.244f, 1.000f };
-        float IN_col_solid_disp_boundary[4] = { 0.000f, 1.000f, 0.750f, 1.000f };
-        float IN_col_solid_sprops       [4] = { 0.796f, 0.551f, 0.194f, 1.000f };
-        float IN_col_ladders            [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
-        float IN_col_solid_other_brushes[4] = { 1.000f, 0.929f, 0.000f, 1.000f }; // solid, non-sky, non-water, non-ladder
         float IN_col_water              [4] = { 0.000f, 0.644f, 1.000f, 0.258f };
+        float IN_col_ladders            [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
         float IN_col_player_clip        [4] = { 0.407f, 0.570f, 0.000f, 0.869f };
         float IN_col_grenade_clip       [4] = { 1.000f, 1.000f, 1.000f, 0.500f };
         float IN_col_trigger_push       [4] = { 0.400f, 0.000f, 1.000f, 0.500f };
+        float IN_col_solid_displacements[4] = { 0.747f, 0.621f, 0.244f, 1.000f };
+        float IN_col_solid_sprops       [4] = { 0.796f, 0.551f, 0.194f, 1.000f };
+        float IN_col_solid_other_brushes[4] = { 1.000f, 0.929f, 0.000f, 1.000f }; // solid, non-sky, non-water, non-ladder
+        float IN_col_solid_disp_boundary[4] = { 0.000f, 1.000f, 0.750f, 1.000f };
         float IN_col_bump_mine          [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
         float IN_col_slide_success      [4] = { 0.000f, 1.000f, 0.000f, 1.000f };
         float IN_col_slide_almost_fail  [4] = { 0.800f, 0.400f, 0.150f, 1.000f };
@@ -88,17 +90,19 @@ public:
         Magnum::Vector2 IN_hori_vel_text_pos = { 0.0f, -0.05f };
 
         // Only used in GLID_AT_SPECIFIC_SPEED mode
-        int IN_specific_glid_vis_hori_speed = 1150.0f; // Horizontal speed of common single bump mine jump
+        int IN_specific_glid_vis_hori_speed = 1150; // Horizontal speed of common single bump mine jump
     } vis;
 
     struct VideoSettings {
+        int IN_user_gui_scaling_factor_pct = 100; // percentage
+
         bool IN_use_custom_fov = false;
         float IN_custom_vert_fov_degrees = float(Magnum::Deg{ CSGO_VERT_FOV });
 
         enum WindowMode {
             WINDOWED,
             FULLSCREEN_WINDOWED // Windowed, but covering an entire display
-        } IN_window_mode = WINDOWED;
+        } IN_window_mode = FULLSCREEN_WINDOWED;
 
         // Only relevant in FULLSCREEN_WINDOWED mode: On which SDL display our
         // window gets placed
@@ -115,9 +119,9 @@ public:
         float IN_overlay_transparency = 60.0f; // from 0 to 100 
         bool IN_overlay_transparency_is_being_adjusted = false; // Indicates preview
 
-        bool IN_vsync_enabled = false;
+        bool IN_vsync_enabled = true; // VSync ON by default to use monitor's refresh rate
 
-        // FPS limit, only used if VSync disabled, initialized to default
+        // FPS limit, only used if VSync disabled, initialized to default 125 FPS
         unsigned int IN_min_loop_period = 8; // Default FPS limit = 1000ms / 8ms = 125
     } video;
 

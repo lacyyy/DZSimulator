@@ -8,14 +8,19 @@
 #include "build_info.h"
 #include "gui/Gui.h"
 #include "gui/GuiState.h"
+#include "SavedUserDataHandler.h"
 
 using namespace gui;
 
 MenuWindow::MenuWindow(Gui& gui) : _gui(gui), _gui_state(gui.state)
 {
 #ifdef NDEBUG
-    // In Release builds, show introductory message on startup
-    ShowAppExplanation();
+    if (_gui_state.show_intro_msg_on_startup) {
+        // In Release builds, show introductory message on startup
+        ShowAppExplanation();
+        // Remember to not show it again on next startup
+        _gui_state.show_intro_msg_on_startup = false;
+    }
 #endif
 }
 
@@ -127,7 +132,7 @@ void MenuWindow::Draw()
 
         auto& geo_vis_mode = _gui_state.vis.IN_geo_vis_mode;
 
-        if (ImGui::RadioButton("Glidability at simulated player speed",
+        if (ImGui::RadioButton("Glidability at specific player speed",
             geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED))
             geo_vis_mode = _gui_state.vis.GLID_AT_SPECIFIC_SPEED;
         ImGui::SameLine(); _gui.HelpMarker(
@@ -187,9 +192,9 @@ void MenuWindow::Draw()
                 ImGui::ColorEdit3("Speed Display Color",
                     (float*)&cols.IN_col_hori_vel_text, picker_flags);
                 ImGui::SliderFloat("Speed Display X Position",
-                    &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.2f");
+                    &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
                 ImGui::SliderFloat("Speed Display Y Position",
-                    &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.2f");
+                    &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
             }
 
             ImGui::Text("");
@@ -199,7 +204,7 @@ void MenuWindow::Draw()
 
         // GLID_AT_SPECIFIC_SPEED vis mode settings
         if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED) {
-            ImGui::SliderInt("Simulated Horizontal Speed",
+            ImGui::SliderInt("Specific Horizontal Speed",
                 &_gui_state.vis.IN_specific_glid_vis_hori_speed, 100, 5000, "%d");
             ImGui::SameLine(); _gui.HelpMarker(
                 ">>>> Depending on the player's speed, surfaces change their glidability.\n"
@@ -335,6 +340,11 @@ void MenuWindow::Draw()
     if (ImGui::CollapsingHeader("Video Settings"))
     {
         DrawVideoSettings();
+    }
+
+    if (ImGui::CollapsingHeader("Other"))
+    {
+        DrawOther();
     }
 
 #ifndef NDEBUG
@@ -866,7 +876,7 @@ void MenuWindow::DrawVideoSettings()
     if (max_gui_scale_slider_pct <= _gui._min_user_gui_scaling_factor_pct)
         max_gui_scale_slider_pct = _gui._min_user_gui_scaling_factor_pct * 2;
 
-    if (ImGui::DragInt("GUI Scaling", &_gui._user_gui_scaling_factor_pct,
+    if (ImGui::DragInt("GUI Scaling", &_gui_state.video.IN_user_gui_scaling_factor_pct,
         1, _gui._min_user_gui_scaling_factor_pct, max_gui_scale_slider_pct,
         "%d%%", ImGuiSliderFlags_NoInput)) {
         _gui._gui_scaling_update_required = true;
@@ -878,6 +888,22 @@ std::string MenuWindow::GetDisplayName(int idx, int w, int h)
 {
     return "Display " + std::to_string(idx)
         + " (" + std::to_string(w) + "x" + std::to_string(h) + ")";
+}
+
+void gui::MenuWindow::DrawOther()
+{
+    // @PORTING Replace "Windows Explorer" with something else fitting for
+    //          Unix and Emscripten.
+    if (ImGui::Button("Show user settings file in Windows Explorer"))
+        SavedUserDataHandler::OpenSaveFileDirectoryInFileExplorer();
+
+    ImGui::Text(
+        "You can switch back to default settings with these steps:\n"
+        "1. Show user settings file in Windows Explorer\n"
+        "2. Close DZSimulator\n"
+        "3. Delete user settings file\n"
+        "4. Re-open DZSimulator"
+    );
 }
 
 void gui::MenuWindow::DrawTestSettings()

@@ -169,7 +169,7 @@ void Gui::CalcNewTotalGuiScalingFactor()
 
     // Let the user adjust the GUI scale as well
     _total_gui_scaling = system_ui_factor * window_size_factor
-        * (_user_gui_scaling_factor_pct / 100.0f);
+        * (state.video.IN_user_gui_scaling_factor_pct / 100.0f);
 
     if (_total_gui_scaling < MIN_TOTAL_GUI_SCALING_FACTOR)
         _total_gui_scaling = MIN_TOTAL_GUI_SCALING_FACTOR;

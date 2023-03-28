@@ -1,6 +1,8 @@
 #ifndef CSGOCONSTANTS_H_
 #define CSGOCONSTANTS_H_
 
+#include <Magnum/Math/Angle.h>
+
 using namespace Magnum::Math::Literals;
 
 
@@ -10,7 +12,7 @@ const float CSGO_TICKRATE = 64.0f; // Matchmaking Danger Zone server tickrate
 // Testing indicates that CSGO's vertical FOV is between 73.7 and 73.8 degrees
 // A precise FOV value here makes the image much sharper when DZSim is used as
 // an overlay above CSGO!
-const Magnum::Deg CSGO_VERT_FOV = 73.75_degf; // CSGO's fixed vertical field of view
+const Magnum::Math::Deg CSGO_VERT_FOV = 73.75_degf; // CSGO's fixed vertical field of view
 
 const float CSGO_PLAYER_HEIGHT_STANDING = 72.0f;
 const float CSGO_PLAYER_HEIGHT_CROUCHED = 54.0f;

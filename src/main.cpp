@@ -26,12 +26,9 @@
 #include "InputHandler.h"
 #include "rendering/BigTextRenderer.h"
 #include "rendering/WorldRenderer.h"
+#include "SavedUserDataHandler.h"
 #include "sim/Server.h"
 #include "GitHubChecker.h"
-
-// Attempt to create window with this mode on startup
-#define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED)
-//#define STARTUP_WINDOW_MODE (gui::GuiState::VideoSettings::WINDOWED)
 
 // Allow window on a resolution of 800x600
 #define MIN_WINDOW_WIDTH  768
@@ -56,16 +53,18 @@ using namespace Math::Literals;
 class DZSimApplication: public Platform::Application {
     public:
         explicit DZSimApplication(const Arguments& arguments);
+        ~DZSimApplication();
 
         // List resources first so it's usable in other members' constructor
         Utility::Resource _resources; // Resources compiled into the executable
 
         // List plugin managers first to make sure they're already initialized
-        // and usable when passed to other member's constructors
+        // and usable when passed to other member's constructors.
         PluginManager::Manager<Text::AbstractFont> _font_plugin_mgr;
 
-        // _gui_state must be one of the first declared members because it is
-        // passed to various other members' constructor
+        // _gui_state must be one of the first declared members because its
+        // state must be loaded from file and then get passed to various other
+        // members' constructor.
         gui::GuiState _gui_state;
         gui::Gui _gui;
 
@@ -125,6 +124,8 @@ class DZSimApplication: public Platform::Application {
 
 
     private:
+        void exitEvent(ExitEvent& event) override;
+
         bool RefreshAvailableDisplays();
         void LoadWindowIcon(Utility::Resource& res);
         void DoCsgoPathSearch(bool show_popup_on_fail=true);
@@ -132,7 +133,6 @@ class DZSimApplication: public Platform::Application {
         bool LoadBspMap(std::string file_path);
         void ConfigureGameKeyBindings();
 
-        void exitEvent(ExitEvent& event) override;
         void viewportEvent(ViewportEvent& event) override;
         void tickEvent() override;
         void CalcViewProjTransformation();
@@ -210,6 +210,7 @@ class DZSimApplication: public Platform::Application {
 DZSimApplication::DZSimApplication(const Arguments& arguments)
     : Platform::Application{ arguments, NoCreate }
     , _resources{ RESOURCE_GROUP_NAME }
+    , _gui_state{ SavedUserDataHandler::LoadUserSettingsFromFile() }
     , _gui{ *this , _resources, _gui_state }
     , _gameServer{ CSGO_TICKRATE }
     , _big_text_renderer { *this,  _font_plugin_mgr }
@@ -217,15 +218,14 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _world_renderer { _resources, _gui_state }
     , _user_input_mode { UserInputMode::MENU }
 {
-    auto& window_mode = _gui_state.video.IN_window_mode;
+    auto& window_mode = _gui_state.video.IN_window_mode; // Attempt to start with this window mode
     auto& available_displays = _gui_state.video.OUT_available_displays;
-    auto& selected_display_idx = _gui_state.video.IN_selected_display_idx;
+    auto& selected_display_idx = _gui_state.video.IN_selected_display_idx; // Caution! Index can be invalid
 
-    window_mode = STARTUP_WINDOW_MODE; // Attempt to start with this mode
     bool set_window_pos_on_startup = false;
     Vector2i window_pos; // Used if set_window_pos_on_startup is true
     Vector2i window_size;
-    
+
     if (!RefreshAvailableDisplays()) // Results are put in available_displays
         Debug{} << "ERROR: Retrieving available displays failed!";
 
@@ -235,9 +235,10 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
         window_mode = gui::GuiState::VideoSettings::WINDOWED;
 
     if (window_mode == gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED) {
-        // guarantee: available_displays.size() > 0
-        // -> Just select the first available display
-        selected_display_idx = 0;
+        assert(available_displays.size() > 0);
+        // Select the first available display if selected index is invalid
+        if(selected_display_idx < 0 || selected_display_idx >= available_displays.size())
+            selected_display_idx = 0;
         const auto& first_display = available_displays[selected_display_idx];
         window_pos  = { first_display.x, first_display.y };
         window_size = { first_display.w, first_display.h };
@@ -422,7 +423,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     // 0: VSync OFF
     // 1: VSync ON
     // -1: Adaptive VSync (on some systems)
-    const bool try_enable_vsync = true; // VSync ON by default to use monitor's refresh rate
+    const bool try_enable_vsync = _gui_state.video.IN_vsync_enabled; // Check user setting
     if (!this->setSwapInterval(try_enable_vsync ? 1 : 0)) { // Driver error
         cur_vsync_enabled = !try_enable_vsync;
         Warning{} << "ERROR: setSwapInterval() failed.";
@@ -447,6 +448,37 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _currentServerWorldState = _currentClientWorldState;
 }
 
+DZSimApplication::~DZSimApplication()
+{
+    // This destructor is always the last thing that gets called upon
+    // program termination.
+
+    // Joining threads prematurely in a certain order might speed up exit
+    // -> Initiate thread joins in a non-blocking way here
+    _csgo_rcon.Disconnect(); // Non-blocking, thread is joined in its destructor
+
+    // Do some other potentially blocking work
+    SavedUserDataHandler::SaveUserSettingsToFile(_gui_state);
+
+    // Join all remaining threads in a blocking way
+    _gameServer.Stop(); // Blocking, thread is joined
+}
+
+
+void DZSimApplication::exitEvent(ExitEvent& event)
+{
+    // exitEvent() gets called when the user presses the window close button
+    // or presses Alt+F4 on our window.
+
+    // CAUTION: This method doesn't get called when the app is closed using
+    //          Magnum::Platform::Sdl2Application::exit() !
+    //          -> Make sure every member can safely be destructed and user data
+    //             is written to file without exitEvent() getting called!
+
+    Debug{} << "EXIT EVENT!";
+    event.setAccepted(); // Confirm exit, don't suppress it
+}
+
 // Returns false if no info of any display could be retrieved, true otherwise.
 // Also tries to select the display that was selected previously. If that fails,
 // the selected display index get set to -1 .
@@ -456,11 +488,12 @@ bool DZSimApplication::RefreshAvailableDisplays()
     auto& vid = _gui_state.video;
 
     // Try to keep the previously selected display selected
+    int prev_selected_idx = vid.IN_selected_display_idx;
     Display prev_selected = { -1, -1, -1, -1 };
-    bool have_prev_selected = vid.IN_selected_display_idx >= 0 &&
-        vid.IN_selected_display_idx < vid.OUT_available_displays.size();
+    bool have_prev_selected = prev_selected_idx >= 0 &&
+        prev_selected_idx < vid.OUT_available_displays.size();
     if(have_prev_selected)
-        prev_selected = vid.OUT_available_displays[vid.IN_selected_display_idx];
+        prev_selected = vid.OUT_available_displays[prev_selected_idx];
 
     vid.OUT_available_displays.clear();
     vid.IN_selected_display_idx = -1;
@@ -495,6 +528,18 @@ bool DZSimApplication::RefreshAvailableDisplays()
         d.w = disp_bounds.w;
         d.h = disp_bounds.h;
         _gui_state.video.OUT_available_displays.push_back(d);
+    }
+
+    // Special case to ensure DZSimulator re-opens on the monitor that
+    // DZSimulator was last closed on:
+    // When we started off with a previously selected display index but no
+    // associated display info (x,y,w,h), try to use the previous display index
+    // in the new "available display" list.
+    if (vid.IN_selected_display_idx == -1) {
+        if (prev_selected_idx >= 0 &&
+            prev_selected_idx < _gui_state.video.OUT_available_displays.size()) {
+            vid.IN_selected_display_idx = prev_selected_idx;
+        }
     }
 
     if (_gui_state.video.OUT_available_displays.empty())
@@ -706,21 +751,6 @@ void DZSimApplication::ConfigureGameKeyBindings() {
 
 }
 
-void DZSimApplication::exitEvent(ExitEvent& event)
-{
-    // CAUTION: This method doesn't get called when the app is closed using
-    //          Magnum::Platform::Sdl2Application::exit() !
-    //          -> Make sure every member can safely be destructed and user data
-    //             is written to file without exitEvent() getting called!
-    Debug{} << "EXIT EVENT!";
-
-    // Joining threads prematurely in a certain order might speed up exit
-    _csgo_rcon.Disconnect(); // Non-blocking, thread is joined in destructor
-    _gameServer.Stop(); // Blocking, thread is joined
-    
-    event.setAccepted(); // Confirm exit, don't suppress it
-}
-
 void DZSimApplication::viewportEvent(ViewportEvent& event)
 {
     Debug{ Debug::Flag::NoSpace} << "[VIEWPORTEVENT]"
@@ -902,8 +932,8 @@ void DZSimApplication::tickEvent() {
         // the window click-through. Allowing click-through with an opacity of 1.0
         // doesn't make sense anyway, but be aware.
         // Edit: In later tests, an opacity of 1.0 no longer seems to break it...
-        if (win_opacity > 0.99f)
-            win_opacity = 0.99f; // Avoid breaking "click-through" feature
+        //if (win_opacity > 0.99f)
+        //    win_opacity = 0.99f; // Avoid breaking "click-through" feature
         if (SDL_SetWindowOpacity(this->window(), win_opacity) != 0) {
             Debug{} << "ERROR: SDL_SetWindowOpacity() failed!";
             _gui_state.popup.QueueMsgError("An error occurred while trying to "

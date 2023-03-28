@@ -79,10 +79,6 @@ private:
     float _total_gui_scaling = 1.0f;
     float _extra_imgui_style_scaling = 1.0f;
     int _min_user_gui_scaling_factor_pct; // lower bound for _user_gui_scaling_factor_pct
-    
-    // User controlled
-    int _user_gui_scaling_factor_pct = 100; // percentage
-
 
     Corrade::Containers::ArrayView<const char> _imgui_disp_font_data = {};
     Corrade::Containers::ArrayView<const char> _imgui_mono_font_data = {};

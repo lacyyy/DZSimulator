@@ -1,7 +1,6 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
 - [ ] Add crosshair (changeable size?)
-- [ ] Save and load user setting to/from file
 - [ ] Visualize push direction, power, type and activation of trigger_push
 - [ ] Fix Z-fighting between water and push triggers
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
@@ -37,7 +36,6 @@
 - [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type. Draw water as the last thing?
 - [ ] Visuals, Fix vertical water face on Sirocco at "Tower One" and on Ember at "Rock Pool C"
 - [ ] dz_arctic has terrible FPS, why?
-- [ ] Enabling overlay mode and then disabling it again causes window to stay at ~ 1% transparency
 - [ ] Investigate "DISP_VPHYSICS found bad displacement collision face" error that makes displacements non-solid, what are the exact criteria for that?
     - Make DZSim visualize those "error displacements" in a special way?
 - [ ] Low priority: Handle props with AABB collision correctly (get AABB from MDL? HullMins / Maxs?). On DZ maps, currently only present with curtains on vineyard
