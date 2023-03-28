@@ -218,6 +218,10 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _world_renderer { _resources, _gui_state }
     , _user_input_mode { UserInputMode::MENU }
 {
+    // Save immediately to file for the sole purpose of ensuring the
+    // settings file and its directory exist.
+    SavedUserDataHandler::SaveUserSettingsToFile(_gui_state);
+
     auto& window_mode = _gui_state.video.IN_window_mode; // Attempt to start with this window mode
     auto& available_displays = _gui_state.video.OUT_available_displays;
     auto& selected_display_idx = _gui_state.video.IN_selected_display_idx; // Caution! Index can be invalid
