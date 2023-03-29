@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20) 
 
 # Project version MUST have format: X.Y.Z
-set(DZSIM_VERSION 0.0.3) # Increase this on each release
+set(DZSIM_VERSION 0.0.4) # Increase this on each release
 
 string(TIMESTAMP DZSIM_BUILD_TIME "%Y-%m-%d %H:%M UTC" UTC)
 
