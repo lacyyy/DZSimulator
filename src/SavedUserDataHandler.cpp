@@ -189,8 +189,9 @@ void SavedUserDataHandler::OpenSaveFileDirectoryInFileExplorer()
     Containers::StringView dir_path = Utility::Path::split(*file_path).first();
     Containers::String native_dir_path = Utility::Path::toNativeSeparators(dir_path);
     auto path_for_winapi = Utility::Unicode::widen(Containers::StringView(native_dir_path));
-    ShellExecuteW(NULL, Utility::Unicode::widen("open"), path_for_winapi,
-        NULL, NULL, SW_SHOWDEFAULT);
+    auto operation_str_for_winapi = Utility::Unicode::widen("open");
+    ShellExecuteW(NULL, operation_str_for_winapi, path_for_winapi, NULL, NULL,
+        SW_SHOWDEFAULT);
 }
 
 // Returns JSON null value if an error occurs
