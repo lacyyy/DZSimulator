@@ -235,10 +235,10 @@ public:
     std::vector<int32_t> surfedges; // Surfedge lump (idx 13)
 
     std::vector<Face> faces; // Face lump (idx 7)
-    std::vector<OrigFace> origfaces; // Original face lump (idx 27)
+    std::vector<OrigFace> origfaces; // Original face lump (idx 27) [CURRENTLY UNUSED]
 
     std::vector<DispVert> dispverts; // DispVert lump (idx 33)
-    std::vector<DispTri> disptris; // DispTri lump (idx 48)
+    std::vector<DispTri> disptris; // DispTri lump (idx 48) [CURRENTLY UNUSED]
     std::vector<DispInfo> dispinfos; // DispInfo lump (idx 26)
 
     std::vector<TexInfo> texinfos; // TexInfo lump (idx 6)
@@ -251,14 +251,14 @@ public:
 
     std::vector<Node> nodes; // Node lump (idx 5)
     std::vector<Leaf> leafs; // Leaf lump (idx 10)
-    std::vector<uint16_t> leaffaces; // LeafFace lump (idx 16)
+    std::vector<uint16_t> leaffaces; // LeafFace lump (idx 16)  [CURRENTLY UNUSED]
     std::vector<uint16_t> leafbrushes; // LeafBrush lump (idx 17)
 
     std::vector<Model> models; // Model lump (idx 14)
 
     // from Game lump (idx 35)
     std::vector<std::string> static_prop_model_dict; // model names CONVERTED TO LOWER CASE
-    std::vector<uint16_t> static_prop_leaf_arr; // unused for now
+    std::vector<uint16_t> static_prop_leaf_arr; // [CURRENTLY UNUSED]
     std::vector<StaticProp> static_props;
 
     std::vector<PakfileEntry> packed_files; // from Pakfile lump (idx 40)

@@ -62,6 +62,7 @@ Information for developers follows here.
 - `res/` - Files that get compiled into the executable (top-level [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt) too). Contains third party software!
 - `src/` - DZSimulator source code. Also contains third party software!
 - `thirdparty/` - Other third party software, some are used, some not.
+- `tools/` - Useful scripts for DZSimulator development
 
 ### License Notes
 
