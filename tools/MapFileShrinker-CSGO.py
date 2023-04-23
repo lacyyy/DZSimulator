@@ -10,11 +10,15 @@
 # CAUTION:
 #    The file is modified in place. Backup the file before using this script.
 # 
-# NOTE: - Any ".bsp" file that was processed by this script cannot be opened by
-#         CSGO.
-#       - Any ".bsp" file that was processed by this script cannot be used by
-#         BSP packing tools such as VIDE's Pakfile Lump editor.
-#         -> Pack/unpack the BSP file before processing it with this script!
+# NOTE:
+#    - Any ".bsp" file that was processed by this script cannot be opened by CSGO.
+#    - Any ".bsp" file that was processed by this script cannot be used by BSP
+#      packing tools such as VIDE's Pakfile Lump editor.
+#      -> Pack/unpack the BSP file BEFORE processing it with this script!
+#         - CAUTION: Manually deleting packed files from a BSP with VIDE often
+#           corrupted the BSP's packed files for me!
+#           I avoided that by first deleting ALL packed files, saving the BSP,
+#           then packing all required files and saving the BSP again.
 
 # Make sure this is a complete list of all lumps that the current version of
 # DZSimulator makes use of!
