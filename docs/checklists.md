@@ -1,8 +1,5 @@
 ## Checklists for making releases and updating libraries or fonts
 
-### Setting up public DZSimulator repo:
-- Add Magnum tag to GitHub repo
-
 ### Releasing a new major/minor/patch/tweak update
 1. Increase project version in top-level CMakeLists.txt
 1. Write changelogs for GitHub and ingame display
