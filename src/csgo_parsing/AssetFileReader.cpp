@@ -3,6 +3,8 @@
 #include <cmath>
 
 #include <FileSystem.h>
+#include <LockableFiles.h>
+#include <SubFile.h>
 
 using namespace csgo_parsing;
 
@@ -14,7 +16,7 @@ using namespace csgo_parsing;
 struct AssetFileReader::Implementation {
     fsal::FileSystem fs; // Default-constructed singleton class
     fsal::File file;
-    size_t pos; // current read position, relative to beginning of file
+    size_t pos = 0; // current read position, relative to beginning of file
 
     // LUT for float32 parsing
     double f32_mantissa_bit_pos_vals[F32_MANTISSA_SIZE];
@@ -40,7 +42,8 @@ bool AssetFileReader::OpenFileFromAbsolutePath(const std::string& abs_file_path)
 {
     // Only treat file path as absolute system path
     fsal::Location file_loc(abs_file_path, fsal::Location::kAbsolute);
-    _impl->file = _impl->fs.Open(file_loc, fsal::kRead);
+    // File must be opened as a 'lockable' file to allow usage with fsal::SubFile
+    _impl->file = _impl->fs.Open(file_loc, fsal::kRead, true);
     _impl->pos = 0;
     if (!_impl->file)
         return false;
@@ -53,10 +56,53 @@ bool AssetFileReader::OpenFileFromGameFiles(const std::string& game_file_path)
     // that were made available by calls to AssetFinder::FindCsgoPath() and
     // AssetFinder::RefreshVpkArchiveIndex()
     fsal::Location file_loc(game_file_path, fsal::Location::kSearchPathsAndArchives);
-    _impl->file = _impl->fs.Open(file_loc, fsal::kRead);
+    // File must be opened as a 'lockable' file to allow usage with fsal::SubFile
+    _impl->file = _impl->fs.Open(file_loc, fsal::kRead, true);
     _impl->pos = 0;
     if (!_impl->file)
         return false;
+    return true;
+}
+
+bool csgo_parsing::AssetFileReader::OpenFileFromMemory(
+    Corrade::Containers::ArrayView<const uint8_t> file_data)
+{
+    _impl->pos = 0;
+
+    if (file_data.data() == nullptr) {
+        _impl->file = fsal::File();
+        return false;
+    }
+    else {
+        // We need to use fsal::LMemRefFileReadOnly here (the lockable version
+        // of fsal::MemRefFileReadOnly) in order to allow an fsal::SubFile to be
+        // opened on top of it like in OpenSubFileFromCurrentlyOpenedFile() .
+        // Technically, locking on read-only memory isn't necessary, but the
+        // FSAL library works that way.
+        _impl->file = fsal::File(new fsal::LMemRefFileReadOnly(
+            file_data.data(),
+            file_data.size()
+        ));
+        return true;
+    }
+}
+
+bool csgo_parsing::AssetFileReader::OpenSubFileFromCurrentlyOpenedFile(
+    size_t subfile_pos, size_t subfile_len)
+{
+    _impl->pos = 0;
+
+    if (!IsOpenedInFile()) {
+        _impl->file = fsal::File();
+        return false;
+    }
+
+    auto currently_opened_file = _impl->file.GetInterface();
+    _impl->file = fsal::File(new fsal::SubFile(
+        currently_opened_file,
+        subfile_len,
+        subfile_pos
+    ));
     return true;
 }
 

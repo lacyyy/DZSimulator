@@ -10,6 +10,7 @@
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Math/Color.h>
 
+#include "csgo_parsing/AssetFileReader.h"
 #include "csgo_parsing/BrushSeparation.h"
 #include "csgo_parsing/BspMap.h"
 #include "csgo_parsing/utils.h"
@@ -43,17 +44,9 @@ namespace rendering {
 
         // Returned code is either SUCCESS or ERROR_PHY_PARSING_FAILED.
         // ERROR_PHY_PARSING_FAILED has a description string.
-        csgo_parsing::utils::RetCode CreatePhyModelMeshFromGameFile(
+        csgo_parsing::utils::RetCode CreatePhyModelMeshFromFile(
             Magnum::GL::Mesh* dest,
-            const std::string& src_phy_path);
-
-        // Returned code is either SUCCESS or ERROR_PHY_PARSING_FAILED.
-        // ERROR_PHY_PARSING_FAILED has a description string.
-        csgo_parsing::utils::RetCode CreatePhyModelMeshFromPackedPhyFile(
-            Magnum::GL::Mesh* dest,
-            const std::string& abs_bsp_file_path, // absolute bsp map file path
-            size_t packed_phy_file_pos, // start position inside bsp file
-            size_t packed_phy_file_len); // phy file byte count
+            csgo_parsing::AssetFileReader& reader_opened_in_phy_file);
 
         // Mesh of Bump Mines thrown/placed into the world
         Magnum::GL::Mesh CreateBumpMineMesh();

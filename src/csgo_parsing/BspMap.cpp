@@ -15,15 +15,28 @@
 
 #include "utils_3d.h"
 
+using namespace Corrade;
 using namespace Magnum;
 using namespace csgo_parsing;
 using namespace utils_3d;
 
 BspMap::BspMap(const std::string& abs_file_path)
-    : abs_bsp_file_path(abs_file_path)
-    , world_mins{ -INFINITY, -INFINITY, -INFINITY }
-    , world_maxs{ INFINITY, INFINITY, INFINITY }
-    , map_version(-1)
+    : file_origin {
+        .type = FileOrigin::FILE_SYSTEM,
+        .abs_file_path = abs_file_path,
+        .file_content_mem = {}
+    }
+    , is_embedded_map { false }
+{
+}
+
+csgo_parsing::BspMap::BspMap(Containers::ArrayView<const uint8_t> bsp_file_content)
+    : file_origin{
+        .type = FileOrigin::MEMORY,
+        .abs_file_path = "",
+        .file_content_mem = bsp_file_content
+    }
+    , is_embedded_map{ true }
 {
 }
 

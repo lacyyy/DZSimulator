@@ -130,7 +130,12 @@ class DZSimApplication: public Platform::Application {
         void LoadWindowIcon(Utility::Resource& res);
         void DoCsgoPathSearch(bool show_popup_on_fail=true);
         void UpdateGuiCsgoMapPaths();
-        bool LoadBspMap(std::string file_path);
+
+        // Loads '.bsp' map files, by default from an external file. If
+        // 'load_from_embedded_files' is set to true, the map file is loaded
+        // from an embedded file (that was compiled into the executable).
+        bool LoadBspMap(std::string file_path, bool load_from_embedded_files=false);
+
         void ConfigureGameKeyBindings();
 
         void viewportEvent(ViewportEvent& event) override;
@@ -445,11 +450,8 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _gameServer.ChangeSimulationTimeScale(1.0);// 0.015625);
     _gameServer.Start();
 
-    _currentClientWorldState.time = sim::Clock::now();
-    _currentClientWorldState.latest_player_input_time =
-        _currentClientWorldState.time;
-    // Set server and client world state initially identical at the start
-    _currentServerWorldState = _currentClientWorldState;
+    // Load embedded map on startup (if it exists)
+    //LoadBspMap("embedded_maps/XXX.bsp", true);
 }
 
 DZSimApplication::~DZSimApplication()
@@ -648,21 +650,52 @@ void DZSimApplication::UpdateGuiCsgoMapPaths() {
 }
 
 // Returns success
-bool DZSimApplication::LoadBspMap(std::string file_path)
+bool DZSimApplication::LoadBspMap(std::string file_path,
+    bool load_from_embedded_files)
 {
     // Deallocate previous map data to minimize peak RAM usage during parsing
     // RAM USAGE NOT REALLY TESTED YET!
     _bsp_map.reset();
     _world_renderer.UnloadGeometry();
 
-    // Reload VPK archives, in case they were just updated by Steam
-    // Only index files with extensions that we need -> Reduces VPK index time
-    std::vector<std::string> required_file_ext = { "mdl", "phy" };
-    csgo_parsing::AssetFinder::RefreshVpkArchiveIndex(required_file_ext);
+    // Embedded map files must not rely on assets from the game directory.
+    // -> Indexing game directory assets for them is unnecessary
+    if (!load_from_embedded_files) {
+        // Reload VPK archives, in case they were just updated by Steam
+        // Only index files with extensions that we need -> Reduces VPK index time
+        std::vector<std::string> required_file_ext = { "mdl", "phy" };
+        csgo_parsing::AssetFinder::RefreshVpkArchiveIndex(required_file_ext);
+    }
 
-    Debug{} << "Loading:" << file_path.c_str();
-    csgo_parsing::utils::RetCode bsp_parse_status
-        = csgo_parsing::ParseBspMapFile(&_bsp_map, file_path);
+    Debug{} << "Loading" << (load_from_embedded_files ? "embedded" : "regular")
+        << "map file:" << file_path.c_str();
+    csgo_parsing::utils::RetCode bsp_parse_status;
+    if (load_from_embedded_files) {
+        bool embedded_file_exists = false;
+        for (Containers::StringView res : _resources.list()) {
+            if (res == file_path) {
+                embedded_file_exists = true;
+                break;
+            }
+        }
+        if (embedded_file_exists) {
+            auto file_content = Containers::arrayCast<const uint8_t>(
+                _resources.getRaw(file_path)
+            );
+            bsp_parse_status = csgo_parsing::ParseBspMapFile(&_bsp_map, file_content);
+        }
+        else {
+            // Embedded file doesn't exist. We don't show an error message in
+            // this case because the developer simply might have decided to not
+            // include or use an embedded map file on startup, which the user
+            // shouldn't be notified of.
+            Debug{} << "EMBEDDED MAP FILE IS MISSING!";
+            return false;
+        }
+    }
+    else {
+        bsp_parse_status = csgo_parsing::ParseBspMapFile(&_bsp_map, file_path);
+    }
 
     if (!bsp_parse_status.successful()) { // Parse error
         std::string msg = "Failed to load the map:\n\n" + bsp_parse_status.desc_msg;
@@ -678,14 +711,19 @@ bool DZSimApplication::LoadBspMap(std::string file_path)
     _world_renderer.LoadBspMapGeometry(_bsp_map);
 
     if (_bsp_map->player_spawns.size() > 0) {
-        csgo_parsing::BspMap::PlayerSpawn& playerSpawn = _bsp_map->player_spawns[0];
+        csgo_parsing::BspMap::PlayerSpawn& playerSpawn =
+            _bsp_map->player_spawns[0];
         _cam_pos = playerSpawn.origin;
         _cam_ang = playerSpawn.angles;
-
         _currentClientWorldState.player.position = playerSpawn.origin;
         _currentClientWorldState.player.angles = playerSpawn.angles;
-        _gameServer.OverrideWorldState(_currentClientWorldState);
     }
+    _currentClientWorldState.time = sim::Clock::now();
+    _currentClientWorldState.latest_player_input_time =
+        _currentClientWorldState.time;
+    _gameServer.OverrideWorldState(_currentClientWorldState);
+    _currentServerWorldState = _currentClientWorldState;
+
     Debug{} << "DONE loading bsp map";
     return true;
 }
@@ -1163,13 +1201,8 @@ void DZSimApplication::tickEvent() {
 
         // Load new map
         // The whole client server reset logic is very hacky and needs to be tidied up
-        //_gameServer.stop();
-        if (LoadBspMap(abs_path_to_load)) { // Successfully loaded
-            //_gameServer.start();
-            _currentClientWorldState.time = sim::Clock::now();
-            _currentClientWorldState.latest_player_input_time =
-                _currentClientWorldState.time;
-            _currentServerWorldState = _currentClientWorldState;
+        if (LoadBspMap(abs_path_to_load)) {
+            // ... Successfully loaded
         }
     }
 

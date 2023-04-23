@@ -4,10 +4,12 @@
 #include <memory>
 #include <string>
 
+#include <Corrade/Containers/ArrayView.h>
+
 namespace csgo_parsing {
 
     // Mainly used to read game files that were made accessible by AssetFinder,
-    // but can also read files from an absolute path.
+    // but can also read files from memory or an absolute path.
     // Most methods return true if they succeeded, false if they failed.
     class AssetFileReader {
     public:
@@ -27,7 +29,17 @@ namespace csgo_parsing {
         // NOTE: Files packed inside BSP map files can't be opened by this method!
         bool OpenFileFromGameFiles(const std::string& game_file_path);
 
-        // If last OpenFileFromXXX() operation was successful
+        // The underlying memory of 'file_data' must remain valid and unchanged
+        // throughout all file read operations!
+        bool OpenFileFromMemory(Corrade::Containers::ArrayView<const uint8_t> file_data);
+
+        // This method requires that the reader is currently opened in a file.
+        // From the currently opened file, selects a subrange and treats and
+        // reads it as if it was a separate file.
+        bool OpenSubFileFromCurrentlyOpenedFile(size_t subfile_pos, size_t subfile_len);
+
+        // If last OpenFileFromXXX() or OpenSubFileFromCurrentlyOpenedFile()
+        // operation was successful.
         bool IsOpenedInFile();
 
         // Get and set read position relative to beginning of file

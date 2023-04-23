@@ -16,6 +16,7 @@
 
 using namespace csgo_parsing;
 using namespace Magnum;
+using namespace Corrade;
 
 bool ParseEntity_worldspawn(std::multimap<std::string, std::string>& key_values, BspMap& in_out)
 {
@@ -1336,49 +1337,74 @@ utils::RetCode ParseLumpData(AssetFileReader& fr, BspMap& in_out)
     return { utils::RetCode::SUCCESS };
 }
 
+// Reads content of the '.bsp' file that the reader is opened in and puts them
+// into the BspMap object. Returned code is SUCCESS (possibly with warning msg)
+// or ERROR_BSP_PARSING_FAILED (with an error description)
+static utils::RetCode _ParseBspMapFile(BspMap& dest_bsp_map,
+    AssetFileReader& opened_reader)
+{
+    if (!opened_reader.IsOpenedInFile())
+        return { utils::RetCode::ERROR_BSP_PARSING_FAILED, "Reader not opened in file"};
+
+    // Parse file data
+    utils::RetCode header_parse_status = ParseHeader(opened_reader, dest_bsp_map.header);
+    if (!header_parse_status.successful())
+        return header_parse_status; // Return header parse error
+
+    std::string parse_warning_msg = header_parse_status.desc_msg;
+
+    // Do these lumps have useful data?
+    Debug{} << "LUMP_IDX_PROPCOLLISION len =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PROPCOLLISION].file_len;
+    Debug{} << "LUMP_IDX_PROPHULLS len     =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PROPHULLS    ].file_len;
+    Debug{} << "LUMP_IDX_PHYSDISP len      =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PHYSDISP     ].file_len;
+    Debug{} << "LUMP_IDX_PHYSCOLLIDE len   =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PHYSCOLLIDE  ].file_len;
+
+    // Parse lumps
+    utils::RetCode lump_data_parse_status = ParseLumpData(opened_reader, dest_bsp_map);
+    if (!lump_data_parse_status.successful())
+        return lump_data_parse_status; // Return lump parse error
+
+    return { utils::RetCode::SUCCESS, parse_warning_msg };
+}
+
 utils::RetCode csgo_parsing::ParseBspMapFile(
-    std::shared_ptr<BspMap>* dest_parsed_bsp_map, const std::string& abs_file_path)
+    std::shared_ptr<BspMap>* dest_parsed_bsp_map,
+    const std::string& abs_bsp_file_path)
 {
     AssetFileReader reader;
-    if (!reader.OpenFileFromAbsolutePath(abs_file_path)) {
+    if (!reader.OpenFileFromAbsolutePath(abs_bsp_file_path)) {
         if (dest_parsed_bsp_map)
             *dest_parsed_bsp_map = { nullptr };
         return { utils::RetCode::ERROR_BSP_PARSING_FAILED,
             "Failed to open '.bsp' file" };
     }
 
-    std::shared_ptr<BspMap> bsp_map = std::make_shared<BspMap>(abs_file_path);
+    std::shared_ptr<BspMap> bsp_map = std::make_shared<BspMap>(abs_bsp_file_path);
+    auto status = _ParseBspMapFile(*bsp_map, reader);
+    if (dest_parsed_bsp_map) {
+        if (status.successful()) *dest_parsed_bsp_map = bsp_map;
+        else                     *dest_parsed_bsp_map = { nullptr };
+    }
+    return status;
+}
 
-    // Parse file data
-    utils::RetCode header_parse_status = ParseHeader(reader, bsp_map->header);
-    if (!header_parse_status.successful()) {
+utils::RetCode csgo_parsing::ParseBspMapFile(
+    std::shared_ptr<BspMap>* dest_parsed_bsp_map,
+    Containers::ArrayView<const uint8_t> bsp_file_content)
+{
+    AssetFileReader reader;
+    if (!reader.OpenFileFromMemory(bsp_file_content)) {
         if (dest_parsed_bsp_map)
             *dest_parsed_bsp_map = { nullptr };
-        return header_parse_status; // Return header parse error
+        return { utils::RetCode::ERROR_BSP_PARSING_FAILED,
+            "Failed to open '.bsp' file (in memory)" };
     }
 
-    std::string parse_warning_msg = header_parse_status.desc_msg;
-
-    // Do these lumps have useful data?
-    Debug{} << "LUMP_IDX_PROPCOLLISION len =" << bsp_map->header.lump_dir[LUMP_IDX_PROPCOLLISION].file_len;
-    Debug{} << "LUMP_IDX_PROPHULLS len     =" << bsp_map->header.lump_dir[LUMP_IDX_PROPHULLS].file_len;
-    Debug{} << "LUMP_IDX_PHYSDISP len      =" << bsp_map->header.lump_dir[LUMP_IDX_PHYSDISP].file_len;
-    Debug{} << "LUMP_IDX_PHYSCOLLIDE len   =" << bsp_map->header.lump_dir[LUMP_IDX_PHYSCOLLIDE].file_len;
-
-    // Parse lumps
-    utils::RetCode lump_data_parse_status = ParseLumpData(reader, *bsp_map);
-    if (!lump_data_parse_status.successful()) {
-        if (dest_parsed_bsp_map)
-            *dest_parsed_bsp_map = { nullptr };
-        return lump_data_parse_status; // Return lump parse error
+    std::shared_ptr<BspMap> bsp_map = std::make_shared<BspMap>(bsp_file_content);
+    auto status = _ParseBspMapFile(*bsp_map, reader);
+    if (dest_parsed_bsp_map) {
+        if (status.successful()) *dest_parsed_bsp_map = bsp_map;
+        else                     *dest_parsed_bsp_map = { nullptr };
     }
-
-    // Return parsed map object
-    if (dest_parsed_bsp_map)
-        *dest_parsed_bsp_map = bsp_map;
-
-    if (parse_warning_msg.empty())
-        return { utils::RetCode::SUCCESS };
-    else
-        return { utils::RetCode::SUCCESS, parse_warning_msg };
+    return status;
 }

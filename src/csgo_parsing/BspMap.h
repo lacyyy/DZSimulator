@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <Corrade/Containers/ArrayView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
@@ -58,18 +59,18 @@ public:
     static const size_t MAX_STATIC_PROPS = 65536; // keep room; CSGO's current limit is 16384
 
     struct LumpDirEntry {
-        uint32_t file_offset;
-        uint32_t file_len;
-        uint32_t version;
-        uint32_t four_cc;
+        uint32_t file_offset = 0;
+        uint32_t file_len = 0;
+        uint32_t version = 0;
+        uint32_t four_cc = 0;
     };
 
     struct Header { // BSP file header
-        uint32_t     identifier; // interpreted as little-endian uint32
-        bool         little_endian; // if bsp file is saved in little endian form
-        uint32_t     version;
+        uint32_t     identifier = 0; // interpreted as little-endian uint32
+        bool         little_endian = true; // if bsp file is saved in little endian form
+        uint32_t     version = 0;
         LumpDirEntry lump_dir[HEADER_LUMP_CNT];
-        uint32_t     map_revision;
+        uint32_t     map_revision = 0;
     };
 
     struct Plane {
@@ -221,10 +222,43 @@ public:
 
     // --------------------------------------------------------------------------
 
-    // Absolute file path to BSP file, may contain UTF-8 Unicode chars
+    // Map was read from a regular file on the file system.
+    // Takes absolute path to that '.bsp' file, may contain UTF-8 Unicode chars.
+    // Knowing the '.bsp' file's path is necessary to load its packed files later.
     BspMap(const std::string& abs_bsp_file_path);
 
-    std::string abs_bsp_file_path; // absolute path, may contain UTF-8 Unicode
+    // Map was read from an embedded '.bsp' file that was compiled into the executable.
+    // Takes memory block containing that file's content.
+    // Knowing the '.bsp' file's content location is necessary to load its
+    // packed files later.
+    BspMap(Corrade::Containers::ArrayView<const uint8_t> bsp_file_content);
+
+    struct FileOrigin {
+        enum Type {
+            UNKNOWN,     // Map is uninitialized or constructed from another source
+            FILE_SYSTEM, // Map was loaded from '.bsp' file on the file system
+            MEMORY       // Map was loaded from memory block holding '.bsp' file content
+        };
+        Type type = UNKNOWN;
+
+        // --- origin info for type == FILE_SYSTEM
+        std::string abs_file_path = ""; // absolute path, may contain UTF-8 Unicode
+        // --- origin info for type == MEMORY
+        Corrade::Containers::ArrayView<const uint8_t> file_content_mem = {};
+    }; 
+    const FileOrigin file_origin; // Where this BSP map was loaded from
+
+    // Embedded map files (whose file content got compiled into the executable)
+    // receive special treatment:
+    //   - Assets referenced by the map are not looked up in the game directory
+    //     or the game's VPK archives (because embedded maps must be independent
+    //     and self-contained)
+    //   - Parsing the collision model of a solid static prop no longer requires
+    //     the '.mdl' file referenced by the static prop to exist (because we
+    //     don't use '.mdl' file content and removing them reduces embedded file
+    //     size)
+    const bool is_embedded_map;
+
 
     Header header;
 
@@ -299,8 +333,9 @@ public:
     };
 
     // worldspawn entity
-    Magnum::Vector3 world_mins, world_maxs; // describe player area, but water towers still go above maxs[2]
-    int32_t map_version; // same as map_revision in bsp file header
+    Magnum::Vector3 world_mins = { -INFINITY, -INFINITY, -INFINITY }; // ???
+    Magnum::Vector3 world_maxs = {  INFINITY,  INFINITY,  INFINITY }; // ???
+    int32_t map_version = -1; // same as map_revision in bsp file header
     std::string sky_name;
     std::string detail_material;
     std::string detail_vbsp;

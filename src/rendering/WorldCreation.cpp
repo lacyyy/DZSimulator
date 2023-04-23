@@ -35,6 +35,11 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
     auto geo = std::make_unique<CsgoMapGeometry>();
     std::string error_msgs = "";
 
+    // Only look up assets in the game's directory and its VPK archives if it
+    // isn't an embedded map. Embedded maps are supposed to be independent and
+    // self-contained, not requiring any external files.
+    bool use_game_dir_assets = !bsp_map->is_embedded_map;
+
     {
         Debug{} << "Parsing displacement face mesh";
         auto displacementFaces = bsp_map->GetDisplacementFaceVertices();
@@ -97,6 +102,15 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
     // MDL paths that we already attempted to load the collision model of
     std::set<std::string> checked_mdl_paths;
 
+    // When loading regular (non-embedded) maps, a requirement to consider a
+    // static prop as solid is the existence of the MDL file it references. This
+    // is done to faithfully represent how CSGO would load a map.
+    // When loading embedded maps, we don't require an MDL file for solid static
+    // props because these maps are custom-made to only be loaded by DZSimulator
+    // and MDL files themselves are not read and they would unnecessarily
+    // increase embedded file size.
+    bool require_existing_mdl_file = !bsp_map->is_embedded_map;
+    
     for (const csgo_parsing::BspMap::StaticProp& sprop : bsp_map->static_props) {
         // Models can be referenced by solid and non-solid static props at the same time!
         if (!sprop.IsSolidWithVPhysics())
@@ -136,11 +150,13 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
             it_packed_phy_idx != packed_phy_file_indices.end() &&
             phy_path.compare(bsp_map->packed_files[*it_packed_phy_idx].file_name) == 0;
 
-        bool is_mdl_in_game_files =
-            csgo_parsing::AssetFinder::ExistsInGameFiles(mdl_path);
+        bool is_mdl_in_game_files = use_game_dir_assets ?
+            csgo_parsing::AssetFinder::ExistsInGameFiles(mdl_path) : false;
 
-        // We require every solid prop to have an existing ".mdl" file
-        if (!is_mdl_in_game_files && !is_mdl_in_packed_files) {
+        // Sometimes we require every solid prop to have an existing ".mdl" file
+        if (require_existing_mdl_file
+            && !is_mdl_in_game_files && !is_mdl_in_packed_files)
+        {
             error_msgs += "Failed to find MDL file '" + mdl_path + "', "
                 "referenced by at least one solid prop_static, e.g. at origin=("
                 + std::to_string((int64_t)sprop.origin.x()) + ","
@@ -150,35 +166,68 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
             continue;
         }
 
-        GL::Mesh phy_mesh{ NoCreate };
-        csgo_parsing::utils::RetCode phy_parse_status;
-        
+        // Open the PHY file at the correct location
+        csgo_parsing::AssetFileReader phy_file_reader;
+        std::string phy_file_read_err = ""; // empty means no error occurred
+
         if (is_phy_in_packed_files) {
-            phy_parse_status = CreatePhyModelMeshFromPackedPhyFile(&phy_mesh,
-                bsp_map->abs_bsp_file_path,
-                bsp_map->packed_files[*it_packed_phy_idx].file_offset,
-                bsp_map->packed_files[*it_packed_phy_idx].file_len);
+            // Depending on where we parsed the original '.bsp' file from,
+            // we need to read its packed files accordingly.
+            switch (bsp_map->file_origin.type) {
+            case csgo_parsing::BspMap::FileOrigin::FILE_SYSTEM: {
+                auto& abs_bsp_file_path = bsp_map->file_origin.abs_file_path;
+                if (!phy_file_reader.OpenFileFromAbsolutePath(abs_bsp_file_path))
+                    phy_file_read_err = "Failed to open BSP file for parsing a "
+                    "packed PHY file: " + abs_bsp_file_path;
+                break;
+            }
+            case csgo_parsing::BspMap::FileOrigin::MEMORY: {
+                auto& bsp_file_mem = bsp_map->file_origin.file_content_mem;
+                if (!phy_file_reader.OpenFileFromMemory(bsp_file_mem))
+                    phy_file_read_err = "Failed to open BSP file from memory to"
+                    " parse packed PHY file";
+                break;
+            }
+            default:
+                phy_file_read_err = "Failed to read packed PHY file: Unknown "
+                    "BSP file origin: " + bsp_map->file_origin.type;
+                break;
+            }
+
+            // If opening the original bsp file succeeded without errors
+            if(phy_file_read_err.empty()) {
+                bool x = phy_file_reader.OpenSubFileFromCurrentlyOpenedFile(
+                    bsp_map->packed_files[*it_packed_phy_idx].file_offset,
+                    bsp_map->packed_files[*it_packed_phy_idx].file_len
+                ); // This can't fail because phy_file_reader is opened in a file
+            }
         }
         else {
-            bool is_phy_in_game_files =
-                csgo_parsing::AssetFinder::ExistsInGameFiles(phy_path);
-            if (is_phy_in_game_files) {
-                phy_parse_status =
-                    CreatePhyModelMeshFromGameFile(&phy_mesh, phy_path);
-            }
-            else {
-                // Static prop is non-solid if their model's PHY doesn't exist anywhere
+            // Look for PHY file in game directory and VPK archives
+            bool is_phy_in_game_files = use_game_dir_assets ?
+                csgo_parsing::AssetFinder::ExistsInGameFiles(phy_path) : false;
+
+            // Static prop is non-solid if their model's PHY doesn't exist anywhere
+            if (!is_phy_in_game_files)
                 continue; // Not an error, we just skip this non-solid model
-            }
+
+            if (!phy_file_reader.OpenFileFromGameFiles(phy_path))
+                phy_file_read_err = "Failed to open PHY file from game files";
         }
 
-        if (phy_parse_status.successful()) {
-            sprop_coll_meshes[mdl_path] = std::move(phy_mesh);
+        if (phy_file_read_err.empty()) { // If no error occurred on file open
+            GL::Mesh phy_mesh{ NoCreate };
+            auto status = CreatePhyModelMeshFromFile(&phy_mesh, phy_file_reader);
+            if (status.successful())
+                sprop_coll_meshes[mdl_path] = std::move(phy_mesh);
+            else
+                phy_file_read_err = status.desc_msg;
         }
-        else { // If PHY mesh creation failed
+
+        if (!phy_file_read_err.empty()) { // If anything failed
             error_msgs += "All prop_static using the model '" + mdl_path + "' "
                 "will be missing from the world because loading their "
-                "collision model failed:\n    " + phy_parse_status.desc_msg + "\n";
+                "collision model failed:\n    " + phy_file_read_err + "\n";
         }
     }
 
@@ -375,63 +424,14 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
 }
 
 csgo_parsing::utils::RetCode
-rendering::WorldCreation::CreatePhyModelMeshFromGameFile(GL::Mesh* dest,
-    const std::string& src_phy_path)
+rendering::WorldCreation::CreatePhyModelMeshFromFile(GL::Mesh* dest,
+    csgo_parsing::AssetFileReader& reader_opened_in_phy_file)
 {
-    if (src_phy_path.length() < 5)
-        return {
-            csgo_parsing::utils::RetCode::ERROR_PHY_PARSING_FAILED,
-            "Invalid PHY file path"
-        };
-
-    // Start reading PHY file from game dir and VPK archives
-    csgo_parsing::AssetFileReader reader;
-    if (!reader.OpenFileFromGameFiles(src_phy_path))
-        return {
-            csgo_parsing::utils::RetCode::ERROR_PHY_PARSING_FAILED,
-            "Failed to open PHY file from game files"
-        };
-
     // CSGO loads the phy model even if checksum of MDL and PHY are not identical.
-    // Parse with reader that is opened in PHY file
     std::vector<std::vector<Vector3>> triangles;
     std::string surface_property;
-    auto ret = csgo_parsing::ParsePhyModel(&triangles, &surface_property, reader);
-
-    if (!ret) // If parsing failed, pass error code along
-        return ret;
-    if (dest)
-        *dest = GenMeshWithVertAttr_Position_Normal(triangles);
-    return { csgo_parsing::utils::RetCode::SUCCESS };
-}
-
-csgo_parsing::utils::RetCode
-rendering::WorldCreation::CreatePhyModelMeshFromPackedPhyFile(
-    GL::Mesh* dest,
-    const std::string& abs_bsp_file_path,
-    size_t packed_phy_file_pos,
-    size_t packed_phy_file_len)
-{
-    // Start reading PHY file from within a BSP map file
-    csgo_parsing::AssetFileReader reader;
-    if (!reader.OpenFileFromAbsolutePath(abs_bsp_file_path))
-        return { csgo_parsing::utils::RetCode::ERROR_PHY_PARSING_FAILED,
-            "Failed to open BSP file for parsing a packed PHY file: "
-                + abs_bsp_file_path
-        };
-
-    if (!reader.SetPos(packed_phy_file_pos))
-        return { csgo_parsing::utils::RetCode::ERROR_PHY_PARSING_FAILED,
-            "Failed to parse packed PHY file, BSP file seek failed, pos "
-                + std::to_string(packed_phy_file_pos)
-        };
-
-    // CSGO loads the phy model even if checksum of MDL and PHY are not identical.
-    // Parse with reader that is opened in PHY file
-    std::vector<std::vector<Vector3>> triangles;
-    std::string surface_property;
-    auto ret = csgo_parsing::ParsePhyModel(&triangles, &surface_property,
-        reader, packed_phy_file_len);
+    auto ret = csgo_parsing::ParsePhyModel(
+        &triangles, &surface_property, reader_opened_in_phy_file);
 
     if (!ret) // If parsing failed, pass error code along
         return ret;

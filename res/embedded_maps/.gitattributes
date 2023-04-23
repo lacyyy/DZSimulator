@@ -1,0 +1,20 @@
+################
+## Set 'binary' attribute for files that will be ignored by line ending
+## normalization and will not get textual diffs generated for them.
+
+# Compiled CSGO map
+*.bsp binary
+# Compiled CSGO collision model
+*.phy binary
+
+
+################
+## Set '-diff' attribute for files that will simply not get textual diffs
+## generated for them. This makes sense for text files whose line changes aren't
+## interesting for developers to see.
+
+# Source file of CSGO map (used to generate a compiled CSGO map file).
+#   We could treat '.vmf' files as 'binary', but testing showed that Git stores
+#   typical '.vmf' file changes slightly more efficiently with '-diff' compared
+#   to 'binary'.
+*.vmf -diff

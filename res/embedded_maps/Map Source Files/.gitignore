@@ -1,0 +1,11 @@
+## Don't track files that get generated in this source file directory when using
+## various CSGO map creation tools:
+
+*.bsp
+*.lin
+*.log
+*.prt
+*.vmx
+
+*.backup
+*.unpacked
