@@ -37,3 +37,4 @@
 - Replace embedded font files with smaller / less comprehensive ones
 - Compress embedded map, font and other files with ZIP compression before embedding
     - Is decoding them again detrimental for startup time?
+    - Improve compression (ratio) of embedded map files by setting unused fields within used lumps to 0 ?
