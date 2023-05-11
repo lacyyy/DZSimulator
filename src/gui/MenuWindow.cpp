@@ -261,10 +261,12 @@ void MenuWindow::Draw()
 
             ImGui::Text("");
 
+#ifndef DZSIM_WEB_PORT
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f,0.86f,0.46f,0.4f));
             if (ImGui::Button("How to fix lag when used as CSGO overlay"))
                 ShowOverlayLagAdvice();
             ImGui::PopStyleColor(1);
+#endif
 
             ImGui::Separator();
             ImGui::Text("");
@@ -409,14 +411,18 @@ void MenuWindow::Draw()
                 build_info::thirdparty::GetMagnumPluginsVersionStr());
             ImGui::BulletText("Magnum Integration %s",
                 build_info::thirdparty::GetMagnumIntegrationVersionStr());
+#ifndef DZSIM_WEB_PORT
             ImGui::BulletText("SDL %s",
                 build_info::thirdparty::GetSdlVersionStr());
+#endif
             ImGui::BulletText("Dear ImGui %s",
                 build_info::thirdparty::GetImGuiVersionStr());
             ImGui::BulletText("Asio %s",
                 build_info::thirdparty::GetAsioVersionStr());
+#ifndef DZSIM_WEB_PORT
             ImGui::BulletText("OpenSSL %s",
                 build_info::thirdparty::GetOpenSSLVersionStr());
+#endif
             ImGui::BulletText("cpp-httplib %s",
                 build_info::thirdparty::GetCppHttpLibVersionStr());
             ImGui::BulletText("nlohmann/json %s",
@@ -824,6 +830,7 @@ void MenuWindow::DrawVideoSettings()
 
     ImGui::Text("");
 
+#ifndef DZSIM_WEB_PORT
     { // Overlay setting
         ImGui::Checkbox("Enable overlay mode",
             &_gui_state.video.IN_overlay_mode_enabled);
@@ -867,6 +874,7 @@ void MenuWindow::DrawVideoSettings()
     }
 
     ImGui::Text("");
+#endif
 
     // GUI scale setting
     int max_gui_scale_slider_pct = 100.0f * _gui.MAX_USER_GUI_SCALING_FACTOR;
@@ -889,6 +897,7 @@ std::string MenuWindow::GetDisplayName(int idx, int w, int h)
 
 void gui::MenuWindow::DrawOther()
 {
+#ifndef DZSIM_WEB_PORT
     // @PORTING Replace "Windows Explorer" with something else fitting for
     //          Unix and Emscripten.
     if (ImGui::Button("Show user settings file in Windows Explorer"))
@@ -901,6 +910,7 @@ void gui::MenuWindow::DrawOther()
         "3. Delete user settings file\n"
         "4. Re-open DZSimulator"
     );
+#endif
 }
 
 void gui::MenuWindow::DrawTestSettings()

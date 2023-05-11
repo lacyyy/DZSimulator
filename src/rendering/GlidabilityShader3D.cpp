@@ -8,6 +8,7 @@
 #include <Magnum/GL/Version.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
+#include <Magnum/Math/Tags.h>
 #include <Magnum/Math/Vector3.h>
 #include <portable-file-dialogs.h>
 
@@ -22,11 +23,19 @@ GlidabilityShader3D::GlidabilityShader3D(NoCreateT)
 GlidabilityShader3D::GlidabilityShader3D(bool use_instanced_transformation,
     const Corrade::Utility::Resource& resources)
 {
-    MAGNUM_ASSERT_GL_VERSION_SUPPORTED(GL::Version::GL330);
+    // TODO: Check: Does this shader completely support OpenGL ES 3.0, GLSL ES 3.00 ?
+#ifdef DZSIM_WEB_PORT
+    const GL::Version SHADER_VERSION = GL::Version::GLES300; // OpenGL ES 3.0
+#else
+    const GL::Version SHADER_VERSION = GL::Version::GL330; // OpenGL 3.3
+#endif
+
+    MAGNUM_ASSERT_GL_VERSION_SUPPORTED(SHADER_VERSION);
 
     // These constructors add corresponding GLSL #version directive to source
-    GL::Shader vert{ GL::Version::GL330, GL::Shader::Type::Vertex };
-    GL::Shader frag{ GL::Version::GL330, GL::Shader::Type::Fragment };
+    GL::Shader vert{ SHADER_VERSION, GL::Shader::Type::Vertex };
+    GL::Shader frag{ SHADER_VERSION, GL::Shader::Type::Fragment };
+
 
     vert.addSource(Utility::formatString(
         "#define POSITION_ATTRIBUTE_LOCATION {}\n"
@@ -44,12 +53,16 @@ GlidabilityShader3D::GlidabilityShader3D(bool use_instanced_transformation,
 
 #ifdef NDEBUG // In Release builds, show user an error message (they have no console)
     if (!success) {
+#ifdef DZSIM_WEB_PORT
+        // FIXME somehow show the user an error message (not just in console)
+#else
         pfd::message("OpenGL shader error",
             "An error occurred while compiling a shader!\n"
             "Please report this to the developer of this app.\n\n"
             "This error might be caused by an old graphics card or an "
             "old OpenGL version that currently isn't accounted for.",
             pfd::choice::ok, pfd::icon::error).result();
+#endif
         std::abort();
     }
 #else // In Debug builds, use regular asserts
@@ -77,6 +90,23 @@ GlidabilityShader3D::GlidabilityShader3D(bool use_instanced_transformation,
         = uniformLocation("min_no_ground_checks_vel_z");
     _uniform_max_vel = uniformLocation("max_vel");
     _uniform_standable_normal = uniformLocation("standable_normal");
+
+    // Set default values of uniform vars. Must happen outside shader code
+    // because the web build does not support in-shader uniform initialization.
+    SetFinalTransformationMatrix(Matrix4{ Math::IdentityInit });
+    SetDiffuseLightingEnabled(true);
+    SetColorOverrideEnabled(true);
+    SetLightDirection(Vector3{ 1.0f, 0.2f, -1.0f });
+    SetOverrideColor(Color4{ 1.0f, 1.0f, 1.0f, 1.0f });
+    SetPlayerPosition(Vector3{ 0.0f, 0.0f, 0.0f });
+    SetHorizontalPlayerSpeed(1.0f); // Set to non-zero to avoid division by zero
+    SetSlideSuccessColor   (Color4{ 1.0f, 1.0f, 1.0f, 1.0f });
+    SetSlideAlmostFailColor(Color4{ 0.7f, 0.7f, 0.7f, 1.0f });
+    SetSlideFailColor      (Color4{ 0.3f, 0.3f, 0.3f, 1.0f });
+    SetGravity(0.0f);
+    SetMinNoGroundChecksVelZ(0.0f);
+    SetMaxVelocity(999999.0f);
+    SetStandableNormal(0.7f);
 }
 
 GlidabilityShader3D&

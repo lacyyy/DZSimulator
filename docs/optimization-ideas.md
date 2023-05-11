@@ -23,6 +23,8 @@
 - Reduce DZSim's overlay lag when connected to csgo
     - Really bad lag seems to be caused by the server not being able to keep up. Does `host_thread_mode 1` help? This command is hidden in CSGO (https://github.com/saul/cvar-unhide)
         - Does this allow to periodically send `getpos` at a higher frequency into the console for a smoother overlay? Right now spamming getpos is only effective when sent at 64 Hz.
+- Web version:
+    - Does the DZSimulator browser tab always have high CPU usage, even when not selected/minimized? Is this avoidable?
 
 ### RAM USAGE REDUCTION:
 - Reduce RAM usage, especially peak usage
@@ -38,3 +40,7 @@
 - Compress embedded map, font and other files with ZIP compression before embedding
     - Is decoding them again detrimental for startup time?
     - Improve compression (ratio) of embedded map files by setting unused fields within used lumps to 0 ?
+- Web version:
+    - Also affects speed: Get rid of exceptions (is this possible?) and disable them in Emscripten build
+        - Alternative: Use more performant (?) [WASM exception proposal](https://emscripten.org/docs/porting/exceptions.html#webassembly-exception-handling-based-support)
+    - [Configure server-side compression of WASM executable](https://doc.magnum.graphics/magnum/platforms-html5.html#platforms-html5-code-size-server)

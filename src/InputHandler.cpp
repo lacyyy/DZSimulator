@@ -3,10 +3,10 @@
 #include "Magnum/Math/Functions.h"
 
 using namespace Magnum;
-using MouseEvent       = Platform::Sdl2Application::MouseEvent;
-using MouseMoveEvent   = Platform::Sdl2Application::MouseMoveEvent;
-using MouseScrollEvent = Platform::Sdl2Application::MouseScrollEvent;
-using KeyEvent         = Platform::Sdl2Application::KeyEvent;
+using MouseEvent       = InputHandler::Application::MouseEvent;
+using MouseMoveEvent   = InputHandler::Application::MouseMoveEvent;
+using MouseScrollEvent = InputHandler::Application::MouseScrollEvent;
+using KeyEvent         = InputHandler::Application::KeyEvent;
 
 InputHandler::InputHandler() :
     _keymap_keyboard(),
@@ -24,8 +24,10 @@ void InputHandler::HandleMousePressEvent(MouseEvent& event)
     case MouseEvent::Button::Left:   name = "MButtonLeft";   break;
     case MouseEvent::Button::Right:  name = "MButtonRight";  break;
     case MouseEvent::Button::Middle: name = "MButtonMiddle"; break;
+#ifndef DZSIM_WEB_PORT
     case MouseEvent::Button::X1:     name = "MButtonExtra1"; break;
     case MouseEvent::Button::X2:     name = "MButtonExtra2"; break;
+#endif
     default: // Unknown button
         return;
     }
@@ -45,8 +47,10 @@ void InputHandler::HandleMouseReleaseEvent(MouseEvent& event)
     case MouseEvent::Button::Left:   name = "MButtonLeft";   break;
     case MouseEvent::Button::Right:  name = "MButtonRight";  break;
     case MouseEvent::Button::Middle: name = "MButtonMiddle"; break;
+#ifndef DZSIM_WEB_PORT
     case MouseEvent::Button::X1:     name = "MButtonExtra1"; break;
     case MouseEvent::Button::X2:     name = "MButtonExtra2"; break;
+#endif
     default: // Unknown button
         return;
     }
@@ -94,14 +98,16 @@ void InputHandler::HandleMouseScrollEvent(MouseScrollEvent& event)
 
 void InputHandler::HandleKeyPressEvent(KeyEvent& event)
 {
-    std::string name = KeyEvent::keyName(event.key());
+    std::string name = event.keyName();
     if (name.length() == 0) // No name for that key -> ignore
         return;
     event.setAccepted();
 
+#ifndef DZSIM_WEB_PORT
     // When holding down a key, ignore repeated presses
     if (event.isRepeated())
         return;
+#endif
     
     InputState& state = _keymap_keyboard[name];
     state._beingPressed = true;
@@ -115,7 +121,7 @@ void InputHandler::HandleKeyPressEvent(KeyEvent& event)
 
 void InputHandler::HandleKeyReleaseEvent(KeyEvent& event)
 {
-    std::string name = KeyEvent::keyName(event.key());
+    std::string name = event.keyName();
     if (name.length() == 0) // No name for that key -> ignore
         return;
     event.setAccepted();

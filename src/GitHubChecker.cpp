@@ -9,8 +9,10 @@
 // WIN32_LEAN_AND_MEAN beforehand.
 #include <httplib.h>
 
+#ifndef DZSIM_WEB_PORT
 #include <Windows.h>
 #include <shellapi.h>
+#endif
 
 #include <Corrade/Utility/Debug.h>
 #include <Magnum/Magnum.h>
@@ -323,6 +325,9 @@ GitHubChecker::~GitHubChecker()
 
 void GitHubChecker::StartAsyncUpdateAndMotdCheck()
 {
+#ifdef DZSIM_WEB_PORT
+    return;
+#else
     if (!g_is_async_check_finished)
         return;
     
@@ -395,6 +400,7 @@ void GitHubChecker::StartAsyncUpdateAndMotdCheck()
 
         g_is_async_check_finished = true;
     });
+#endif
 }
 
 bool GitHubChecker::IsAsyncUpdateAndMotdCheckFinished()
@@ -418,9 +424,13 @@ std::string GitHubChecker::GetMotd() {
 
 void GitHubChecker::OpenDZSimUpdatePageInBrowser()
 {
+    // @PORTING: Make this work not just on Windows
+
+#ifdef DZSIM_WEB_PORT
+    return; // TODO: Is opening a webpage possible on Emscripten?
+#else
     // Open a website in the default browser (Windows-only)
     ShellExecute(NULL, "open", "https://github.com/lacyyy/DZSimulator/releases",
         NULL, NULL, SW_SHOWNORMAL);
-
-    // @PORTING: Make this work not just on Windows
+#endif
 }

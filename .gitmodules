@@ -19,3 +19,6 @@
 [submodule "thirdparty/SDL"]
 	path = thirdparty/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "thirdparty/toolchains"]
+	path = thirdparty/toolchains
+	url = https://github.com/mosra/toolchains.git

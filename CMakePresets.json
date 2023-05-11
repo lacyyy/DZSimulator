@@ -3,7 +3,7 @@
     "configurePresets": [
         {
             "name": "win-x64-debug",
-            "displayName": "Windows x64 Debug",
+            "displayName": " Windows x64 Debug",
             "description": "Target Windows x64 in Debug mode",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
@@ -25,7 +25,7 @@
         },
         {
             "name": "win-x64-release-static",
-            "displayName": "Windows x64 Release",
+            "displayName": " Windows x64 Release",
             "description": "Target Windows x64 in Release mode, compile Magnum statically and disable application console window.",
             "inherits": "win-x64-debug",
             "cacheVariables": {
@@ -50,7 +50,7 @@
         },
         {
             "name": "win-x64-release-static-debuggable",
-            "displayName": "Windows x64 Release +Console +DebugInfo",
+            "displayName": " Windows x64 Release +Console +DebugInfo",
             "description": "Target Windows x64 in Release mode, compile Magnum statically and enable debug info.",
             "inherits": "win-x64-release-static",
             "cacheVariables": {
@@ -59,6 +59,25 @@
                     "type": "BOOL",
                     "value": "OFF"
                 }
+            }
+        },
+        {
+            "name": "BASE-emscripten-wasm-release",
+            "hidden": true,
+            "description": "See BUILDING.md for details on building for the web. This preset is supposed to be inherited from a preset in CMakeUserPresets.json to specify where Emscripten is installed and where the final web files should get installed to.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "EMSCRIPTEN_PREFIX": "/YOUR/EMSCRIPTEN/INSTALLATION/emsdk/upstream/emscripten",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/thirdparty/toolchains/generic/Emscripten-wasm.cmake",
+                "CORRADE_RC_EXECUTABLE": "${sourceDir}/out/build/win-x64-release-static/Release/bin/corrade-rc.exe",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_BUILD_TYPE": "Release",
+                "MAGNUM_TARGET_GLES2": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "DZSIM_WEB_PORT": "1"
             }
         }
     ]

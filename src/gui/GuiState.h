@@ -112,12 +112,14 @@ public:
         std::vector<AvailableDisplay> OUT_available_displays;
         bool IN_available_display_refresh_needed = false;
 
+#ifndef DZSIM_WEB_PORT
         // In overlay mode, the DZSim window stays always on top of other
         // windows and turns transparent. Additionally, it becomes click-through
         // once the DZSim window loses focus.
         bool IN_overlay_mode_enabled = false;
         float IN_overlay_transparency = 60.0f; // from 0 to 100 
         bool IN_overlay_transparency_is_being_adjusted = false; // Indicates preview
+#endif
 
         bool IN_vsync_enabled = true; // VSync ON by default to use monitor's refresh rate
 

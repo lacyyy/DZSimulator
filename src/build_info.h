@@ -17,14 +17,16 @@ namespace build_info {
         const char* GetMagnumPluginsVersionStr();
         const char* GetMagnumIntegrationVersionStr();
         const char* GetCorradeVersionStr();
-        const char* GetSdlVersionStr();
         const char* GetImGuiVersionStr();
         const char* GetAsioVersionStr();
         const char* GetCppHttpLibVersionStr();
         const char* GetJsonVersionStr();
         const char* GetFsalVersionStr();
-        const char* GetOpenSSLVersionStr();
 
+#ifndef DZSIM_WEB_PORT
+        const char* GetSdlVersionStr();
+        const char* GetOpenSSLVersionStr();
+#endif
 
     }
     

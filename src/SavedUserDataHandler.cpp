@@ -2,9 +2,11 @@
 
 #include <string>
 
+#ifndef DZSIM_WEB_PORT
 #define UNICODE // Required in order to work with paths containing Unicode
 #include <Windows.h>
 #include <shellapi.h> // For WINAPI's ShellExecuteW()
+#endif
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
@@ -137,8 +139,10 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
     TryParseBool (g.video.IN_use_custom_fov,          GetNestedValue(s, "VideoSettings", "CustomFOV", "use-custom-fov"));
     TryParseFloat(g.video.IN_custom_vert_fov_degrees, GetNestedValue(s, "VideoSettings", "CustomFOV", "custom-vertical-fov"));
 
+#ifndef DZSIM_WEB_PORT
     TryParseBool (g.video.IN_overlay_mode_enabled, GetNestedValue(s, "VideoSettings", "OverlayMode", "enable"));
     TryParseFloat(g.video.IN_overlay_transparency, GetNestedValue(s, "VideoSettings", "OverlayMode", "transparency"));
+#endif
 
     TryParseInt(g.video.IN_user_gui_scaling_factor_pct, GetNestedValue(s, "VideoSettings", "GUI", "size"));
 
@@ -168,18 +172,26 @@ static json UpgradeUserDataFromOlderToCurrentVersion(const json& older_user_data
 
 Containers::Optional<Containers::String> SavedUserDataHandler::GetAbsoluteSaveFilePath()
 {
-    // @PORTING Make sure this work not just on Windows
+    // @PORTING Make sure this works not just on Windows
+
+#ifdef DZSIM_WEB_PORT
+    return {};
+#else
     Containers::Optional<Containers::String> cfg_dir =
         Utility::Path::configurationDirectory("DZSimulator");
     if (!cfg_dir)
         return {};
     return Utility::Path::join(*cfg_dir, "UserData.json");
+#endif
 }
 
 void SavedUserDataHandler::OpenSaveFileDirectoryInFileExplorer()
 {
-    // @PORTING Make this work not just on Windows
+    // @PORTING Make sure this works not just on Windows
 
+#ifdef DZSIM_WEB_PORT
+    return;
+#else
     Containers::Optional<Containers::String> file_path = GetAbsoluteSaveFilePath();
     if (!file_path) {
         Utility::Debug{} << DEBUG_ID << "Failed to find save file directory";
@@ -192,6 +204,7 @@ void SavedUserDataHandler::OpenSaveFileDirectoryInFileExplorer()
     auto operation_str_for_winapi = Utility::Unicode::widen("open");
     ShellExecuteW(NULL, operation_str_for_winapi, path_for_winapi, NULL, NULL,
         SW_SHOWDEFAULT);
+#endif
 }
 
 // Returns JSON null value if an error occurs
@@ -219,6 +232,9 @@ static json LoadJsonFromFile(Containers::StringView file_path) {
 
 gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
 {
+#ifdef DZSIM_WEB_PORT
+    return {};
+#else
     Containers::Optional<Containers::String> file_path = GetAbsoluteSaveFilePath();
     if (!file_path) {
         Utility::Debug{} << DEBUG_ID << "Default user settings are used since "
@@ -275,6 +291,7 @@ gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
     else { // latest_compatible_user_data_version == CURRENT_USER_DATA_FORMAT_VERSION
         return ParseUserDataFromCurrentVersion(*latest_compatible_user_data);
     }
+#endif
 }
 
 static std::string Color4fToStr(const float *src) {
@@ -346,8 +363,10 @@ static json ConvertUserSettingsToUserDataJson(const gui::GuiState& gui_state) {
     video_settings["CustomFOV"]["use-custom-fov"     ] = gui_state.video.IN_use_custom_fov;
     video_settings["CustomFOV"]["custom-vertical-fov"] = gui_state.video.IN_custom_vert_fov_degrees;
 
+#ifndef DZSIM_WEB_PORT
     video_settings["OverlayMode"]["enable"      ] = gui_state.video.IN_overlay_mode_enabled;
     video_settings["OverlayMode"]["transparency"] = gui_state.video.IN_overlay_transparency;
+#endif
 
     video_settings["GUI"]["size"] = gui_state.video.IN_user_gui_scaling_factor_pct;
 
@@ -356,6 +375,9 @@ static json ConvertUserSettingsToUserDataJson(const gui::GuiState& gui_state) {
 
 void SavedUserDataHandler::SaveUserSettingsToFile(const gui::GuiState& gui_state)
 {
+#ifdef DZSIM_WEB_PORT
+    return;
+#else
     // Each different version of the user data format gets its own array entry
     // in the save file.
     json save_file_array_entry = json::object();
@@ -449,4 +471,5 @@ void SavedUserDataHandler::SaveUserSettingsToFile(const gui::GuiState& gui_state
         Utility::Debug{} << DEBUG_ID << "Failed to write settings to file: \"" << *file_path << "\"";
     else
         Utility::Debug{} << DEBUG_ID << "Successfully wrote settings to file: \"" << *file_path << "\"";
+#endif
 }

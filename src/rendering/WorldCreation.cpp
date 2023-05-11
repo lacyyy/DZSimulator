@@ -190,7 +190,7 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
             }
             default:
                 phy_file_read_err = "Failed to read packed PHY file: Unknown "
-                    "BSP file origin: " + bsp_map->file_origin.type;
+                    "BSP file origin: " + std::to_string(bsp_map->file_origin.type);
                 break;
             }
 
@@ -261,7 +261,10 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
 
         mesh.setInstanceCount(instances.size())
             .addVertexBufferInstanced(
-                GL::Buffer{ std::move(instances) },
+                GL::Buffer{
+                    GL::Buffer::TargetHint::Array,
+                    std::move(instances)
+                },
                 1,
                 0,
                 GlidabilityShader3D::TransformationMatrix{}
@@ -457,13 +460,13 @@ GL::Mesh rendering::WorldCreation::GenMeshWithVertAttr_Position(
     // Turn faces into triangles
     for (const std::vector<Vector3>& face : faces) {
         for (size_t tri = 0; tri < face.size() - 2; ++tri) {
-            data_vertbuf.emplace_back(face[0]);
-            data_vertbuf.emplace_back(face[tri + 1]);
-            data_vertbuf.emplace_back(face[tri + 2]);
+            data_vertbuf.push_back({ face[0]       });
+            data_vertbuf.push_back({ face[tri + 1] });
+            data_vertbuf.push_back({ face[tri + 2] });
         }
     }
 
-    GL::Buffer vertices;
+    GL::Buffer vertices{ GL::Buffer::TargetHint::Array };
     vertices.setData(data_vertbuf);
     GL::Mesh mesh;
     mesh.setCount(vertices.size() / sizeof(Vert))
@@ -498,7 +501,7 @@ GL::Mesh rendering::WorldCreation::GenMeshWithVertAttr_Position_Normal(
         }
     }
 
-    GL::Buffer vertices;
+    GL::Buffer vertices{ GL::Buffer::TargetHint::Array };
     vertices.setData(data_vertbuf);
     GL::Mesh mesh;
     mesh.setCount(vertices.size() / sizeof(Vert))

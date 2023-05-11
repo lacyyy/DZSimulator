@@ -1,4 +1,4 @@
-#include "BSPMap.h"
+#include "BspMap.h"
 
 #include <cassert>
 #include <cmath>

@@ -8,23 +8,35 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 #include <Magnum/Math/Vector2.h>
-#include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Shaders/DistanceFieldVectorGL.h>
 #include <Magnum/Text/AbstractFont.h>
 #include <Magnum/Text/DistanceFieldGlyphCache.h>
 #include <Magnum/Text/Renderer.h>
 
+#ifdef DZSIM_WEB_PORT
+#include <Magnum/Platform/EmscriptenApplication.h>
+#else
+#include <Magnum/Platform/Sdl2Application.h>
+#endif
+
 namespace rendering {
 
     class BigTextRenderer {
     public:
-        BigTextRenderer(Magnum::Platform::Sdl2Application& app,
+#ifdef DZSIM_WEB_PORT
+        typedef Magnum::Platform::EmscriptenApplication Application;
+#else
+        typedef Magnum::Platform::Sdl2Application Application;
+#endif
+
+    public:
+        BigTextRenderer(Application& app,
             Corrade::PluginManager::Manager<Magnum::Text::AbstractFont>& font_plugin_mgr);
 
         void Init(const Corrade::Containers::ArrayView<const char>& raw_font_data);
 
         void HandleViewportEvent(
-            const Magnum::Platform::Sdl2Application::ViewportEvent& event);
+            const Application::ViewportEvent& event);
 
         void DrawDisclaimer(float gui_scaling);
 
@@ -32,7 +44,7 @@ namespace rendering {
         void DrawNumber(int number, const Magnum::Color4& col, float scaling, Magnum::Vector2 pos);
 
     private:
-        Magnum::Platform::Sdl2Application& _app;
+        Application& _app;
         Corrade::PluginManager::Manager<Magnum::Text::AbstractFont>& _font_plugin_mgr;
 
         Magnum::Shaders::DistanceFieldVectorGL2D _shader{ Magnum::NoCreate };

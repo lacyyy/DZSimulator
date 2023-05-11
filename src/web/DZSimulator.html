@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Danger Zone Simulator</title>
+  <link rel="stylesheet" href="WebApplication.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <h1>Danger Zone Simulator</h1>
+  <div id="container">
+    <div id="sizer"><div id="expander"><div id="listener">
+      <canvas id="canvas"></canvas>
+      <div id="status">Initialization...</div>
+      <div id="status-description"></div>
+      <script async="async" src="DZSimulator.js"></script>
+      <script src="EmscriptenApplication.js"></script>
+      <script>
+      "use strict"; /* it summons the Cthulhu in a proper way, they say */
+
+      Module.canvas.addEventListener('contextmenu', function(event) {
+          event.preventDefault();
+      }, true);
+      </script>
+
+    </div></div></div>
+  </div>
+</body>
+</html>

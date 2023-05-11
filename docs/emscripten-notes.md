@@ -1,0 +1,29 @@
+### TODO list for the web port of DZSimulator
+
+- Fix Clang compile warnings
+- Figure out a good way of grabbing the mouse
+- Add more build info
+    - MAGNUM_TARGET_WEBGL
+    - [Emscripten version](https://github.com/emscripten-core/emscripten/pull/17883)
+    - OpenGL version?
+    - pthreads multithreading support: __EMSCRIPTEN_PTHREADS__
+    - Why is CORRADE_TARGET_32BIT defined?
+- License text can't be copied to clipboard
+- Replace portable-file-dialogs calls with something else in web builds
+    - E.g. glidability shader init error msg
+- Figure out changing screen size and entering fullscreen
+- Does GSI or netconport work with CS from the web?
+    - Use [Emscripten socket support](https://emscripten.org/docs/porting/networking.html)?
+    - Implement GSI with Asio to get rid of cpp-httplib in web builds?
+    - If neither GSI or netconport work, get rid of cpp-httplib and Asio in web builds
+    - Add note in LICENSES-THIRD-PARTY.txt that some libraries are not used in web builds?
+- Get rid of include directories from unused libraries in CMakeLists.txt
+- Test VSync and FPS settings. Useless in web builds?
+- Test DPI scaling in the web
+- Check out Emscripten ports for zlib/bzip2 and Bullet!
+- Add an Emscripten Debug build option? What are the benefits? Faster build times?
+    - https://doc.magnum.graphics/magnum/platforms-html5.html#platforms-html5-code-size
+- Refactor BUILDING.md
+- Different browsers must be tested
+- Check out [Emscripten speed and memory profiling](https://emscripten.org/docs/porting/Debugging.html#profiling)
+- Test if hardware acceleration is disabled in browser and tell user about it

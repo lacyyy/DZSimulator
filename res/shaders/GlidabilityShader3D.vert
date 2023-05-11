@@ -11,22 +11,22 @@ in highp mat4 instanced_model_transformation;
 
 out lowp vec4 interpolated_color;
 
-uniform highp mat4 final_transformation_matrix = mat4(1.0);
-uniform bool enable_diffuse_lighting = true;
-uniform bool enable_color_override = true;
-uniform highp vec3 light_dir = normalize(vec3(1.0, 0.2, -1.0)); // Normalized
-uniform lowp vec4 override_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform highp vec3 player_pos = vec3(0.0, 0.0, 0.0);
-uniform highp float player_speed_hori = 1.0;
+uniform highp mat4 final_transformation_matrix;
+uniform bool enable_diffuse_lighting;
+uniform bool enable_color_override;
+uniform highp vec3 light_dir; // Always normalized
+uniform lowp vec4 override_color;
+uniform highp vec3 player_pos;
+uniform highp float player_speed_hori;
 
 uniform lowp vec4 slide_success_color;
 uniform lowp vec4 slide_almost_fail_color;
 uniform lowp vec4 slide_fail_color;
 
-uniform highp float gravity = 0.0; // sv_gravity
-uniform highp float min_no_ground_checks_vel_z = 0.0;
-uniform highp float max_vel = 999999.0; // sv_maxvelocity
-uniform highp float standable_normal = 0.7; // sv_standable_normal
+uniform highp float gravity; // sv_gravity
+uniform highp float min_no_ground_checks_vel_z;
+uniform highp float max_vel; // sv_maxvelocity
+uniform highp float standable_normal; // sv_standable_normal
 
 
 // Returns brightness value between 0 and 1 from diffuse lighting

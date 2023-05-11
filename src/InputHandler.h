@@ -4,7 +4,12 @@
 #include <string>
 #include <map>
 #include <functional>
+
+#ifdef DZSIM_WEB_PORT
+#include <Magnum/Platform/EmscriptenApplication.h>
+#else
 #include <Magnum/Platform/Sdl2Application.h>
+#endif
 
 class InputHandler {
 public:
@@ -36,13 +41,20 @@ private:
     };
 
 public:
+#ifdef DZSIM_WEB_PORT
+    typedef Magnum::Platform::EmscriptenApplication Application;
+#else
+    typedef Magnum::Platform::Sdl2Application Application;
+#endif
+
+public:
     InputHandler();
-    void HandleMousePressEvent  (Magnum::Platform::Sdl2Application::MouseEvent& event);
-    void HandleMouseReleaseEvent(Magnum::Platform::Sdl2Application::MouseEvent& event);
-    void HandleMouseMoveEvent   (Magnum::Platform::Sdl2Application::MouseMoveEvent& event);
-    void HandleMouseScrollEvent (Magnum::Platform::Sdl2Application::MouseScrollEvent& event);
-    void HandleKeyPressEvent    (Magnum::Platform::Sdl2Application::KeyEvent& event);
-    void HandleKeyReleaseEvent  (Magnum::Platform::Sdl2Application::KeyEvent& event);
+    void HandleMousePressEvent  (Application::MouseEvent& event);
+    void HandleMouseReleaseEvent(Application::MouseEvent& event);
+    void HandleMouseMoveEvent   (Application::MouseMoveEvent& event);
+    void HandleMouseScrollEvent (Application::MouseScrollEvent& event);
+    void HandleKeyPressEvent    (Application::KeyEvent& event);
+    void HandleKeyReleaseEvent  (Application::KeyEvent& event);
 
     InputHandler::Key GetKey(std::string name, bool from_mouse);
     InputHandler::Key GetMouseKey(std::string name);

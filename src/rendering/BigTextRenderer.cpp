@@ -15,7 +15,7 @@ using namespace rendering;
 #define DISCLAIMER_MSG "THIS IS NOT A CHEAT\n(requires sv_cheats 1)"
 #define NUMBER_TEXT_GLYPHS "0123456789"
 
-BigTextRenderer::BigTextRenderer(Platform::Sdl2Application& app,
+BigTextRenderer::BigTextRenderer(Application& app,
     PluginManager::Manager<Text::AbstractFont>& font_plugin_mgr)
     : _app { app }
     , _font_plugin_mgr {font_plugin_mgr}
@@ -25,8 +25,8 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
 {
     // Delayed member construction here (not in constructor) because they
     // require a GL context
-    _vertices = GL::Buffer{};
-    _indices = GL::Buffer{};
+    _vertices = GL::Buffer{ GL::Buffer::TargetHint::Array        };
+    _indices  = GL::Buffer{ GL::Buffer::TargetHint::ElementArray };
     _shader = Shaders::DistanceFieldVectorGL2D{};
 
     // Unscaled glyph cache texture size
@@ -82,7 +82,7 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
 }
 
 void BigTextRenderer::HandleViewportEvent(
-    const Platform::Sdl2Application::ViewportEvent& /*event*/)
+    const Application::ViewportEvent& /*event*/)
 {
     // ...
 }

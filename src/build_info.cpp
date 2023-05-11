@@ -60,9 +60,6 @@ const char* build_info::thirdparty::GetCorradeVersionStr() {
 #endif
 }
 
-const char* build_info::thirdparty::GetSdlVersionStr() {
-    return MACRO_TO_STR(SDL_MAJOR_VERSION) "." MACRO_TO_STR(SDL_MINOR_VERSION) "." MACRO_TO_STR(SDL_PATCHLEVEL);
-}
 const char* build_info::thirdparty::GetImGuiVersionStr() {
     return IMGUI_VERSION;
 }
@@ -86,10 +83,16 @@ const char* build_info::thirdparty::GetFsalVersionStr()
     return "(modified from commit 43a10da)";
 }
 
+#ifndef DZSIM_WEB_PORT
+const char* build_info::thirdparty::GetSdlVersionStr() {
+    return MACRO_TO_STR(SDL_MAJOR_VERSION) "." MACRO_TO_STR(SDL_MINOR_VERSION) "." MACRO_TO_STR(SDL_PATCHLEVEL);
+}
+
 const char* build_info::thirdparty::GetOpenSSLVersionStr()
 {
     return MACRO_TO_STR(DZ_SIM_OPENSSL_VERSION);
 }
+#endif
 
 void build_info::print() {
 
@@ -100,10 +103,14 @@ void build_info::print() {
     Debug{} << " - Magnum Plugins    " << thirdparty::GetMagnumPluginsVersionStr();
     Debug{} << " - Magnum Integration" << thirdparty::GetMagnumIntegrationVersionStr();
     Debug{} << " - Corrade           " << thirdparty::GetCorradeVersionStr();
+#ifndef DZSIM_WEB_PORT
     Debug{} << " - SDL" << thirdparty::GetSdlVersionStr();
+#endif
     Debug{} << " - Dear ImGui" << thirdparty::GetImGuiVersionStr();
     Debug{} << " - Asio" << thirdparty::GetAsioVersionStr();
+#ifndef DZSIM_WEB_PORT
     Debug{} << " - OpenSSL" << thirdparty::GetOpenSSLVersionStr();
+#endif
     Debug{} << " - cpp-httplib" << thirdparty::GetCppHttpLibVersionStr();
     Debug{} << " - nlohmann/json" << thirdparty::GetJsonVersionStr();
     Debug{} << " - podgorskiy/fsal" << thirdparty::GetFsalVersionStr();

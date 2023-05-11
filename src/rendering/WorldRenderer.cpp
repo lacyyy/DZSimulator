@@ -69,8 +69,12 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         0.0f
     ); // vector must be normalized
 
+#ifdef DZSIM_WEB_PORT
+    bool has_world_diffuse_lighting = true;
+#else
     // Don't do lighting in overlay, it is inaccurate compared to CSGO's lighting
     bool has_world_diffuse_lighting = !_gui_state.video.IN_overlay_mode_enabled;
+#endif
 
     bool glidability_vis_globally_disabled =
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_AT_SPECIFIC_SPEED &&
@@ -104,9 +108,12 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
     }
 
     GL::Renderer::setFrontFace(GL::Renderer::FrontFace::ClockWise);
+
+#ifndef DZSIM_WEB_PORT
     GL::Renderer::setPolygonMode(GL::Renderer::PolygonMode::Fill);
     //GL::Renderer::setPolygonMode(GL::Renderer::PolygonMode::Line);
     //GL::Renderer::setLineWidth(1.0f);
+#endif
 
     // Draw displacements
     _glid_shader_non_instanced

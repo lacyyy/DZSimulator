@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "Popup.h"
 
 #include "Gui.h"
