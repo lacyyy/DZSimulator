@@ -26,3 +26,4 @@
 - Different browsers must be tested
 - Check out [Emscripten speed and memory profiling](https://emscripten.org/docs/porting/Debugging.html#profiling)
 - Test if hardware acceleration is disabled in browser and tell user about it
+- Is [this](https://developer.chrome.com/articles/file-system-access/) a way to read from a user's CSGO installation? Can this grant access to a directory or just single files?
