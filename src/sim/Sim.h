@@ -11,4 +11,4 @@ namespace sim {
 
 }
 
-#endif SIM_SIM_H
+#endif // SIM_SIM_H

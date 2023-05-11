@@ -11,7 +11,7 @@
 #include <Magnum/Math/Matrix4.h>
 
 #include "csgo_parsing/BrushSeparation.h"
-#include "CSGOConstants.h"
+#include "CsgoConstants.h"
 #include "utils_3d.h"
 
 using namespace Magnum;

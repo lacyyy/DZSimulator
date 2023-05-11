@@ -257,7 +257,7 @@ void MenuWindow::Draw()
             // ----
             if (_gui_state.rcon.OUT_fail_msg.length() > 0)
                 ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                    _gui_state.rcon.OUT_fail_msg.c_str());
+                    "%s", _gui_state.rcon.OUT_fail_msg.c_str());
 
             ImGui::Text("");
 

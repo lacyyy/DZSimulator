@@ -1,6 +1,5 @@
 ### TODO list for the web port of DZSimulator
 
-- Fix Clang compile warnings
 - Figure out a good way of grabbing the mouse
 - Add more build info
     - MAGNUM_TARGET_WEBGL

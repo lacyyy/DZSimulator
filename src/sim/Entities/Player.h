@@ -5,7 +5,7 @@
 #include <Magnum/Math/Vector3.h>
 #include <Corrade/Utility/Debug.h>
 
-#include "CSGOConstants.h"
+#include "CsgoConstants.h"
 #include "GlobalVars.h"
 #include "sim/PlayerInputState.h"
 

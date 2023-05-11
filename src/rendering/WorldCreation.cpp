@@ -303,7 +303,6 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
     // Keep this list in the same order as the enum declaration, so that a brush
     // category can be identified by index
     std::vector<BrushSep::Category> bCategories = {
-        BrushSep::Category::OTHER,
         BrushSep::Category::SOLID,
         BrushSep::Category::PLAYERCLIP,
         BrushSep::Category::GRENADECLIP,

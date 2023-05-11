@@ -1607,6 +1607,8 @@ void DZSimApplication::drawEvent() {
     // Draw prominent horizontal velocity number
     if (_bsp_map && _gui_state.vis.IN_display_hori_vel_text) {
         switch (_gui_state.vis.IN_geo_vis_mode) {
+            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GEO_TYPE:
+                break;
             case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GLID_OF_CSGO_SESSION:
             case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GLID_AT_SPECIFIC_SPEED:
                 float* imgui_col4 = _gui_state.vis.IN_col_hori_vel_text;
@@ -1617,6 +1619,7 @@ void DZSimApplication::drawEvent() {
                     _gui.GetTotalGuiScaling() * _gui_state.vis.IN_hori_vel_text_size,
                     _gui_state.vis.IN_hori_vel_text_pos
                 );
+                break;
         }
     }
 

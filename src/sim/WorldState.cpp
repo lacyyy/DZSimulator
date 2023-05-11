@@ -10,7 +10,7 @@
 #include <Corrade/Utility/Debug.h>
 
 #include "GlobalVars.h"
-#include "CSGOConstants.h"
+#include "CsgoConstants.h"
 
 using namespace Magnum;
 

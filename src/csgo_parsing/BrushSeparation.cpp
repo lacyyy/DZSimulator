@@ -10,35 +10,6 @@
 
 using namespace csgo_parsing::BrushSeparation;
 
-// -------- OTHER BRUSHES ---------------------------------------------------------------------------------
-
-bool IS_BRUSH_OTHER(const csgo_parsing::BspMap::Brush& b) {
-    return false;
-    if (b.HasFlags(csgo_parsing::BspMap::Brush::WATER) || b.HasFlags(csgo_parsing::BspMap::Brush::LADDER))
-        return false;
-    //Debug{} << b.contents;
-    return b.HasFlags(csgo_parsing::BspMap::Brush::SOLID) || b.HasFlags(csgo_parsing::BspMap::Brush::GRATE) || b.HasFlags(csgo_parsing::BspMap::Brush::WINDOW);
-}
-std::string other_tex_trigger = "TOOLS/TOOLSTRIGGER";
-bool IS_BRUSHSIDE_OTHER(const csgo_parsing::BspMap::BrushSide& bs, const csgo_parsing::BspMap& map) {
-    // TOOLS/TOOLSTRIGGER brush flags = 1
-    // TOOLS/TOOLSAREAPORTAL brush flags = 1
-    // TOOLS/TOOLSNODRAW brush flags = 1
-    return true;
-    csgo_parsing::BspMap::TexInfo ti = map.texinfos[bs.texinfo];
-    if (ti.HasFlag_SKY()) return false;
-    const char* texName = map.texdatastringdata.data() + map.texdatastringtable[map.texdatas[ti.texdata].name_string_table_id];
-    if (other_tex_trigger.compare(texName) == 0) {
-        //Debug{} << texName;
-        return false;
-    }
-
-    return false;
-
-    return true;//true;
-    //Debug{} << ti.HasFlag_NODRAW() << texName;
-    //return bs.dispinfo != -1;
-}
 
 // -------- SOLID BRUSHES ---------------------------------------------------------------------------------
 
@@ -107,7 +78,6 @@ std::pair<isBrush_X_func_t, isBrushSide_X_func_t>
 csgo_parsing::BrushSeparation::getBrushCategoryTestFuncs(Category cat)
 {
     switch (cat) {
-    case Category::OTHER:       return { &IS_BRUSH_OTHER,       &IS_BRUSHSIDE_OTHER };
     case Category::SOLID:       return { &IS_BRUSH_SOLID,       &IS_BRUSHSIDE_SOLID };
     case Category::PLAYERCLIP:  return { &IS_BRUSH_PLAYERCLIP,  nullptr };
     case Category::GRENADECLIP: return { &IS_BRUSH_GRENADECLIP, nullptr };

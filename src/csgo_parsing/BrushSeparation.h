@@ -8,7 +8,6 @@
 namespace csgo_parsing::BrushSeparation {
 
     enum Category {
-        OTHER,
         SOLID,
         PLAYERCLIP,
         GRENADECLIP,
