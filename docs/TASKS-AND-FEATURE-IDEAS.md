@@ -1,5 +1,17 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
+- [ ] Increase security with CSGO's netconport
+    - Let user choose netconport value 
+    - On first startup, randomly generate strong password (long and humanly readable, what's the max length?)
+    - Add option to generate a new password
+    - Can we detect what launch options are currently set in Steam for CSGO? Warn the user if not set correctly?
+    - Save chosen password and port in UserData.json
+    - Don't show password implicitly in DZSimulator UI
+    - Warn the user that this password must not be shared with others
+    - Send "PASS my-long-password" before any other communication
+    - Check for responses: "Bad password attempt from net console" or "This server is password protected for console access. Must send PASS command"
+- [ ] Add option "Don't show this message again" to message that pops up when DZSim update is available on GitHub
+
 - [ ] Add crosshair (changeable size?)
 - [ ] Visualize push direction, power, type and activation of trigger_push
 - [ ] Fix Z-fighting between water and push triggers
@@ -19,6 +31,7 @@
 - [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
 - [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
 - [ ] Add hotkeys for frequent UI actions (e.g. toggling overlay mode, visualization mode, connecting to csgo, show displacement edges)
+- [ ] Automate Git submodule installation (With a script? With CMake?)
 
 ## KNOWN ISSUES, PRIORITIZED:
 
