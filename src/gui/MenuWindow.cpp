@@ -435,6 +435,7 @@ void MenuWindow::Draw()
             ImGui::TreePop();
         }
 
+#ifndef DZSIM_WEB_PORT
         if (ImGui::TreeNode("Acknowledgements"))
         {
             ImGui::Text("");
@@ -444,6 +445,7 @@ void MenuWindow::Draw()
 
             ImGui::TreePop();
         }
+#endif
 
         ImGui::Text("");
 
