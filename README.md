@@ -94,8 +94,10 @@ DZSimulator source code that is not part of any third party software is availabl
 | [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) | GUI dialogs library | [**DWTFYWT License**](thirdparty/portable-file-dialogs/COPYING) |
 | [Noto Sans fonts](https://fonts.google.com/noto/specimen/Noto+Sans) | In-app fonts | [**SIL Open Font License**](res/fonts/OFL.txt) |
 | [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) | Game engine SDK | [**Source 1 SDK License**](LICENSES-THIRD-PARTY.txt) |
+| [Bullet Physics](https://github.com/bulletphysics/bullet3) | Physics library | [**zlib License**](thirdparty/bullet/LICENSE.txt) |
 
 Third party software that is used but isn't listed here was released into the public domain.
+
 
 NOTE: If you're going to use additional libraries from Magnum or Corrade, make sure to comply to their third-party components' license terms if they depend on any:
 - [Magnum's third party components](https://doc.magnum.graphics/magnum/credits-third-party.html)

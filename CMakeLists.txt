@@ -11,6 +11,7 @@ set(DZSIM_CMAKE_MODULES          thirdparty/_cmake_modules)
 set(DZSIM_CMAKE_INCLUDE_DIR      dzsim_cmake_inc) # folder in binary dir for CMake generated files
 
 set(DZSIM_ASIO_DIR               thirdparty/asio/asio)
+set(DZSIM_BULLET_DIR             thirdparty/bullet)
 set(DZSIM_CORRADE_DIR            thirdparty/corrade)
 set(DZSIM_CPP_HTTPLIB_DIR        thirdparty/cpp-httplib)
 set(DZSIM_FSAL_DIR               thirdparty/fsal_modified/fsal)
@@ -36,7 +37,9 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/${DZSIM_CMAKE_MODULES}/" ${CMAKE_MO
 # Enable useful compiler warnings (breaks compile if disabled?!)
 set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 
-# Enable features
+
+# Set features/build-time options before doing add_subdirectory() calls
+set(MAGNUM_WITH_BULLET           ON CACHE BOOL "" FORCE)
 set(MAGNUM_WITH_IMGUI            ON CACHE BOOL "" FORCE)
 set(MAGNUM_WITH_SDL2APPLICATION  ON CACHE BOOL "" FORCE)
 set(MAGNUM_WITH_STBIMAGEIMPORTER ON CACHE BOOL "" FORCE)
@@ -65,13 +68,31 @@ set(SDL_THREADS    OFF CACHE BOOL "" FORCE)
 set(SDL_SHARED     OFF CACHE BOOL "" FORCE)
 add_subdirectory(${DZSIM_SDL_DIR}                EXCLUDE_FROM_ALL)
 
+# Bullet Physics: Disable unnecessary build options
+set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_BULLET3       OFF CACHE BOOL "" FORCE)
+set(BUILD_CLSOCKET      OFF CACHE BOOL "" FORCE)
+set(BUILD_CPU_DEMOS     OFF CACHE BOOL "" FORCE)
+set(BUILD_ENET          OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTRAS        OFF CACHE BOOL "" FORCE)
+set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTS    OFF CACHE BOOL "" FORCE)
+# This is needed in case BUILD_EXTRAS is enabled, as you'd get a CMake syntax
+# error otherwise
+set(PKGCONFIG_INSTALL_PREFIX "lib${LIB_SUFFIX}/pkgconfig/")
+
+
 # Set Dear ImGui path
 set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/${DZSIM_IMGUI_DIR})
 
-# Add subprojects
+## Add CMake subprojects
 add_subdirectory(${DZSIM_CORRADE_DIR}            EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_DIR}             EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_PLUGINS_DIR}     EXCLUDE_FROM_ALL)
+# Bullet's subdir must be added *before* magnum-integration's subdir.
+# Bullet's subdir must be added *after* magnum-plugin's subdir to avoid a crash
+# in Debug builds (looks like a CMake script bug).
+add_subdirectory(${DZSIM_BULLET_DIR}             EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_INTEGRATION_DIR} EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_FSAL_DIR}               EXCLUDE_FROM_ALL)
 
@@ -86,10 +107,15 @@ find_package(Magnum REQUIRED
     Text
     Trade)
 find_package(MagnumIntegration REQUIRED
+    Bullet
     ImGui)
 find_package(MagnumPlugins REQUIRED
     StbImageImporter
     StbTrueTypeFont)
+find_package(Bullet REQUIRED
+#    Collision
+    Dynamics)
+#    LinearMath)
 
 # Find OpenSSL
 set(OPENSSL_USE_STATIC_LIBS TRUE)
@@ -122,6 +148,7 @@ target_link_libraries(DZSimulator PRIVATE
     Magnum::Shaders
     Magnum::Text
     Magnum::Trade
+    MagnumIntegration::Bullet
     MagnumIntegration::ImGui
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbTrueTypeFont
@@ -130,7 +157,10 @@ target_link_libraries(DZSimulator PRIVATE
 # OpenSSL::applink might be needed to compile OpenSSL into projects under MSVC
 # (see its CMake documentation for details)
     #OpenSSL::applink 
+    Bullet::Dynamics
 )
+#    Bullet::Collision
+#    Bullet::LinearMath
 
 # The cpp-httplib library requires CPPHTTPLIB_OPENSSL_SUPPORT to be defined
 # before all occurrences of its "httplib.h" being included!
@@ -158,7 +188,7 @@ if(CORRADE_TARGET_WINDOWS)
 endif()
 
 # If you add new cpp-files to the project, add their path to this list!
-target_sources(DZSimulator PRIVATE ${DZSIM_EXTRA_SOURCES} "src/main.cpp" "src/csgo_parsing/BrushSeparation.cpp" "src/GlobalVars.cpp" "src/InputHandler.cpp" "src/rendering/_unused_VertBufUpdateDemo.cpp" "src/rendering/WorldRenderer.cpp"  "src/csgo_parsing/BspMap.cpp"  "src/csgo_parsing/BspMapParsing.cpp" "src/sim/Server.cpp" "src/sim/WorldState.cpp"    "src/build_info.cpp" "src/gui/Gui.cpp" "src/rendering/BigTextRenderer.cpp" "src/utils_3d.cpp"   "src/csgo_integration/Gsi.cpp" "src/rendering/GlidabilityShader3D.cpp" "src/csgo_integration/RemoteConsole.cpp" "src/csgo_integration/Handler.cpp" "src/csgo_parsing/AssetFinder.cpp" "src/csgo_parsing/PhyModelParsing.cpp" "src/csgo_parsing/AssetFileReader.cpp"  "src/csgo_parsing/utils.cpp" "src/rendering/WorldCreation.cpp" "src/gui/MenuWindow.cpp" "src/gui/Popup.cpp" "src/GitHubChecker.cpp" "src/SavedUserDataHandler.cpp")
+target_sources(DZSimulator PRIVATE ${DZSIM_EXTRA_SOURCES} "src/main.cpp" "src/csgo_parsing/BrushSeparation.cpp" "src/GlobalVars.cpp" "src/InputHandler.cpp" "src/rendering/_unused_VertBufUpdateDemo.cpp" "src/rendering/WorldRenderer.cpp"  "src/csgo_parsing/BspMap.cpp"  "src/csgo_parsing/BspMapParsing.cpp" "src/sim/Server.cpp" "src/sim/WorldState.cpp"    "src/build_info.cpp" "src/gui/Gui.cpp" "src/rendering/BigTextRenderer.cpp" "src/utils_3d.cpp"   "src/csgo_integration/Gsi.cpp" "src/rendering/GlidabilityShader3D.cpp" "src/csgo_integration/RemoteConsole.cpp" "src/csgo_integration/Handler.cpp" "src/csgo_parsing/AssetFinder.cpp" "src/csgo_parsing/PhyModelParsing.cpp" "src/csgo_parsing/AssetFileReader.cpp"  "src/csgo_parsing/utils.cpp" "src/rendering/WorldCreation.cpp" "src/gui/MenuWindow.cpp" "src/gui/Popup.cpp" "src/GitHubChecker.cpp" "src/SavedUserDataHandler.cpp" "src/BulletPhysicsTest.cpp")
 
 # Make the executable a default target to build & run in Visual Studio (doesn't work?)
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT DZSimulator)

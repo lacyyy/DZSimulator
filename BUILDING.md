@@ -33,6 +33,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
 1. Next, run these commands without changing the working directory to get the required submodules at specific versions (You can ignore the 'detached HEAD' advice): 
     ```
     git submodule add https://github.com/chriskohlhoff/asio.git thirdparty/asio/
+    git submodule add https://github.com/bulletphysics/bullet3.git thirdparty/bullet/
     git submodule add https://github.com/mosra/corrade.git thirdparty/corrade/
     git submodule add https://github.com/ocornut/imgui.git thirdparty/imgui/
     git submodule add https://github.com/mosra/magnum.git thirdparty/magnum/
@@ -40,6 +41,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git submodule add https://github.com/mosra/magnum-plugins.git thirdparty/magnum-plugins/
     git submodule add https://github.com/libsdl-org/SDL.git thirdparty/SDL/
     git -C thirdparty/asio/ checkout asio-1-23-0
+    git -C thirdparty/bullet/ checkout 2.83.7
     git -C thirdparty/corrade/ checkout f6eef8a2d4e151693dbf35621876ec074a8b7003
     git -C thirdparty/imgui/ checkout v1.88
     git -C thirdparty/magnum/ checkout 9c4f2ceea279dc9bdc17a55ef565136f602c9ac3
@@ -51,6 +53,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     ```
     53dea9830964eee8b5c2a7ee0a65d6e268dc78a1 thirdparty/SDL (release-2.0.22)
     4915cfd8a1653c157a1480162ae5601318553eb8 thirdparty/asio (asio-1-23-0)
+    2fb92bc40c16e4da5a9018479d4a8e1899702ab8 thirdparty/bullet (2.83.7)
     f6eef8a2d4e151693dbf35621876ec074a8b7003 thirdparty/corrade (v2020.06-847-gf6eef8a2)
     9aae45eb4a05a5a1f96be1ef37eb503a12ceb889 thirdparty/imgui (v1.62-2483-g9aae45eb)
     9c4f2ceea279dc9bdc17a55ef565136f602c9ac3 thirdparty/magnum (v2020.06-1597-g9c4f2ceea)

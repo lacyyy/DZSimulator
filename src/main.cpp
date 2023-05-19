@@ -30,6 +30,8 @@
 #include "sim/Server.h"
 #include "GitHubChecker.h"
 
+#include "BulletPhysicsTest.h"
+
 // Allow window on a resolution of 800x600
 #define MIN_WINDOW_WIDTH  768
 #define MIN_WINDOW_HEIGHT 432
@@ -223,6 +225,8 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _world_renderer { _resources, _gui_state }
     , _user_input_mode { UserInputMode::MENU }
 {
+    do_bullet_physics_test();
+
     // Save immediately to file for the sole purpose of ensuring the
     // settings file and its directory exist.
     SavedUserDataHandler::SaveUserSettingsToFile(_gui_state);
