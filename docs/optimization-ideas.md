@@ -1,6 +1,7 @@
 ## OPTIMIZATION IDEAS, UNORDERED:
 
 ### LOADING TIME REDUCTION:
+- Compile with Clang or GCC instead of MSVC, any speed improvements?
 - PARSING CSGO MAPS:
     - Load packed PHY files in order of their position in the BSP file without reopening it each time?
     - Don't parse/load lumps we don't need (leafface lump? face lump?)

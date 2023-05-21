@@ -414,14 +414,17 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
                 if (plane.normal[axis] ==  1.0f) if ( plane.dist < maxs[axis]) maxs[axis] =  plane.dist;
             }
         }
-        // Abort in Debug build if any of the 6 axial planes was missing
+        // If any of the 6 axial planes was missing, skip in Release, abort in Debug
+        bool invalid_brush = false;
         for (int i = 0; i < 3; i++) {
             if (mins[i] == -HUGE_VALF || maxs[i] == HUGE_VALF) {
                 Debug{} << "UNEXPECTED PARSE INPUT: Brush at index" << brush_idx
                     << "does not have all 6 axial brushsides!";
                 assert(0);
+                invalid_brush = true;
             }
         }
+        if (invalid_brush) continue;
 
         // Start the cutting process with faces of a small AABB of the brush.
         // Starting with a large box would lead to float imprecisions and degenerate faces.
