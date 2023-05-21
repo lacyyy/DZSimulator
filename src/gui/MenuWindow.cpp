@@ -531,7 +531,6 @@ void MenuWindow::ShowKnownIssues()
 {
     _gui_state.popup.QueueMsgWarn(
         "Known issues that will hopefully be addressed in the future:\n\n"
-        "  - Some triangles of some brush geometry are missing/broken\n"
         "  - Some transparent objects disappear when looking through certain "
         "other transparent objects\n"
     );

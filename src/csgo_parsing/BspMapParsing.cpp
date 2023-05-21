@@ -774,6 +774,11 @@ utils::RetCode ParseLump_BrushSides(AssetFileReader& fr, BspMap& in_out)
             || !fr.ReadINT16_LE(bs.bevel))
             return { utils::RetCode::ERROR_BSP_PARSING_FAILED, "Read error" };
 
+        // The bevel field can take the values 0, 1, 256 and 257 in CSGO maps.
+        // The least significant bit is the actual bevel value. The other bit's
+        // purpose is unknown, we don't care about it.
+        bs.bevel = bs.bevel & 0x0001;
+
         in_out.brushsides.push_back(std::move(bs));
     }
 

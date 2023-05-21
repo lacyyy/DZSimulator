@@ -12,6 +12,8 @@
     - Check for responses: "Bad password attempt from net console" or "This server is password protected for console access. Must send PASS command"
 - [ ] Add option "Don't show this message again" to message that pops up when DZSim update is available on GitHub
 
+- [ ] Add "Effective Steepness" visualization mode (that only takes horizontal impact from player to surface into account)
+- [ ] Add "Effective Rampslide POV" visualization mode (where all surfaces, incl. bevel planes(!), are pushed outwards by half the player's AABB. Maybe shift the world down by half player height to make it feel more natural)
 - [ ] Add crosshair (changeable size?)
 - [ ] Visualize push direction, power, type and activation of trigger_push
 - [ ] Fix Z-fighting between water and push triggers
@@ -35,15 +37,6 @@
 
 ## KNOWN ISSUES, PRIORITIZED:
 
-- [ ] Fix brush parsing, missing/invalid faces, present at:
-    - Catfjsh's "bump_release" map
-    - Vineyard big stair playerclip brush outside to the right of the big catacombs entrance
-    - Missing face at blacksite's thin shack wall as well, but in CSGO too? parse error? nodraw face?
-    - player clip stairs in Dust2's tunnels 
-    - https://github.com/wfowler1/Unity3D-BSP-Importer useful code?
-    - https://github.com/magcius/noclip.website useful code?
-    - https://github.com/Metapyziks/SourceUtils/ useful code?
-    - Ladder brush doesn't get parsed as such on Insertion@Houses, is it clip brush and ladder at the same time?
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
 - [ ] Disgusting brush mesh Z fighting
 - [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type. Draw water as the last thing?

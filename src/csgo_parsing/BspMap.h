@@ -76,8 +76,6 @@ public:
     struct Plane {
         Magnum::Vector3 normal;
         float dist; // distance from origin
-        // FIXME Add type here?! Might be useful for brush vertex parsing
-        // https://developer.valvesoftware.com/wiki/Source_BSP_File_Format#Plane
     };
 
     struct Edge {
@@ -175,7 +173,7 @@ public:
         uint16_t plane_num; // index into planes array
         int16_t texinfo; // index into texinfos array
         int16_t disp_info; // index into dispinfos array
-        int16_t bevel; // relevant for collision? randomly takes values of 0,1,256,257
+        int16_t bevel; // If 1, this brushside is only used for detection of collisions with AABBs
     };
 
     struct Node { // Node of the BSP tree

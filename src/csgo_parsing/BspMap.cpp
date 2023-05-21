@@ -1,5 +1,6 @@
 #include "BSPMap.h"
 
+#include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -8,10 +9,10 @@
 #include <functional>
 
 #include <Magnum/Magnum.h>
-#include <Magnum/Math/Vector3.h>
-#include <Magnum/Math/Vector4.h>
 #include <Magnum/Math/Distance.h>
 #include <Magnum/Math/Intersection.h>
+#include <Magnum/Math/Vector3.h>
+#include <Magnum/Math/Vector4.h>
 
 #include "utils_3d.h"
 
@@ -355,23 +356,28 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
     return total_faces;
 }
 
-// FIXME Look at
-// https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/utils/vbsp/brushbsp.cpp#L1048
-// to finally fix incorrect brush faces?!
-// is this useful? https://github.com/magcius/noclip.website
-// or this? https://github.com/Metapyziks/SourceUtils/
-// Use Plane type here?! Might be useful for brush vertex parsing:
-//      https://developer.valvesoftware.com/wiki/Source_BSP_File_Format#Plane
 // Returns faces with clockwise vertex winding
 std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std::set<size_t>& brush_indices,
     bool (*pred_Brush)(const Brush&),
     bool (*pred_BrushSide)(const BrushSide&, const BspMap&)) const
 {
-    std::vector<std::vector<Magnum::Vector3>> finalFaces; // This vector will be returned
+    // TODO If float imprecision still causes face parse errors:
+    //  - Shift the center of the brush to (0,0,0) to cut with better precision!
+    //    - This requires shifting the brush vertices and adjusting all plane's 'dist' values:
+    //        shifted_plane_dist = plane_dist + Dot(plane_normal,-0.5f * (mins + maxs));
+    //      Like here: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/brushbsp.cpp#L1089-L1094
+    //  - The "plane over-cut" logic might have been made redundant since further brush parse fixes were added
+    //  - Check out how other projects solve this problem:
+    //     https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/brushbsp.cpp#L1048
+    //     https://github.com/wfowler1/Unity3D-BSP-Importer
+    //     https://github.com/magcius/noclip.website
+    //     https://github.com/Metapyziks/SourceUtils/
 
-    // TODO Optimization: delete redundant vertices that are on the line from the last to to the next vertex
-    // TODO Observe vertex drifts, adjust overcut
-    // TODO Remove redundant faces inside other faces?
+    // TODO Optimization:
+    //  - Delete redundant vertices that are on the line from the last to to the next vertex
+    //  - Remove redundant faces inside other faces?
+
+    std::vector<std::vector<Magnum::Vector3>> finalFaces; // This vector will be returned
 
     // When checking what vertices fall behind a plane, vertices on the plane are
     // treated pretty much randomly (float inaccuracy). Therefore cut a fraction
@@ -380,29 +386,6 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
 
     // How much a plane at least has to cut to not be considered redundant and skipped
     const Float BRUSH_PLANE_REDUNDANT_CUT_SIZE = 0.01f; // must be greater than zero
-
-    // Our coordinate system follows the right hand rule: thumb = +X, index finger = +Y, middle finger = +Z
-    const float MAX_P = BspMap::MAX_BRUSH_LENGTH / 2; // max positive vertex position
-    const float EXTREME_THRESH = MAX_P * 0.98f;
-    std::vector<std::vector<Vector3>> hugeCube = { // cube faces with clockwise vertex winding
-    { { MAX_P, MAX_P, MAX_P}, { MAX_P,-MAX_P, MAX_P}, {-MAX_P,-MAX_P, MAX_P}, {-MAX_P, MAX_P, MAX_P} },  // face facing +Z
-    { {-MAX_P, MAX_P,-MAX_P}, {-MAX_P,-MAX_P,-MAX_P}, { MAX_P,-MAX_P,-MAX_P}, { MAX_P, MAX_P,-MAX_P} },  // face facing -Z
-    { { MAX_P,-MAX_P, MAX_P}, { MAX_P, MAX_P, MAX_P}, { MAX_P, MAX_P,-MAX_P}, { MAX_P,-MAX_P,-MAX_P} },  // face facing +X
-    { {-MAX_P,-MAX_P,-MAX_P}, {-MAX_P, MAX_P,-MAX_P}, {-MAX_P, MAX_P, MAX_P}, {-MAX_P,-MAX_P, MAX_P} },  // face facing -X
-    { { MAX_P, MAX_P, MAX_P}, {-MAX_P, MAX_P, MAX_P}, {-MAX_P, MAX_P,-MAX_P}, { MAX_P, MAX_P,-MAX_P} },  // face facing +Y
-    { { MAX_P,-MAX_P,-MAX_P}, {-MAX_P,-MAX_P,-MAX_P}, {-MAX_P,-MAX_P, MAX_P}, { MAX_P,-MAX_P, MAX_P} } };// face facing -Y
-
-    // To check vertices for equivalence, their extreme components must be removed first
-    std::function<Vector3(const Vector3&)> getVertexNonExtremeComponents = [EXTREME_THRESH](const Vector3& v) {
-        Vector3 result(v); // Copy v
-        for (int i = 0; i < 3; ++i) {
-            if (result[i] > EXTREME_THRESH)
-                result[i] = 1.0f;
-            else if (result[i] < -EXTREME_THRESH)
-                result[i] = -1.0f;
-        }
-        return result;
-    };
 
     // Function to check if vertex is cut by plane or not
     // Plane vectors point OUT of the brush, not into it
@@ -417,18 +400,60 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
             if (!pred_Brush(brush)) // Skip brush if it doesn't fit the predicate
                 continue;
 
-        // Initially a cube bigger than the whole level
-        std::vector<std::vector<Vector3>> brushFaces(hugeCube); // Copy hugeCube vector
+        // Properties of brushes as observed on CSGO maps:
+        //   - Every brush has at least 6 unique axial brushsides
+        //   - Axial brushsides can be marked as "bevel planes"
+
+        // Get AABB of brush from its axial planes (which might be bevel planes)
+        Vector3 mins { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
+        Vector3 maxs { HUGE_VALF, HUGE_VALF, HUGE_VALF };
+        for (size_t i = 0; i < brush.num_sides; ++i) {
+            const Plane& plane = this->planes[this->brushsides[brush.first_side + i].plane_num];
+            for (int axis = 0; axis < 3; axis++) {
+                if (plane.normal[axis] == -1.0f) if (-plane.dist > mins[axis]) mins[axis] = -plane.dist;
+                if (plane.normal[axis] ==  1.0f) if ( plane.dist < maxs[axis]) maxs[axis] =  plane.dist;
+            }
+        }
+        // Abort in Debug build if any of the 6 axial planes was missing
+        for (int i = 0; i < 3; i++) {
+            if (mins[i] == -HUGE_VALF || maxs[i] == HUGE_VALF) {
+                Debug{} << "UNEXPECTED PARSE INPUT: Brush at index" << brush_idx
+                    << "does not have all 6 axial brushsides!";
+                assert(0);
+            }
+        }
+
+        // Start the cutting process with faces of a small AABB of the brush.
+        // Starting with a large box would lead to float imprecisions and degenerate faces.
+        // Our coordinate system follows the right hand rule: thumb = +X, index finger = +Y, middle finger = +Z
+        std::vector<std::vector<Vector3>> brushFaces = { // AABB faces with clockwise vertex winding
+            { {maxs[0],maxs[1],maxs[2]}, {maxs[0],mins[1],maxs[2]}, {mins[0],mins[1],maxs[2]}, {mins[0],maxs[1],maxs[2]} },  // face facing +Z
+            { {mins[0],maxs[1],mins[2]}, {mins[0],mins[1],mins[2]}, {maxs[0],mins[1],mins[2]}, {maxs[0],maxs[1],mins[2]} },  // face facing -Z
+            { {maxs[0],mins[1],maxs[2]}, {maxs[0],maxs[1],maxs[2]}, {maxs[0],maxs[1],mins[2]}, {maxs[0],mins[1],mins[2]} },  // face facing +X
+            { {mins[0],mins[1],mins[2]}, {mins[0],maxs[1],mins[2]}, {mins[0],maxs[1],maxs[2]}, {mins[0],mins[1],maxs[2]} },  // face facing -X
+            { {maxs[0],maxs[1],maxs[2]}, {mins[0],maxs[1],maxs[2]}, {mins[0],maxs[1],mins[2]}, {maxs[0],maxs[1],mins[2]} },  // face facing +Y
+            { {maxs[0],mins[1],mins[2]}, {mins[0],mins[1],mins[2]}, {mins[0],mins[1],maxs[2]}, {maxs[0],mins[1],maxs[2]} } };// face facing -Y;
         brushFaces.reserve(brush.num_sides);
 
-        std::vector<size_t> brushside_indices;
-        for (size_t i = 0; i < brush.num_sides; ++i)
-            brushside_indices.push_back(brush.first_side + i);
+        std::vector<size_t> non_bevel_brushside_indices;
+        for (size_t i = 0; i < brush.num_sides; ++i) {
+            size_t brushside_idx = brush.first_side + i;
+
+            // Brushsides that are marked as a "bevel plane" are only relevant
+            // for detection of collisions with AABBs. They are irrelevant for
+            // the visual representation of a brush (and they could maybe cause
+            // brush face parse errors). We only ignore the bevel property when
+            // constructing the starting AABB from axial planes, see above.
+            if (this->brushsides[brushside_idx].bevel)
+                continue;
+
+            non_bevel_brushside_indices.push_back(brushside_idx);
+        }
 
         // Check if we are interested in any of the brushsides, if not -> skip this brush
         if (pred_BrushSide) {// If BrushSide predicate function was provided
             bool isAnyFaceWanted = false;
-            for (size_t bSideIdx : brushside_indices) {
+            for (size_t bSideIdx : non_bevel_brushside_indices) {
                 if (pred_BrushSide(this->brushsides[bSideIdx], *this)) {
                     isAnyFaceWanted = true;
                     break;
@@ -438,22 +463,9 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
                 continue; // Skip this brush
         }
 
-        // All csgo brushes have at least 6 axis planes(normals with just one non-zero component) which make
-        // a nice axis-aligned small box. To save potential float error trouble with very large slant surfaces
-        // later on, we first cut to a (relatively) small 6-sided cuboid. After that, cut slant surfaces.
-        // -> Sort planes, axis planes(normals with just one non-zero component) first
-        std::sort(brushside_indices.begin(), brushside_indices.end(), [this](size_t idx1, size_t idx2) {
-            Vector3 n1 = this->planes[this->brushsides[idx1].plane_num].normal;
-            Vector3 n2 = this->planes[this->brushsides[idx2].plane_num].normal;
-            int emptyComps1 = 0, emptyComps2 = 0;
-            for (int i = 0; i < 3; ++i) if (n1[i] == 0.0f) ++emptyComps1;
-            for (int i = 0; i < 3; ++i) if (n2[i] == 0.0f) ++emptyComps2;
-            return emptyComps1 > emptyComps2;
-        });
-
         std::vector<size_t> unwantedBrushFaceIndices; // indices into brushFaces that need to be removed at the end
 
-        for (size_t bSideIdx : brushside_indices) { // Iterate through brush planes
+        for (size_t bSideIdx : non_bevel_brushside_indices) { // Iterate through brush planes
 
             const BspMap::BrushSide& bSide = this->brushsides[bSideIdx];
             BspMap::Plane plane = this->planes[bSide.plane_num];
@@ -497,9 +509,8 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
                     if (isCurrVertBehindPlane) {
                         // Only add current vertex if alteredVertices doesn't contain it yet
                         bool duplicate = false;
-                        Vector3 currVert_nonEx = getVertexNonExtremeComponents(currVert);
                         for (Vector3& v : alteredVertices) {
-                            if (BspMap::AreVerticesEquivalent(currVert_nonEx, getVertexNonExtremeComponents(v))) {
+                            if (BspMap::AreVerticesEquivalent(currVert, v)) {
                                 duplicate = true;
                                 break;
                             }
@@ -548,9 +559,8 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
 
                         // Only add new vertex if alteredVertices doesn't contain it yet
                         bool duplicate = false;
-                        Vector3 newVertex_nonEx = getVertexNonExtremeComponents(newVertex);
                         for (Vector3& v : alteredVertices) {
-                            if (BspMap::AreVerticesEquivalent(newVertex_nonEx, getVertexNonExtremeComponents(v))) {
+                            if (BspMap::AreVerticesEquivalent(newVertex, v)) {
                                 duplicate = true;
                                 break;
                             }
@@ -570,10 +580,9 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
                 std::vector<Vector3> filteredVertices;
                 for (Vector3& v : bSideVertices) {
                     bool duplicate = false;
-                    Vector3 v_nonEx = getVertexNonExtremeComponents(v);
                     for (Vector3& v_filtered : filteredVertices) {
                         // If vertices are too close together
-                        if (BspMap::AreVerticesEquivalent(v_nonEx, getVertexNonExtremeComponents(v_filtered))) {
+                        if (BspMap::AreVerticesEquivalent(v, v_filtered)) {
                             duplicate = true;
                             break;
                         }
