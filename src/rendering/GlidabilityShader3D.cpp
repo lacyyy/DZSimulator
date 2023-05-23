@@ -49,7 +49,9 @@ GlidabilityShader3D::GlidabilityShader3D(bool use_instanced_transformation,
     frag.addSource(resources.getString("shaders/GlidabilityShader3D.frag"));
 
     // Any compiler error messages are printed to error output
-    bool success = GL::Shader::compile({ vert, frag });
+    vert.submitCompile();
+    frag.submitCompile();
+    bool success = vert.checkCompile() && frag.checkCompile();
 
 #ifdef NDEBUG // In Release builds, show user an error message (they have no console)
     if (!success) {
@@ -69,7 +71,8 @@ GlidabilityShader3D::GlidabilityShader3D(bool use_instanced_transformation,
     CORRADE_INTERNAL_ASSERT_OUTPUT(success);
 #endif
 
-    attachShaders({ vert, frag });
+    attachShader(vert);
+    attachShader(frag);
 
     CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 

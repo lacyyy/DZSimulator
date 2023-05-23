@@ -42,11 +42,11 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git submodule add https://github.com/mosra/toolchains.git thirdparty/toolchains/
     git submodule add https://github.com/libsdl-org/SDL.git thirdparty/SDL/
     git -C thirdparty/asio/ checkout asio-1-23-0
-    git -C thirdparty/corrade/ checkout f6eef8a2d4e151693dbf35621876ec074a8b7003
+    git -C thirdparty/corrade/ checkout c548c45aff4e1f08c707a61775ab3131ef735739
     git -C thirdparty/imgui/ checkout v1.88
-    git -C thirdparty/magnum/ checkout 9c4f2ceea279dc9bdc17a55ef565136f602c9ac3
-    git -C thirdparty/magnum-integration/ checkout 79747545dbe711055f7f06bcf6ac5c76541ab6c0
-    git -C thirdparty/magnum-plugins/ checkout 03c597c7b2098326e472af62702b6d09beaf67c7
+    git -C thirdparty/magnum/ checkout 4b765e9b12ed617e435ca49695f8ef7e66af654b
+    git -C thirdparty/magnum-integration/ checkout 1a66b05bd7db0a5484366054ddc678bebf79921e
+    git -C thirdparty/magnum-plugins/ checkout 7d1aba3fda3324ac3f0d0694e673350c1fbd55f8
     git -C thirdparty/toolchains/ checkout 65568a98fa48de0369f35e9788779fdfbe14cacc
     git -C thirdparty/SDL/ checkout release-2.0.22
     ```
@@ -54,11 +54,11 @@ If for some reason, you need to build this repo and it has empty submodule folde
     ```
     53dea9830964eee8b5c2a7ee0a65d6e268dc78a1 thirdparty/SDL (release-2.0.22)
     4915cfd8a1653c157a1480162ae5601318553eb8 thirdparty/asio (asio-1-23-0)
-    f6eef8a2d4e151693dbf35621876ec074a8b7003 thirdparty/corrade (v2020.06-847-gf6eef8a2)
+    c548c45aff4e1f08c707a61775ab3131ef735739 thirdparty/corrade (v2020.06-1383-gc548c45a)
     9aae45eb4a05a5a1f96be1ef37eb503a12ceb889 thirdparty/imgui (v1.62-2483-g9aae45eb)
-    9c4f2ceea279dc9bdc17a55ef565136f602c9ac3 thirdparty/magnum (v2020.06-1597-g9c4f2ceea)
-    79747545dbe711055f7f06bcf6ac5c76541ab6c0 thirdparty/magnum-integration (v2020.06-142-g7974754)
-    03c597c7b2098326e472af62702b6d09beaf67c7 thirdparty/magnum-plugins (v2020.06-843-g03c597c7)
+    4b765e9b12ed617e435ca49695f8ef7e66af654b thirdparty/magnum (v2020.06-2375-g4b765e9b1)
+    1a66b05bd7db0a5484366054ddc678bebf79921e thirdparty/magnum-integration (v2020.06-181-g1a66b05)
+    7d1aba3fda3324ac3f0d0694e673350c1fbd55f8 thirdparty/magnum-plugins (v2020.06-1205-g7d1aba3f)
     65568a98fa48de0369f35e9788779fdfbe14cacc thirdparty/toolchains (heads/master)
     ```
 

@@ -1,6 +1,7 @@
 #include "InputHandler.h"
 
-#include "Magnum/Math/Functions.h"
+#include <Corrade/Containers/StringStl.h> // For implicit StringView to std::string conversion
+#include <Magnum/Math/Functions.h>
 
 using namespace Magnum;
 using MouseEvent       = InputHandler::Application::MouseEvent;
