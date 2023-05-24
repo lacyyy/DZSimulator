@@ -1,5 +1,13 @@
 ### TODO list for the web port of DZSimulator
 
+- Web app seems to run out of memory after long idling time, why?
+    ```
+    Aborted(Cannot enlarge memory arrays to size 33558528 bytes (OOM). Either
+    (1) compile with -sINITIAL_MEMORY=X with X higher than the current value
+    33554432, (2) compile with -sALLOW_MEMORY_GROWTH which allows increasing
+    the size at runtime, or (3) if you want malloc to return NULL (0) instead
+    of this abort, compile with -sABORTING_MALLOC=0)
+    ```
 - Figure out a good way of grabbing the mouse
 - Add more build info
     - MAGNUM_TARGET_WEBGL
