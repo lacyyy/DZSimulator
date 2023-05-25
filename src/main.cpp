@@ -437,10 +437,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 
     _gui.Init(font_data_disp, font_data_mono);
 
+    // Initialization of members that require a GL context to be active
     _big_text_renderer.Init(font_data_disp);
     _wide_line_renderer.Init();
-
-    // Initialization of members that require a GL context to be active
     _world_renderer.InitShaders();
 
     // Enable transparency
@@ -455,6 +454,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
         GL::Renderer::BlendEquation::Add);
 
     ///////////////////////
+
+    // DepthFunction::LessOrEqual helps against Z-Fighting
+    GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
 
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);

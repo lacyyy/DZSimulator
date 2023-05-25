@@ -400,10 +400,15 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
         if (faces_from_trigger_push.size() == 0) continue;
 
         // Rotate and translate model of trigger_push.
-        // Elevate above water surface to fix Z fighting with the water
-        const Vector3 Z_FIGHTING_RESOLVER = {0.0f, 0.0f, 0.1f};
+        // Elevate non-ladder push triggers above water surface to fix
+        // Z-fighting with the water. Downside: These push triggers are drawn
+        // slightly in the wrong position. Don't elevate ladder push triggers,
+        // just in case someone needs to look at them very precisely.
+        Vector3 z_fighting_resolver = trigger_push.only_falling_players ?
+            Vector3{ 0.0f, 0.0f, 0.0f } : Vector3{ 0.0f, 0.0f, 1.0f };
+
         Matrix4 trigger_push_transf = utils_3d::CalcModelTransformationMatrix(
-            trigger_push.origin + Z_FIGHTING_RESOLVER,
+            trigger_push.origin + z_fighting_resolver,
             trigger_push.angles
         );
         for (auto& face : faces_from_trigger_push) {
@@ -411,7 +416,7 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
                 v = trigger_push_transf.transformPoint(v);
             }
         }
-
+        
         trigger_push_faces.insert(trigger_push_faces.end(),
             std::make_move_iterator(faces_from_trigger_push.begin()),
             std::make_move_iterator(faces_from_trigger_push.end()));
