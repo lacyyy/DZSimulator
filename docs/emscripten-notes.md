@@ -8,7 +8,7 @@
     the size at runtime, or (3) if you want malloc to return NULL (0) instead
     of this abort, compile with -sABORTING_MALLOC=0)
     ```
-- Figure out a good way of grabbing the mouse
+- Figure out a good way of grabbing the mouse ([this?](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API))
 - Add more build info
     - MAGNUM_TARGET_WEBGL
     - [Emscripten version](https://github.com/emscripten-core/emscripten/pull/17883)
