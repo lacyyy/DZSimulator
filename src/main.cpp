@@ -9,6 +9,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
+#include <Magnum/Math/Functions.h>
 #include <Magnum/Text/AbstractFont.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -31,6 +32,7 @@
 #include "InputHandler.h"
 #include "rendering/BigTextRenderer.h"
 #include "rendering/WorldRenderer.h"
+#include "rendering/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
 #include "sim/Server.h"
 #include "GitHubChecker.h"
@@ -77,6 +79,7 @@ class DZSimApplication: public Platform::Application {
         InputHandler _inputs;
         
         rendering::BigTextRenderer _big_text_renderer;
+        rendering::WideLineRenderer _wide_line_renderer;
 
         // The latest world state calculated from the server
         // -> changes every server tick
@@ -156,6 +159,7 @@ class DZSimApplication: public Platform::Application {
         void tickEvent() override;
 #endif
         void CalcViewProjTransformation();
+        Vector3 GetCameraForwardVector(); // Normalized
         void drawEvent() override;
         void textInputEvent(TextInputEvent& event) override
         {
@@ -434,6 +438,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _gui.Init(font_data_disp, font_data_mono);
 
     _big_text_renderer.Init(font_data_disp);
+    _wide_line_renderer.Init();
 
     // Initialization of members that require a GL context to be active
     _world_renderer.InitShaders();
@@ -441,7 +446,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     // Enable transparency
     GL::Renderer::enable(GL::Renderer::Feature::Blending);
 
-    // Blend functions for BigTextRenderer
+    // Blend functions for BigTextRenderer and WideLineRenderer
     GL::Renderer::setBlendFunction(
         GL::Renderer::BlendFunction::One,
         GL::Renderer::BlendFunction::OneMinusSourceAlpha);
@@ -860,6 +865,7 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
     // elements
     _gui.HandleViewportEvent(event);
     _big_text_renderer.HandleViewportEvent(event);
+    _wide_line_renderer.HandleViewportEvent(event);
 
     redraw();
 }
@@ -1551,6 +1557,18 @@ void DZSimApplication::CalcViewProjTransformation() {
     );
 
     _view_proj_transformation = projection_transformation * view_transformation;
+}
+
+// Returned vector is normalized
+Vector3 DZSimApplication::GetCameraForwardVector()
+{
+    auto pitch_sincos = Math::sincos(Deg{ -_cam_ang[0] });
+    auto yaw_sincos   = Math::sincos(Deg{ +_cam_ang[1] });
+    return {
+        yaw_sincos.second * pitch_sincos.second,
+        yaw_sincos.first * pitch_sincos.second,
+        pitch_sincos.first
+    };
 }
 
 void DZSimApplication::drawEvent() {

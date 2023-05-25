@@ -325,6 +325,7 @@ target_sources(DZSimulator PRIVATE
     "src/rendering/_unused_VertBufUpdateDemo.cpp"
     "src/rendering/BigTextRenderer.cpp"
     "src/rendering/GlidabilityShader3D.cpp"
+    "src/rendering/WideLineRenderer.cpp"
     "src/rendering/WorldCreation.cpp"
     "src/rendering/WorldRenderer.cpp"
 

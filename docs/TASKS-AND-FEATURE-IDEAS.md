@@ -39,7 +39,9 @@
 
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
 - [ ] Disgusting brush mesh Z fighting
-- [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type. Draw water as the last thing?
+- [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type.
+    - Each transparent face needs to be ordered by depth before being drawn
+    - Wide lines disappear behind transparent surfaces, split the lines on them
 - [ ] Visuals, Fix vertical water face on Sirocco at "Tower One" and on Ember at "Rock Pool C"
 - [ ] dz_arctic has terrible FPS, why?
 - [ ] Investigate "DISP_VPHYSICS found bad displacement collision face" error that makes displacements non-solid, what are the exact criteria for that?
