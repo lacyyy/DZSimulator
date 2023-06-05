@@ -1,15 +1,16 @@
 ## Checklists for making releases and updating libraries or fonts
 
-### Releasing a new major/minor/patch/tweak update
+### Releasing a new major/minor/patch update
+1. Commit all changes into Git that need to go into the release
+1. Make sure your working tree is clean, i.e. `git status` shows no untracked files or unstaged changes
+    - You can use `git stash` to temporarily remove working directory changes that shouldn't be included in the next release
+    - After publishing the next release, you can then restore the changes with `git stash pop`
 1. Increase project version in top-level CMakeLists.txt
 1. Write changelogs for GitHub and ingame display
-1. In the parent directory of the repo, run:
-       `tar --exclude="DZSimulator/.git" --exclude="DZSimulator/.vs" --exclude="DZSimulator/out" -zcvf "DZSimulator-vX.Y.Z-Source-code-with-submodules.tar.gz" DZSimulator`
 1. In Visual Studio, right-click top-level CMakeLists.txt > Configure DZSimulatorProject
 1. Build executable
-1. Rename executable("DZSimulator-vX.Y.Z.exe") and source code archive with new version number
 1. Make sure in-app build timestamp is correctly updated
-1. Commit new version tag and push it:
+1. Commit new version tag (and possibly ingame changelog) and push it:
 
     **CAUTION: The git tag's name must follow strict rules in order for the new release to be detected by by previous DZSimulator versions!**
     - Tag name MUST be of the format `vX.Y.Z` where X, Y and Z are positive integers.
@@ -23,6 +24,15 @@
     git push origin
     git push origin --tags
     ```
+1. Inside the repo, run:
+    ```
+    git ls-files --cached --recurse-submodules -z | tar --use-compress-program='xz -8' -cvf ../DZSimulator-vX.Y.Z-Source-code-with-submodules.tar.xz --xform=s:^:DZSimulator/: --null --files-from=-
+    ```
+    - Your working tree must be clean before running this command to ensure the correct files and their correct version get archived (Note: Untracked files don't get archived)
+    - If you're on Windows, you need to run this command in **Git Bash**, which is probably included in your Git installation
+    - Command was tested with GNU tar 1.34
+    - The `.tar.xz` archive is created in the parent directory
+1. Rename executable ("DZSimulator-vX.Y.Z.exe") and source code archive with new version number
 1. Make a release on GitHub, write changes and attach source code archive and the executable(s)
 1. Test if new GitHub release is detected by previously released DZSimulator versions
 
