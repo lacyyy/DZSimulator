@@ -11,15 +11,15 @@ namespace utils_3d {
     Magnum::Matrix4 CalcModelTransformationMatrix(const Magnum::Vector3& obj_pos,
         const Magnum::Vector3& obj_ang, float uniform_scale=1.0f);
 
-    // Calculates normalized normal of triangle described by 3 vertices in
-    // clockwise direction
+    // Calculates normal of triangle described by 3 vertices in
+    // counter-clockwise direction
     Magnum::Vector3 CalcNormalCcwFront(
         const Magnum::Vector3& v1,
         const Magnum::Vector3& v2,
         const Magnum::Vector3& v3);
 
-    // Calculates normalized normal of triangle described by 3 vertices in
-    // counter-clockwise direction
+    // Calculates normal of triangle described by 3 vertices in
+    // clockwise direction
     Magnum::Vector3 CalcNormalCwFront (
         const Magnum::Vector3& v1,
         const Magnum::Vector3& v2,

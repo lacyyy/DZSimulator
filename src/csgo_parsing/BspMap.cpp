@@ -75,8 +75,8 @@ bool BspMap::Brush::HasFlags(uint32_t flags) const { return contents & flags; }
 // Return true if 2 vertices are so close together they should be considered the same
 bool BspMap::AreVerticesEquivalent(const Vector3& a, const Vector3& b)
 {
-    const Magnum::Float EPSILON = 1.0e-05f;
-    const Magnum::Float EPSILON_SQUARED = EPSILON * EPSILON;
+    const Float EPSILON = 1.0e-05f;
+    const Float EPSILON_SQUARED = EPSILON * EPSILON;
 
     Float distanceSquared = (b - a).dot();
 
@@ -85,9 +85,9 @@ bool BspMap::AreVerticesEquivalent(const Vector3& a, const Vector3& b)
     return distanceSquared <= EPSILON_SQUARED * std::max(a.dot(), b.dot());
 }
 
-std::vector<Magnum::Vector3> BspMap::GetFaceVertices(uint32_t face_idx) const
+std::vector<Vector3> BspMap::GetFaceVertices(uint32_t face_idx) const
 {
-    std::vector<Magnum::Vector3> vertexListCW;
+    std::vector<Vector3> vertexListCW;
     BspMap::Face f = this->faces[face_idx];
     // Faces are described in clockwise order when looked at from the front!
     for (size_t i = 0; i < f.num_edges; ++i) {
@@ -98,13 +98,15 @@ std::vector<Magnum::Vector3> BspMap::GetFaceVertices(uint32_t face_idx) const
     return vertexListCW;
 }
 
-// Returns displacement's vertices row by row (or column by column)
-std::vector<Magnum::Vector3> BspMap::GetDisplacementVertices(size_t disp_info_idx) const
+// @OPTIMIZATION Don't call this function more than once per displacement
+std::vector<Vector3> BspMap::GetDisplacementVertices(size_t disp_info_idx) const
 {
+    // This function must return the vertices in the same order as they are
+    // found in the BSP map file's DISP_VERTS lump
+
     const BspMap::DispInfo& dispinfo = this->dispinfos[disp_info_idx];
     size_t num_row_verts = ((size_t)1 << dispinfo.power) + 1; // verts in one row
     size_t num_verts = num_row_verts * num_row_verts;
-    //const size_t num_tris = 2 * ((size_t)1 << dispinfo.power) * ((size_t)1 << dispinfo.power);
 
     BspMap::Face face = this->faces[dispinfo.map_face];
     if (face.num_edges != 4) {
@@ -130,33 +132,31 @@ std::vector<Magnum::Vector3> BspMap::GetDisplacementVertices(size_t disp_info_id
         }
     }
 
-    Vector3& mapFaceVertTopLeft = mapFaceVertListCW[(idx_startPosVert + 3) % mapFaceVertListCW.size()];
-    Vector3& mapFaceVertTopRight = mapFaceVertListCW[(idx_startPosVert + 0) % mapFaceVertListCW.size()];
-    Vector3& mapFaceVertBotRight = mapFaceVertListCW[(idx_startPosVert + 1) % mapFaceVertListCW.size()];
-    Vector3& mapFaceVertBotLeft = mapFaceVertListCW[(idx_startPosVert + 2) % mapFaceVertListCW.size()];
+    Vector3& mapFaceVertTopLeft  = mapFaceVertListCW[(idx_startPosVert + 3) % 4];
+    Vector3& mapFaceVertTopRight = mapFaceVertListCW[(idx_startPosVert + 0) % 4];
+    Vector3& mapFaceVertBotRight = mapFaceVertListCW[(idx_startPosVert + 1) % 4];
+    Vector3& mapFaceVertBotLeft  = mapFaceVertListCW[(idx_startPosVert + 2) % 4];
 
     std::vector<Vector3> verts(num_verts);
-    for (size_t i = 0; i < num_verts; ++i) {
+    for (size_t i = 0; i < num_verts; i++) {
         // Calc flat displacement vertex position
         Float rowPos = (Float)(i % num_row_verts) / (Float)(num_row_verts - 1);
         Float colPos = (Float)(i / num_row_verts) / (Float)(num_row_verts - 1);
-        Vector3 top_interp = (1.0f - rowPos) * mapFaceVertTopLeft + (rowPos)*mapFaceVertTopRight;
-        Vector3 bot_interp = (1.0f - rowPos) * mapFaceVertBotLeft + (rowPos)*mapFaceVertBotRight;
-        verts[i] = (1.0f - colPos) * top_interp + (colPos)*bot_interp;
+        Vector3 top_interp = (rowPos) * mapFaceVertTopLeft + (1.0f - rowPos) * mapFaceVertTopRight;
+        Vector3 bot_interp = (rowPos) * mapFaceVertBotLeft + (1.0f - rowPos) * mapFaceVertBotRight;
+        verts[i] = (1.0f - colPos) * top_interp + (colPos) * bot_interp;
 
-        // Invert left/right dispvert read direction (bsp file just counts differently than us)
-        size_t idx_rowPos = i % num_row_verts;
-        size_t i_inv = i - idx_rowPos + ((num_row_verts - 1) - idx_rowPos);
         // Add offset
-        verts[i] += this->dispverts[dispinfo.disp_vert_start + i_inv].dist * this->dispverts[dispinfo.disp_vert_start + i_inv].vec;
+        const DispVert& dispvert = this->dispverts[dispinfo.disp_vert_start + i];
+        verts[i] += dispvert.dist * dispvert.vec;
     }
 
     return verts;
 }
 
-std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementFaceVertices() const
+std::vector<std::vector<Vector3>> BspMap::GetDisplacementFaceVertices() const
 {
-    std::vector<std::vector<Magnum::Vector3>> finalFaces; // will be returned in the end
+    std::vector<std::vector<Vector3>> finalFaces; // will be returned in the end
 
     for (size_t i = 0; i < this->dispinfos.size(); ++i) {
         const BspMap::DispInfo& dispinfo = this->dispinfos[i];
@@ -171,19 +171,19 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementFaceVertices() 
         for (size_t tileY = 0; tileY < ((size_t)1 << dispinfo.power); ++tileY) {
             for (size_t tileX = 0; tileX < ((size_t)1 << dispinfo.power); ++tileX) {
 
-                Vector3 vertTopLeft  = verts[(tileY    ) * num_row_verts + (tileX    )];
-                Vector3 vertBotLeft  = verts[(tileY + 1) * num_row_verts + (tileX    )];
-                Vector3 vertBotRight = verts[(tileY + 1) * num_row_verts + (tileX + 1)];
-                Vector3 vertTopRight = verts[(tileY    ) * num_row_verts + (tileX + 1)];
+                Vector3 vertTopLeft  = verts[(tileY    ) * num_row_verts + (tileX + 1)];
+                Vector3 vertBotLeft  = verts[(tileY + 1) * num_row_verts + (tileX + 1)];
+                Vector3 vertBotRight = verts[(tileY + 1) * num_row_verts + (tileX    )];
+                Vector3 vertTopRight = verts[(tileY    ) * num_row_verts + (tileX    )];
 
                 // Switch up triangle seperating diagonal each tile
                 std::vector<Vector3> triangle1, triangle2;
                 if ((tileX + tileY) % 2 == 0) {
-                    triangle1 = { vertTopLeft, vertBotRight, vertBotLeft  };
-                    triangle2 = { vertTopLeft, vertTopRight, vertBotRight };
-                } else {
                     triangle1 = { vertTopLeft, vertTopRight, vertBotLeft  };
                     triangle2 = { vertBotLeft, vertTopRight, vertBotRight };
+                } else {
+                    triangle1 = { vertTopLeft, vertBotRight, vertBotLeft  };
+                    triangle2 = { vertTopLeft, vertTopRight, vertBotRight };
                 }
                 finalFaces.push_back(std::move(triangle1));
                 finalFaces.push_back(std::move(triangle2));
@@ -194,8 +194,8 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementFaceVertices() 
     return finalFaces;
 }
 
-// OPTIMIZE: Merge boundary faces that can be merged (e.g. in displacement walls)
-std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVertices() const
+// @OPTIMIZATION: Merge boundary faces that can be merged (e.g. in displacement walls)
+std::vector<std::vector<Vector3>> BspMap::GetDisplacementBoundaryFaceVertices() const
 {
     const float EPSILON = 0.00001f; // Min vector length allowed for normalization
     // By how much the boundary faces are placed above the displacement faces
@@ -203,7 +203,7 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
     // Ratio of boundary width to displacement tile width
     const float BOUNDARY_THICKNESS = 0.1f; // between 0.0 and 1.0
 
-    std::vector<std::vector<Magnum::Vector3>> total_faces; // will be returned in the end
+    std::vector<std::vector<Vector3>> total_faces; // will be returned in the end
 
     for (size_t disp_idx = 0; disp_idx < this->dispinfos.size(); disp_idx++) {
         const BspMap::DispInfo& dispinfo = this->dispinfos[disp_idx];
@@ -220,25 +220,25 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
         // Second outermost vertex line of each of the 4 displacement sides
         std::vector<std::vector<Vector3>> secnd_outer_edge_lines{ 4 };
 
-        // [Side idx 0] Add vertices of top row (from left to right)
+        // [Side idx 0] Add vertices of top row (from right to left)
         for (size_t i = 0; i < num_row_verts; i++) {
             size_t idx_outermost_vert = i;
             first_outer_edge_lines[0].push_back(verts[idx_outermost_vert]);
             secnd_outer_edge_lines[0].push_back(verts[idx_outermost_vert + num_row_verts]);
         }
-        // [Side idx 1] Add vertices of right column (from top to bottom)
+        // [Side idx 1] Add vertices of left column (from top to bottom)
         for (size_t i = 0; i < num_row_verts; i++) {
             size_t idx_outermost_vert = num_row_verts - 1 + i * num_row_verts;
             first_outer_edge_lines[1].push_back(verts[idx_outermost_vert]);
             secnd_outer_edge_lines[1].push_back(verts[idx_outermost_vert - 1]);
         }
-        // [Side idx 2] Add vertices of bottom row (from right to left)
+        // [Side idx 2] Add vertices of bottom row (from left to right)
         for (size_t i = 0; i < num_row_verts; i++) {
             size_t idx_outermost_vert = num_row_verts * num_row_verts - 1 - i;
             first_outer_edge_lines[2].push_back(verts[idx_outermost_vert]);
             secnd_outer_edge_lines[2].push_back(verts[idx_outermost_vert - num_row_verts]);
         }
-        // [Side idx 3] Add vertices of left column (from bottom to top)
+        // [Side idx 3] Add vertices of right column (from bottom to top)
         for (size_t i = 0; i < num_row_verts; i++) {
             size_t idx_outermost_vert = (num_row_verts - 1) * num_row_verts - i * num_row_verts;
             first_outer_edge_lines[3].push_back(verts[idx_outermost_vert]);
@@ -250,7 +250,7 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
         // clockwise vertex winding order and are formed as follows
         // (each 'X' represents a vertex):
         //
-        //     vertex index -> [0]   [1]   [2]   [3]   [4]   [5]   [6]   [7]   [8]
+        //     vertex index -> [8]   [7]   [6]   [5]   [4]   [3]   [2]   [1]   [0]
         // first outermost  ->  X --- X --- X --- X --- X --- X --- X --- X --- X  
         //   vertex line        | \ooo|ooo/ | \ooo|ooo/ | \ooo|ooo/ | \ooo|ooo/ |
         //                      |  \oo|oo/  |  \oo|oo/  |  \oo|oo/  |  \oo|oo/  |
@@ -264,11 +264,11 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
             // Calculate normals of triangles that have the displacement's
             // outermost edges (triangles filled with 'o' in the comment above)
             std::vector<Vector3> outermost_edge_normals;
-            outermost_edge_normals.reserve(num_row_verts);
+            outermost_edge_normals.reserve(num_row_verts - 1);
             for (size_t tri_idx = 0; tri_idx < num_row_verts - 1; tri_idx++) {
                 outermost_edge_normals.push_back(CalcNormalCwFront(
-                    first_outermost_vertices[tri_idx],
                     first_outermost_vertices[tri_idx + 1],
+                    first_outermost_vertices[tri_idx],
                     secnd_outermost_vertices[1 + (size_t)(tri_idx / 2) * 2]));
             }
 
@@ -311,16 +311,16 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
                 }
                 else {
                     if (i != 0) {
-                        Vector3 tmp = Math::cross((first_outermost_vertices[i] -
-                                                   first_outermost_vertices[i - 1]),
+                        Vector3 tmp = Math::cross((first_outermost_vertices[i - 1] -
+                                                   first_outermost_vertices[i]),
                                                   outermost_edge_normals[i - 1]);
                         if (tmp.length() > EPSILON)
                             inwards_vec += tmp.normalized();
                     }
                         
                     if (i != num_row_verts - 1) {
-                        Vector3 tmp = Math::cross((first_outermost_vertices[i + 1] -
-                                                   first_outermost_vertices[i]),
+                        Vector3 tmp = Math::cross((first_outermost_vertices[i] -
+                                                   first_outermost_vertices[i + 1]),
                                                   outermost_edge_normals[i]);
                         if (tmp.length() > EPSILON)
                             inwards_vec += tmp.normalized();
@@ -342,13 +342,13 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
             // Make boundary mesh vertices into triangles
             for (size_t tile = 0; tile < num_row_verts - 1; tile++) {
                 total_faces.push_back({
-                    boundary_mesh_vertices[0][tile],
+                    boundary_mesh_vertices[1][tile],
                     boundary_mesh_vertices[1][tile + 1],
-                    boundary_mesh_vertices[1][tile] });
+                    boundary_mesh_vertices[0][tile + 1] });
                 total_faces.push_back({
-                    boundary_mesh_vertices[0][tile],
                     boundary_mesh_vertices[0][tile + 1],
-                    boundary_mesh_vertices[1][tile + 1] });
+                    boundary_mesh_vertices[0][tile],
+                    boundary_mesh_vertices[1][tile] });
             }
         }
     }
@@ -357,7 +357,7 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetDisplacementBoundaryFaceVer
 }
 
 // Returns faces with clockwise vertex winding
-std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std::set<size_t>& brush_indices,
+std::vector<std::vector<Vector3>> BspMap::GetBrushFaceVertices(const std::set<size_t>& brush_indices,
     bool (*pred_Brush)(const Brush&),
     bool (*pred_BrushSide)(const BrushSide&, const BspMap&)) const
 {
@@ -373,11 +373,11 @@ std::vector<std::vector<Magnum::Vector3>> BspMap::GetBrushFaceVertices(const std
     //     https://github.com/magcius/noclip.website
     //     https://github.com/Metapyziks/SourceUtils/
 
-    // TODO Optimization:
+    // TODO @OPTIMIZATION:
     //  - Delete redundant vertices that are on the line from the last to to the next vertex
     //  - Remove redundant faces inside other faces?
 
-    std::vector<std::vector<Magnum::Vector3>> finalFaces; // This vector will be returned
+    std::vector<std::vector<Vector3>> finalFaces; // This vector will be returned
 
     // When checking what vertices fall behind a plane, vertices on the plane are
     // treated pretty much randomly (float inaccuracy). Therefore cut a fraction
@@ -649,7 +649,7 @@ std::set<size_t> BspMap::GetModelBrushIndices_worldspawn() const
 std::set<size_t> BspMap::GetModelBrushIndices(uint32_t model_idx) const
 {
     const Model& m = this->models[model_idx];
-    //std::vector<std::vector<Magnum::Vector3>> totalFaces;
+    //std::vector<std::vector<Vector3>> totalFaces;
 
     std::vector<int32_t> pendingNodesAndLeafs = { m.head_node };
 

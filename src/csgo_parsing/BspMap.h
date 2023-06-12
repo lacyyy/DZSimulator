@@ -352,7 +352,10 @@ public:
 
     std::vector<Magnum::Vector3> GetFaceVertices(uint32_t face_idx) const; // index into faces array
 
+    // Returns a displacement's vertices in the same order as they are found in
+    // the BSP map file's DISP_VERTS lump
     std::vector<Magnum::Vector3> GetDisplacementVertices(size_t disp_info_idx) const;
+
     std::vector<std::vector<Magnum::Vector3>> GetDisplacementFaceVertices() const;
     std::vector<std::vector<Magnum::Vector3>> GetDisplacementBoundaryFaceVertices() const;
 
