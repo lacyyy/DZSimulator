@@ -1,5 +1,5 @@
-#ifndef RENDERING_WORLDCREATION_H_
-#define RENDERING_WORLDCREATION_H_
+#ifndef REN_WORLDCREATION_H_
+#define REN_WORLDCREATION_H_
 
 #include <map>
 #include <memory>
@@ -15,7 +15,7 @@
 #include "csgo_parsing/BspMap.h"
 #include "csgo_parsing/utils.h"
 
-namespace rendering {
+namespace ren {
 
     // Map-specific data container for convenient deallocation
     struct CsgoMapGeometry {
@@ -71,4 +71,4 @@ namespace rendering {
     }
 }
 
-#endif // RENDERING_WORLDCREATION_H_
+#endif // REN_WORLDCREATION_H_

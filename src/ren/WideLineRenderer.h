@@ -1,5 +1,5 @@
-#ifndef RENDERING_WIDELINERENDERER_H_
-#define RENDERING_WIDELINERENDERER_H_
+#ifndef REN_WIDELINERENDERER_H_
+#define REN_WIDELINERENDERER_H_
 
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Math/Color.h>
@@ -13,7 +13,7 @@
 #include <Magnum/Platform/Sdl2Application.h>
 #endif
 
-namespace rendering {
+namespace ren {
     class WideLineRenderer {
     public:
 #ifdef DZSIM_WEB_PORT
@@ -54,6 +54,6 @@ namespace rendering {
         Magnum::GL::Mesh _z_line_mesh{ Magnum::NoCreate };
     };
 
-} // namespace rendering
+} // namespace ren
 
-#endif // RENDERING_WIDELINERENDERER_H_
+#endif // REN_WIDELINERENDERER_H_

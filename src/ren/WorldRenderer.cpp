@@ -16,7 +16,7 @@
 
 using namespace Magnum;
 using namespace Math::Literals;
-using namespace rendering;
+using namespace ren;
 
 namespace BrushSep = csgo_parsing::BrushSeparation;
 
@@ -242,7 +242,7 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
 
 }
 
-Magnum::Color4 rendering::WorldRenderer::CvtImguiCol4(float* im_col4)
+Magnum::Color4 ren::WorldRenderer::CvtImguiCol4(float* im_col4)
 {
     return Magnum::Color4(im_col4[0], im_col4[1], im_col4[2], im_col4[3]);
 }

@@ -1,5 +1,5 @@
-#ifndef RENDERING_WORLDRENDERER_H_
-#define RENDERING_WORLDRENDERER_H_
+#ifndef REN_WORLDRENDERER_H_
+#define REN_WORLDRENDERER_H_
 
 #include <memory>
 #include <vector>
@@ -13,10 +13,10 @@
 
 #include "csgo_parsing/BspMap.h"
 #include "gui/GuiState.h"
-#include "rendering/GlidabilityShader3D.h"
+#include "ren/GlidabilityShader3D.h"
 #include "WorldCreation.h"
 
-namespace rendering {
+namespace ren {
 
 class WorldRenderer {
 public:
@@ -46,13 +46,13 @@ private:
     Magnum::Shaders::FlatGL3D _flat_shader{ Magnum::NoCreate };
 
     // World meshes
-    std::unique_ptr<rendering::CsgoMapGeometry> _map_geo{ nullptr };
+    std::unique_ptr<ren::CsgoMapGeometry> _map_geo{ nullptr };
 
     // Other meshes
     Magnum::GL::Mesh _mesh_bump_mine{ Magnum::NoCreate };
 
 };
 
-} // namespace rendering
+} // namespace ren
 
-#endif // RENDERING_WORLDRENDERER_H_
+#endif // REN_WORLDRENDERER_H_

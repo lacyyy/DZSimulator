@@ -322,12 +322,12 @@ target_sources(DZSimulator PRIVATE
     "src/gui/MenuWindow.cpp"
     "src/gui/Popup.cpp"
 
-    "src/rendering/_unused_VertBufUpdateDemo.cpp"
-    "src/rendering/BigTextRenderer.cpp"
-    "src/rendering/GlidabilityShader3D.cpp"
-    "src/rendering/WideLineRenderer.cpp"
-    "src/rendering/WorldCreation.cpp"
-    "src/rendering/WorldRenderer.cpp"
+    "src/ren/_unused_VertBufUpdateDemo.cpp"
+    "src/ren/BigTextRenderer.cpp"
+    "src/ren/GlidabilityShader3D.cpp"
+    "src/ren/WideLineRenderer.cpp"
+    "src/ren/WorldCreation.cpp"
+    "src/ren/WorldRenderer.cpp"
 
     "src/sim/Server.cpp"
     "src/sim/WorldState.cpp"

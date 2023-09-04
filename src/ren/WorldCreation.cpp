@@ -20,15 +20,15 @@
 #include "GlidabilityShader3D.h"
 #include "utils_3d.h"
 
-using namespace rendering;
-using namespace rendering::WorldCreation;
+using namespace ren;
+using namespace ren::WorldCreation;
 using namespace utils_3d;
 
 using namespace Magnum;
 using namespace Math::Literals;
 namespace BrushSep = csgo_parsing::BrushSeparation;
 
-std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry(
+std::unique_ptr<CsgoMapGeometry> ren::WorldCreation::CreateCsgoMapGeometry(
     std::shared_ptr<const csgo_parsing::BspMap> bsp_map,
     std::string* dest_errors)
 {
@@ -431,7 +431,7 @@ std::unique_ptr<CsgoMapGeometry> rendering::WorldCreation::CreateCsgoMapGeometry
 }
 
 csgo_parsing::utils::RetCode
-rendering::WorldCreation::CreatePhyModelMeshFromFile(GL::Mesh* dest,
+ren::WorldCreation::CreatePhyModelMeshFromFile(GL::Mesh* dest,
     csgo_parsing::AssetFileReader& reader_opened_in_phy_file)
 {
     // CSGO loads the phy model even if checksum of MDL and PHY are not identical.
@@ -447,12 +447,12 @@ rendering::WorldCreation::CreatePhyModelMeshFromFile(GL::Mesh* dest,
     return { csgo_parsing::utils::RetCode::SUCCESS };
 }
 
-GL::Mesh rendering::WorldCreation::CreateBumpMineMesh()
+GL::Mesh ren::WorldCreation::CreateBumpMineMesh()
 {
     return MeshTools::compile(Primitives::uvSphereSolid(7, 10));
 }
 
-GL::Mesh rendering::WorldCreation::GenMeshWithVertAttr_Position(
+GL::Mesh ren::WorldCreation::GenMeshWithVertAttr_Position(
     const std::vector<std::vector<Vector3>>& faces)
 {
     struct Vert {
@@ -480,7 +480,7 @@ GL::Mesh rendering::WorldCreation::GenMeshWithVertAttr_Position(
     return mesh;
 }
 
-GL::Mesh rendering::WorldCreation::GenMeshWithVertAttr_Position_Normal(
+GL::Mesh ren::WorldCreation::GenMeshWithVertAttr_Position_Normal(
     const std::vector<std::vector<Vector3>>& faces)
 {
     struct Vert {

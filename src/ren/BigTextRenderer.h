@@ -1,5 +1,5 @@
-#ifndef RENDERING_BIGTEXTRENDERER_H_
-#define RENDERING_BIGTEXTRENDERER_H_
+#ifndef REN_BIGTEXTRENDERER_H_
+#define REN_BIGTEXTRENDERER_H_
 
 #include <memory>
 
@@ -19,7 +19,7 @@
 #include <Magnum/Platform/Sdl2Application.h>
 #endif
 
-namespace rendering {
+namespace ren {
 
     class BigTextRenderer {
     public:
@@ -61,6 +61,6 @@ namespace rendering {
         Magnum::Matrix3 _transformation_projection_number_text;
     };
 
-} // namespace rendering
+} // namespace ren
 
-#endif // RENDERING_BIGTEXTRENDERER_H_
+#endif // REN_BIGTEXTRENDERER_H_

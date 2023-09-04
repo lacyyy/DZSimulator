@@ -10,7 +10,7 @@
 
 using namespace Magnum;
 using namespace Math::Literals;
-using namespace rendering;
+using namespace ren;
 
 #define DISCLAIMER_MSG "THIS IS NOT A CHEAT\n(requires sv_cheats 1)"
 #define NUMBER_TEXT_GLYPHS "0123456789"
@@ -129,7 +129,7 @@ void BigTextRenderer::DrawDisclaimer(float gui_scaling)
     
 }
 
-void rendering::BigTextRenderer::DrawNumber(
+void ren::BigTextRenderer::DrawNumber(
     int number, const Magnum::Color4& col, float scaling, Vector2 pos)
 {
     Vector2i window_size = _app.windowSize();

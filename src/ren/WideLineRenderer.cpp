@@ -18,7 +18,7 @@
 #include <Magnum/Shaders/Line.h>
 #include <Magnum/Trade/MeshData.h>
 
-using namespace rendering;
+using namespace ren;
 using namespace Magnum;
 
 
@@ -69,7 +69,7 @@ static bool ClipLineToCameraPlane(Vector3& start, Vector3& end, const Vector4& c
     return false; // At least some part of the line is in front of the camera plane
 }
 
-void rendering::WideLineRenderer::Init()
+void ren::WideLineRenderer::Init()
 {
     // Delayed member construction here (not in constructor) because they
     // require a GL context
@@ -98,13 +98,13 @@ void rendering::WideLineRenderer::Init()
     _z_line_mesh = MeshTools::compileLines(MeshTools::generateLines(mesh_data_z_line));
 }
 
-void rendering::WideLineRenderer::HandleViewportEvent(
+void ren::WideLineRenderer::HandleViewportEvent(
     const Application::ViewportEvent& /*event*/)
 {
     // ...
 }
 
-void rendering::WideLineRenderer::DrawAABB(
+void ren::WideLineRenderer::DrawAABB(
     const Color4& aabb_col, const Vector3& aabb_center_pos, const Vector3& aabb_extents,
     const Matrix4& view_proj_transformation,
     const Vector3& cam_pos, const Vector3& cam_dir_normal, bool no_depth_test)
@@ -213,7 +213,7 @@ void rendering::WideLineRenderer::DrawAABB(
     GL::Renderer::setDepthMask(true);
 }
 
-void rendering::WideLineRenderer::DrawLine(
+void ren::WideLineRenderer::DrawLine(
     const Color4& color, Vector3 start, Vector3 end,
     const Matrix4& view_proj_transformation,
     const Vector3& cam_pos, const Vector3& cam_dir_normal, bool no_depth_test)

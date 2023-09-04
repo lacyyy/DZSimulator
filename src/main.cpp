@@ -30,9 +30,9 @@
 #include "csgo_parsing/BspMapParsing.h"
 #include "gui/Gui.h"
 #include "InputHandler.h"
-#include "rendering/BigTextRenderer.h"
-#include "rendering/WorldRenderer.h"
-#include "rendering/WideLineRenderer.h"
+#include "ren/BigTextRenderer.h"
+#include "ren/WorldRenderer.h"
+#include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
 #include "sim/Server.h"
 #include "GitHubChecker.h"
@@ -78,8 +78,8 @@ class DZSimApplication: public Platform::Application {
         sim::Server _gameServer;
         InputHandler _inputs;
         
-        rendering::BigTextRenderer _big_text_renderer;
-        rendering::WideLineRenderer _wide_line_renderer;
+        ren::BigTextRenderer _big_text_renderer;
+        ren::WideLineRenderer _wide_line_renderer;
 
         // The latest world state calculated from the server
         // -> changes every server tick
@@ -106,7 +106,7 @@ class DZSimApplication: public Platform::Application {
 
         GitHubChecker _update_checker;
 
-        rendering::WorldRenderer _world_renderer;
+        ren::WorldRenderer _world_renderer;
 
         enum UserInputMode{
             // User can navigate the menu with their mouse cursor
