@@ -46,9 +46,7 @@ public:
     static const size_t MAX_TEXDATA_STRING_DATA = 256000;
     static const size_t MAX_TEXTURE_NAME_LENGTH = 128;
 
-    // Currently, max csgo brush length is 32768.
-    // MAX_BRUSH_LENGTH must be bigger, it's the length of the cube to cut brushes from
-    static const size_t MAX_BRUSH_LENGTH = 65536; // 2 times the current limit in csgo
+    static const size_t MAX_BRUSH_LENGTH = 32768; // max brush length in CSGO
     static const size_t MAX_BRUSHES = 8192;
     static const size_t MAX_BRUSHSIDES = 65536;
     static const size_t MAX_BRUSH_SIDES = 128; // max number of faces on a single brush
