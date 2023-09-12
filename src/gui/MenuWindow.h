@@ -16,6 +16,7 @@ namespace gui {
     private:
         void ShowAppExplanation();
         void ShowTechnicalities();
+        void ShowMovementRecreationDetails();
         void ShowKnownIssues();
         void ShowPlannedFeatures();
 

@@ -9,7 +9,7 @@ Everything else in this repository falls into one of two categories:
        requirements under 'LICENSES-THIRD-PARTY.txt'. Using this software
        requires you to distribute anything derived from it for free!
        Software from this category is clearly marked with comments like
-       'taken from source-sdk-2013/<...>'.
+       'start of source-sdk-2013 code'.
 
     2. Software not from 'thirdparty/', not from 'res/fonts/' and not marked
        as taken from source-sdk-2013 is available solely under the MIT License

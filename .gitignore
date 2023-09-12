@@ -1,6 +1,9 @@
 # Build results (leading '/' to only match top-level 'out'-directory)
 /out/
 
+# User-specific build configurations (e.g. library installation paths)
+CMakeUserPresets.json
+
 # Binary version of resource script file from the resource compiler
 *.aps
 

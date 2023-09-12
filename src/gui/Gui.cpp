@@ -1,4 +1,4 @@
-#include "Gui.h"
+#include "gui/Gui.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -8,12 +8,15 @@
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
+
+#ifndef DZSIM_WEB_PORT
 #include <portable-file-dialogs.h>
+#endif
 
 using namespace Magnum;
 using namespace gui;
 
-Gui::Gui(Platform::Sdl2Application& app, Utility::Resource& res, GuiState& state)
+Gui::Gui(Application& app, Utility::Resource& res, GuiState& state)
     : _app{ app }
     , _resources { res }
     , state{ state }
@@ -73,7 +76,7 @@ void Gui::Init(
         _app.framebufferSize());
 }
 
-void Gui::HandleViewportEvent(Platform::Sdl2Application::ViewportEvent& /* event */)
+void Gui::HandleViewportEvent(Application::ViewportEvent& /* event */)
 {
     UpdateGuiScaling();
 }
@@ -409,6 +412,9 @@ void Gui::DrawLegalNoticesWindow()
 // Returns path with forward slash directory separators
 std::string Gui::OpenBspFileDialog()
 {
+#ifdef DZSIM_WEB_PORT
+    return {};
+#else
     if (!pfd::settings::available()) {
         Error{} << "[ERR] pfd not available!";
         return {}; // Return empty string
@@ -428,4 +434,5 @@ std::string Gui::OpenBspFileDialog()
     std::string path = Corrade::Utility::Path::fromNativeSeparators(selection[0]);
     Debug{} << "[Gui] Selected map file to open:" << path.c_str();
     return path;
+#endif
 }

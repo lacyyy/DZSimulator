@@ -4,6 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <thread>
 #include <queue>
 
 #include <Magnum/Magnum.h>

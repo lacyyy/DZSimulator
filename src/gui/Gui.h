@@ -7,8 +7,13 @@
 #include <Corrade/Containers/StringView.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
-#include <Magnum/Platform/Sdl2Application.h>
 #include <Magnum/Tags.h>
+
+#ifdef DZSIM_WEB_PORT
+#include <Magnum/Platform/EmscriptenApplication.h>
+#else
+#include <Magnum/Platform/Sdl2Application.h>
+#endif
 
 #include "gui/GuiState.h"
 
@@ -24,9 +29,15 @@ namespace gui {
 
 class Gui {
 public:
+#ifdef DZSIM_WEB_PORT
+    typedef Magnum::Platform::EmscriptenApplication Application;
+#else
+    typedef Magnum::Platform::Sdl2Application Application;
+#endif
 
-    Gui(Magnum::Platform::Sdl2Application& app, Corrade::Utility::Resource& res,
-        GuiState& state);
+public:
+
+    Gui(Application& app, Corrade::Utility::Resource& res, GuiState& state);
 
     void Init(
         const Corrade::Containers::ArrayView<const char>& font_data_disp = {},
@@ -34,8 +45,7 @@ public:
 
     void Draw();
 
-    void HandleViewportEvent(
-        Magnum::Platform::Sdl2Application::ViewportEvent& event);
+    void HandleViewportEvent(Application::ViewportEvent& event);
 
     float GetTotalGuiScaling(); // Getter for _total_gui_scaling
     void UpdateGuiScaling(); // Must be called before ImGui::NewFrame()
@@ -68,7 +78,7 @@ private:
     std::string OpenBspFileDialog();
 
 
-    Magnum::Platform::Sdl2Application& _app;
+    Application& _app;
     Corrade::Utility::Resource& _resources;
 
     const float DEFAULT_FONT_SIZE = 26.0f;
@@ -103,8 +113,8 @@ private:
 
 
     // Let modules access this class's private members
-    friend class MenuWindow;
-    friend class Popup;
+    friend class gui::MenuWindow;
+    friend class gui::Popup;
 };
 
 } // namespace gui

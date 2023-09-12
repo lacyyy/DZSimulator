@@ -1,11 +1,13 @@
-#include "AssetFinder.h"
+#include "csgo_parsing/AssetFinder.h"
 
+#ifndef DZSIM_WEB_PORT
 // Here we only use Windows API calls to read registry entries. This is always
 // done through the non-Unicode Windows code page versions of the API calls
 // (function names ending in 'A') because we assume Steam's registry keys, value
 // names and install path string are all ASCII and do not contain Unicode.
 // Hence no '#define UNICODE' before the windows header include here.
 #include <windows.h>
+#endif
 
 #include <cstring>
 #include <fstream>
@@ -22,13 +24,14 @@
 #include <fsal.h>
 #include <Magnum/Magnum.h>
 
-#include "utils.h"
+#include "csgo_parsing/utils.h"
 
 using namespace csgo_parsing;
 using namespace csgo_parsing::AssetFinder;
 using namespace Magnum;
 namespace CorrPath = Corrade::Utility::Path;
 
+#ifndef DZSIM_WEB_PORT
 // We're looking for a registry key under HKEY_CURRENT_USER\Software\Valve\Steam
 // Steam's install directory is saved under that key's value with name "SteamPath"
 #define STEAM_REGISTRY_KEY_ENTRY_KEY HKEY_CURRENT_USER
@@ -41,7 +44,7 @@ namespace CorrPath = Corrade::Utility::Path;
 #define STEAM_DIR_LIBRARYFOLDERS_VDF_PATH "steamapps/libraryfolders.vdf"
 // Sub-path in a Steam library folder leading to CSGO's install dir
 #define STEAM_LIB_FOLDER_CSGO_PATH "steamapps/common/Counter-Strike Global Offensive/"
-
+#endif
 
 // ---- INTERNAL VARIABLES ----
 
@@ -53,7 +56,7 @@ static std::string s_csgo_path = "";
 // Paths are in UTF-8 with forward slash directory separators.
 static std::vector<std::string> s_map_files = {};
 
-
+#ifndef DZSIM_WEB_PORT
 // Get error message for a system-defined error
 std::string GetSystemErrorMsg(const std::string& what_failed, DWORD err_code)
 {
@@ -344,6 +347,7 @@ utils::RetCode GetSteamLibraryFolderPaths(
 
     return { utils::RetCode::SUCCESS };
 }
+#endif
 
 // Explores all files under a directory recursively and returns their paths
 // relative to the starting directory. Given path must be UTF-8 and directory
@@ -382,6 +386,9 @@ std::vector<std::string> ListFilePathsRecursively(const std::string& dir_path)
 
 utils::RetCode AssetFinder::FindCsgoPath()
 {
+#ifdef DZSIM_WEB_PORT
+    return { utils::RetCode::STEAM_NOT_INSTALLED };
+#else
     // Clear previous results of FindCsgoPath(), RefreshMapFileList() and
     // RefreshVpkArchiveIndex()
     s_csgo_path = "";
@@ -440,6 +447,7 @@ utils::RetCode AssetFinder::FindCsgoPath()
     }
     
     return { utils::RetCode::CSGO_NOT_INSTALLED };
+#endif
 }
 
 const std::string& AssetFinder::GetCsgoPath()
@@ -504,8 +512,12 @@ utils::RetCode AssetFinder::RefreshVpkArchiveIndex(
 
 bool AssetFinder::ExistsInGameFiles(const std::string& file_path)
 {
+#ifdef DZSIM_WEB_PORT
+    return false;
+#else
     // Look for file under search paths and inside the VPK archive index!
     fsal::Location loc(file_path, fsal::Location::kSearchPathsAndArchives);
     fsal::FileSystem fs;
     return fs.Exists(loc);
+#endif
 }

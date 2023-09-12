@@ -1,4 +1,4 @@
-#include "BigTextRenderer.h"
+#include "ren/BigTextRenderer.h"
 
 #include <string>
 
@@ -10,23 +10,24 @@
 
 using namespace Magnum;
 using namespace Math::Literals;
-using namespace rendering;
+using namespace ren;
 
 #define DISCLAIMER_MSG "THIS IS NOT A CHEAT\n(requires sv_cheats 1)"
 #define NUMBER_TEXT_GLYPHS "0123456789"
 
-BigTextRenderer::BigTextRenderer(Platform::Sdl2Application& app,
+BigTextRenderer::BigTextRenderer(Application& app,
     PluginManager::Manager<Text::AbstractFont>& font_plugin_mgr)
     : _app { app }
     , _font_plugin_mgr {font_plugin_mgr}
 {}
 
-void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_data)
+void BigTextRenderer::InitWithOpenGLContext(
+    const Containers::ArrayView<const char>& raw_font_data)
 {
     // Delayed member construction here (not in constructor) because they
     // require a GL context
-    _vertices = GL::Buffer{};
-    _indices = GL::Buffer{};
+    _vertices = GL::Buffer{ GL::Buffer::TargetHint::Array        };
+    _indices  = GL::Buffer{ GL::Buffer::TargetHint::ElementArray };
     _shader = Shaders::DistanceFieldVectorGL2D{};
 
     // Unscaled glyph cache texture size
@@ -70,7 +71,7 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
         Text::Alignment::TopRight
     );
     
-    // Can we move the cache into the renderer constructor for optimization?
+    // @Optimization Can we move the cache into the renderer constructor?
     size_t number_text_glyph_cnt = std::strlen(NUMBER_TEXT_GLYPHS);
     _number_text.reset(
         new Text::Renderer2D(*_font, *_cache, 50.0f, Text::Alignment::MiddleCenter));
@@ -82,7 +83,7 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
 }
 
 void BigTextRenderer::HandleViewportEvent(
-    const Platform::Sdl2Application::ViewportEvent& /*event*/)
+    const Application::ViewportEvent& /*event*/)
 {
     // ...
 }
@@ -129,7 +130,7 @@ void BigTextRenderer::DrawDisclaimer(float gui_scaling)
     
 }
 
-void rendering::BigTextRenderer::DrawNumber(
+void BigTextRenderer::DrawNumber(
     int number, const Magnum::Color4& col, float scaling, Vector2 pos)
 {
     Vector2i window_size = _app.windowSize();

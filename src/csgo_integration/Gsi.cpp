@@ -1,4 +1,4 @@
-#include "Gsi.h"
+#include "csgo_integration/Gsi.h"
 
 #include <atomic>
 #include <memory>

@@ -9,26 +9,35 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
-#include <Magnum/Platform/Sdl2Application.h>
+#include <Magnum/Math/Functions.h>
 #include <Magnum/Text/AbstractFont.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
+
+#ifdef DZSIM_WEB_PORT
+#include <Magnum/Platform/EmscriptenApplication.h>
+#else
+#include <Magnum/Platform/Sdl2Application.h>
 #include <SDL_hints.h>
 #include <SDL_syswm.h> // To get windows API handle
+#endif
 
 #include "build_info.h"
+#include "coll/CollidableWorld.h"
 #include "csgo_integration/Gsi.h"
 #include "csgo_integration/Handler.h"
 #include "csgo_integration/RemoteConsole.h"
 #include "csgo_parsing/AssetFinder.h"
 #include "csgo_parsing/BspMapParsing.h"
+#include "GitHubChecker.h"
 #include "gui/Gui.h"
 #include "InputHandler.h"
-#include "rendering/BigTextRenderer.h"
-#include "rendering/WorldRenderer.h"
+#include "ren/BigTextRenderer.h"
+#include "ren/WorldRenderer.h"
+#include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
 #include "sim/Server.h"
-#include "GitHubChecker.h"
+#include "WorldCreator.h"
 
 // Allow window on a resolution of 800x600
 #define MIN_WINDOW_WIDTH  768
@@ -71,7 +80,8 @@ class DZSimApplication: public Platform::Application {
         sim::Server _gameServer;
         InputHandler _inputs;
         
-        rendering::BigTextRenderer _big_text_renderer;
+        ren::BigTextRenderer _big_text_renderer;
+        ren::WideLineRenderer _wide_line_renderer;
 
         // The latest world state calculated from the server
         // -> changes every server tick
@@ -98,7 +108,12 @@ class DZSimApplication: public Platform::Application {
 
         GitHubChecker _update_checker;
 
-        rendering::WorldRenderer _world_renderer;
+        // Map data
+        std::shared_ptr<csgo_parsing::BspMap>  _bsp_map;
+        std::shared_ptr<coll::CollidableWorld> _coll_world;
+        std::shared_ptr<ren ::RenderableWorld> _ren_world;
+
+        ren::WorldRenderer _world_renderer;
 
         enum UserInputMode{
             // User can navigate the menu with their mouse cursor
@@ -119,15 +134,20 @@ class DZSimApplication: public Platform::Application {
         gui::GuiState::VideoSettings::WindowMode cur_window_mode;
         gui::GuiState::VideoSettings::AvailableDisplay cur_fullscreen_display; // Currently used display, if in "Fullscreen Windowed" mode
 
+#ifndef DZSIM_WEB_PORT
         HWND win_handle = nullptr; // Windows API window handle
-
+#endif
 
 
     private:
+#ifndef DZSIM_WEB_PORT
         void exitEvent(ExitEvent& event) override;
+#endif
 
         bool RefreshAvailableDisplays();
+#ifndef DZSIM_WEB_PORT
         void LoadWindowIcon(Utility::Resource& res);
+#endif
         void DoCsgoPathSearch(bool show_popup_on_fail=true);
         void UpdateGuiCsgoMapPaths();
 
@@ -139,8 +159,14 @@ class DZSimApplication: public Platform::Application {
         void ConfigureGameKeyBindings();
 
         void viewportEvent(ViewportEvent& event) override;
+        
+        void DoUpdate();
+
+#ifndef DZSIM_WEB_PORT
         void tickEvent() override;
+#endif
         void CalcViewProjTransformation();
+        Vector3 GetCameraForwardVector(); // Normalized
         void drawEvent() override;
         void textInputEvent(TextInputEvent& event) override
         {
@@ -207,8 +233,6 @@ class DZSimApplication: public Platform::Application {
             _inputs.HandleKeyReleaseEvent(event);
         }
         
-        std::shared_ptr<csgo_parsing::BspMap> _bsp_map;
-
         Matrix4 _view_proj_transformation; // = projection_matrix * view_matrix
 };
 
@@ -285,10 +309,14 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 
     // Don't add WindowFlag::Borderless to this config! It breaks window
     // transparency for unknown reasons.
+    Configuration app_conf = Configuration{}.setTitle(window_title);
+
+#ifdef DZSIM_WEB_PORT
+    app_conf.setSize(window_size);
+#else
     auto dpi_policy = Configuration::DpiScalingPolicy::Default;
-    Configuration app_conf = Configuration{}
-        .setTitle(window_title)
-        .setSize(window_size, dpi_policy);
+    app_conf.setSize(window_size, dpi_policy);
+#endif
 
     if (window_mode != gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED)
         app_conf.addWindowFlags(Configuration::WindowFlag::Resizable);
@@ -314,7 +342,13 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     //       Sdl2Application::dpiScaling(config) determines DPI scaling only from
     //       display index 0 ! Other displays might have different DPI scaling!
     Vector2 dpi_scaling = dpiScaling(app_conf);
+#ifdef DZSIM_WEB_PORT
+    // FIXME: This definitely needs testing, no idea how this behaves.
+    app_conf.setSize(window_size / dpi_scaling);
+#else
     app_conf.setSize(window_size / dpi_scaling, dpi_policy);
+#endif
+
 
     // Try creating a context with MSAA.
     // Higher MSAA sample counts significantly reduce FPS. A sample count of 2
@@ -327,6 +361,8 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
             << MSAA_SAMPLE_COUNT << "-> context without MSAA will be created.";
         create(app_conf, glConf.setSampleCount(0)); // 0 = no multisampling
     }
+
+#ifndef DZSIM_WEB_PORT
 
 #ifdef SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH
     // Let SDL generate mouse events even if the window isn't focused
@@ -351,7 +387,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     Vector2i min_window_size = { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT };
     min_window_size /= dpi_scaling;
     this->setMinWindowSize(min_window_size);
+#endif
 
+#ifndef DZSIM_WEB_PORT
     {
         win_handle = nullptr;
         std::string hwnd_retrieve_err_msg = "";
@@ -380,6 +418,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
                 "in overlay mode! More things might not work too.\n\n"
                 "Error information: " + hwnd_retrieve_err_msg);
     }
+#endif
 
     
     build_info::print();
@@ -389,8 +428,10 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     Debug{} << "-- resources:";
     for (auto e : _resources.list())
         Debug{} << "-" << e;
-    
+
+#ifndef DZSIM_WEB_PORT
     LoadWindowIcon(_resources);
+#endif
 
     DoCsgoPathSearch(); // Shows user an error popup on failure
 
@@ -401,15 +442,15 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 
     _gui.Init(font_data_disp, font_data_mono);
 
-    _big_text_renderer.Init(font_data_disp);
-
     // Initialization of members that require a GL context to be active
-    _world_renderer.InitShaders();
+    _big_text_renderer .InitWithOpenGLContext(font_data_disp);
+    _wide_line_renderer.InitWithOpenGLContext();
+    _world_renderer    .InitWithOpenGLContext();
 
     // Enable transparency
     GL::Renderer::enable(GL::Renderer::Feature::Blending);
 
-    // Blend functions for BigTextRenderer
+    // Blend functions for BigTextRenderer and WideLineRenderer
     GL::Renderer::setBlendFunction(
         GL::Renderer::BlendFunction::One,
         GL::Renderer::BlendFunction::OneMinusSourceAlpha);
@@ -418,6 +459,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
         GL::Renderer::BlendEquation::Add);
 
     ///////////////////////
+
+    // DepthFunction::LessOrEqual helps against Z-Fighting
+    GL::Renderer::setDepthFunction(GL::Renderer::DepthFunction::LessOrEqual);
 
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
@@ -428,6 +472,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 
     GL::Renderer::setClearColor(0x18214C_rgbf);// 0x32434C_rgbf);
 
+#ifndef DZSIM_WEB_PORT
     // Set VSync. Swap interval can be:
     // 0: VSync OFF
     // 1: VSync ON
@@ -441,11 +486,14 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
         cur_vsync_enabled = try_enable_vsync;
     }
     _gui_state.video.IN_vsync_enabled = cur_vsync_enabled; // Update GUI
+#endif
 
     ConfigureGameKeyBindings();
     CalcViewProjTransformation();
 
+#ifndef DZSIM_WEB_PORT
     _update_checker.StartAsyncUpdateAndMotdCheck();
+#endif
 
     _gameServer.ChangeSimulationTimeScale(1.0);// 0.015625);
     _gameServer.Start();
@@ -470,9 +518,10 @@ DZSimApplication::~DZSimApplication()
     _gameServer.Stop(); // Blocking, thread is joined
 }
 
-
+#ifndef DZSIM_WEB_PORT
 void DZSimApplication::exitEvent(ExitEvent& event)
 {
+    // exitEvent() doesn't exist for the web build!
     // exitEvent() gets called when the user presses the window close button
     // or presses Alt+F4 on our window.
 
@@ -484,12 +533,18 @@ void DZSimApplication::exitEvent(ExitEvent& event)
     Debug{} << "EXIT EVENT!";
     event.setAccepted(); // Confirm exit, don't suppress it
 }
+#endif
 
 // Returns false if no info of any display could be retrieved, true otherwise.
 // Also tries to select the display that was selected previously. If that fails,
 // the selected display index get set to -1 .
 bool DZSimApplication::RefreshAvailableDisplays()
 {
+#ifdef DZSIM_WEB_PORT
+    _gui_state.video.OUT_available_displays.clear();
+    _gui_state.video.IN_selected_display_idx = -1;
+    return false;
+#else
     using Display = gui::GuiState::VideoSettings::AvailableDisplay;
     auto& vid = _gui_state.video;
 
@@ -552,8 +607,10 @@ bool DZSimApplication::RefreshAvailableDisplays()
         return false;
     else
         return true;
+#endif
 }
 
+#ifndef DZSIM_WEB_PORT
 void DZSimApplication::LoadWindowIcon(Utility::Resource& res)
 {
     PluginManager::Manager<Trade::AbstractImporter> manager;
@@ -578,9 +635,13 @@ void DZSimApplication::LoadWindowIcon(Utility::Resource& res)
 
     setWindowIcon(*image);
 }
+#endif
 
 void DZSimApplication::DoCsgoPathSearch(bool show_popup_on_fail)
 {
+#ifdef DZSIM_WEB_PORT
+    return;
+#else
     auto ret = csgo_parsing::AssetFinder::FindCsgoPath();
     if (ret) // success, csgo path was found
         return;
@@ -606,6 +667,7 @@ void DZSimApplication::DoCsgoPathSearch(bool show_popup_on_fail)
 
         _gui_state.popup.QueueMsgError(user_msg);
     }
+#endif
 }
 
 void DZSimApplication::UpdateGuiCsgoMapPaths() {
@@ -655,8 +717,9 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
 {
     // Deallocate previous map data to minimize peak RAM usage during parsing
     // RAM USAGE NOT REALLY TESTED YET!
-    _bsp_map.reset();
-    _world_renderer.UnloadGeometry();
+    _ren_world .reset();
+    _coll_world.reset();
+    _bsp_map   .reset();
 
     // Embedded map files must not rely on assets from the game directory.
     // -> Indexing game directory assets for them is unnecessary
@@ -708,7 +771,16 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     if (!bsp_parse_status.desc_msg.empty())
         _gui_state.popup.QueueMsgWarn(bsp_parse_status.desc_msg);
 
-    _world_renderer.LoadBspMapGeometry(_bsp_map);
+    std::string world_init_errors;
+    auto initialized_worlds =
+        WorldCreator::InitFromBspMap(_bsp_map, &world_init_errors);
+    _ren_world  = initialized_worlds.first;
+    _coll_world = initialized_worlds.second;
+
+    if (!world_init_errors.empty()) {
+        Debug{} << world_init_errors.c_str();
+        _gui_state.popup.QueueMsgWarn(world_init_errors);
+    }
 
     if (_bsp_map->player_spawns.size() > 0) {
         csgo_parsing::BspMap::PlayerSpawn& playerSpawn =
@@ -810,12 +882,12 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
     // elements
     _gui.HandleViewportEvent(event);
     _big_text_renderer.HandleViewportEvent(event);
+    _wide_line_renderer.HandleViewportEvent(event);
 
     redraw();
 }
 
-// Called after processing all input events and before drawEvent()
-void DZSimApplication::tickEvent() {
+void DZSimApplication::DoUpdate() {
     // All mouse and key events have been processed right before calling
     // tickEvent() -> Save the time point when the game input was sampled
     auto current_time = sim::Clock::now();
@@ -824,8 +896,12 @@ void DZSimApplication::tickEvent() {
     if (_gui_state.app_exit_requested) // Exit if user requested it
         this->exit(); // CAUTION: This way, exitEvent() doesn't get called!
 
+#ifdef DZSIM_WEB_PORT
+    bool is_window_focused = true; // Is this detectable on Emscripten???
+#else
     auto window_flags = SDL_GetWindowFlags(this->window());
     bool is_window_focused = window_flags & SDL_WINDOW_INPUT_FOCUS;
+#endif
 
     // When we're in "sparing low latency draw mode" the following happens:
     //   - Targeted main loop frequency is set to 1000 Hz (i.e. tickEvent() rate)
@@ -848,6 +924,12 @@ void DZSimApplication::tickEvent() {
 
     // If a new frame must be drawn after this tickEvent()
     bool redraw_needed = false;
+
+#ifdef DZSIM_WEB_PORT
+    // Due to EmscriptenApplications's main loop implementation, we always need
+    // to redraw.
+    redraw_needed = true;
+#endif
 
     if (!is_sparing_low_latency_draw_mode_enabled)
         redraw_needed = true; // Here, always draw new frames
@@ -888,9 +970,14 @@ void DZSimApplication::tickEvent() {
     else if (esc_pressed) { // Toggle modes with ESC key
         if (_user_input_mode == UserInputMode::MENU) {
             _user_input_mode = UserInputMode::FIRST_PERSON;
+            // If you update these cursor types, also update them were they're read
+#ifdef DZSIM_WEB_PORT
+            setCursor(Cursor::Hidden);
+#else
             setCursor(Cursor::HiddenLocked);
+#endif
         }
-        else if(_user_input_mode == UserInputMode::FIRST_PERSON) {
+        else if (_user_input_mode == UserInputMode::FIRST_PERSON) {
             _user_input_mode = UserInputMode::MENU;
             setCursor(Cursor::Arrow);
             leaving_first_person_mode = true;
@@ -954,6 +1041,7 @@ void DZSimApplication::tickEvent() {
         }
     }
 
+#ifndef DZSIM_WEB_PORT
     float wanted_transparency = 0.0f;
     if (_gui_state.video.IN_overlay_mode_enabled) {
         if (_gui_state.video.IN_overlay_transparency_is_being_adjusted
@@ -962,7 +1050,9 @@ void DZSimApplication::tickEvent() {
         else // Very subtle indicator for user that shows we are in overlay mode
             wanted_transparency = 10.0f;
     }
+#endif
 
+#ifndef DZSIM_WEB_PORT
     // Only call SDL opacity function when necessary
     if (wanted_transparency != cur_overlay_transparency) {
         cur_overlay_transparency = wanted_transparency; // Only try setting opacity once
@@ -1037,7 +1127,7 @@ void DZSimApplication::tickEvent() {
         }
     }
 
-    const auto WINDOWED            = gui::GuiState::VideoSettings::WINDOWED;
+    const auto WINDOWED = gui::GuiState::VideoSettings::WINDOWED;
     const auto FULLSCREEN_WINDOWED = gui::GuiState::VideoSettings::FULLSCREEN_WINDOWED;
     auto& gui_window_mode_setting = _gui_state.video.IN_window_mode;
     auto& available_displays = _gui_state.video.OUT_available_displays;
@@ -1068,7 +1158,7 @@ void DZSimApplication::tickEvent() {
                     selected_display_idx = 0;
                 const auto& display = available_displays[selected_display_idx];
                 SDL_SetWindowPosition(this->window(), display.x, display.y);
-                SDL_SetWindowSize    (this->window(), display.w, display.h);
+                SDL_SetWindowSize(this->window(), display.w, display.h);
                 // Remember window mode and display to detect gui setting changes
                 cur_window_mode = FULLSCREEN_WINDOWED;
                 cur_fullscreen_display = display;
@@ -1120,7 +1210,7 @@ void DZSimApplication::tickEvent() {
                 || cur_fullscreen_display.h != selected_display.h)
             {
                 // Move window to newly selected display
-                SDL_SetWindowSize    (this->window(), selected_display.w, selected_display.h);
+                SDL_SetWindowSize(this->window(), selected_display.w, selected_display.h);
                 SDL_SetWindowPosition(this->window(), selected_display.x, selected_display.y);
                 cur_fullscreen_display = selected_display;
             }
@@ -1130,7 +1220,7 @@ void DZSimApplication::tickEvent() {
     // Set correct window resizability state
     if (cur_window_mode == WINDOWED) SDL_SetWindowResizable(this->window(), SDL_TRUE);
     else                             SDL_SetWindowResizable(this->window(), SDL_FALSE);
-
+#endif
 
     // Remote csgo console
     if (_gui_state.rcon.IN_disconnect
@@ -1153,7 +1243,8 @@ void DZSimApplication::tickEvent() {
     _gui_state.rcon.OUT_is_disconnecting = _csgo_rcon.IsDisconnecting();
     _gui_state.rcon.OUT_fail_msg = _csgo_rcon.GetLastErrorMessage();
 
-    
+#ifndef DZSIM_WEB_PORT
+    // Native builds only:
     // Set max main loop frequency (value only takes effect if VSync is off)
     if (is_sparing_low_latency_draw_mode_enabled) {
         // Set targeted main loop frequency to 1000 Hz for low latency drawing
@@ -1163,7 +1254,9 @@ void DZSimApplication::tickEvent() {
         // Respect user setting for the FPS limit
         this->setMinimalLoopPeriod(_gui_state.video.IN_min_loop_period);
     }
-    
+#endif
+
+#ifndef DZSIM_WEB_PORT
     // Enable / disable VSync if required
     static bool s_vsync_error = false; // If setting VSync has failed previously
     if (!s_vsync_error) {
@@ -1185,6 +1278,7 @@ void DZSimApplication::tickEvent() {
             }
         }
     }
+#endif
 
     // Map load selection GUI handling
     if (_gui_state.map_select.IN_box_opened) {
@@ -1283,14 +1377,20 @@ void DZSimApplication::tickEvent() {
     }
     else if (_user_input_mode == UserInputMode::FIRST_PERSON) {
         //if (cam_input_mouse_enabled) {
-        if (cursor() == Cursor::HiddenLocked) {
+        // If you update these cursor types, also update them were they're set
+#ifdef DZSIM_WEB_PORT
+        const auto fp_cursor_type = Cursor::Hidden;
+#else
+        const auto fp_cursor_type = Cursor::HiddenLocked;
+#endif
+        if (cursor() == fp_cursor_type) {
             Vector2 delta = AIM_SENSITIVITY * Vector2{ mouse_pos_change };
             _cam_ang.x() += delta.y(); // cam pitch
             _cam_ang.y() -= delta.x(); // cam yaw
         }
 
         // Clamp camera angles
-        if (_cam_ang.x() >  89.0f) _cam_ang.x() = 89.0f;
+        if (_cam_ang.x() > 89.0f) _cam_ang.x() = 89.0f;
         if (_cam_ang.x() < -89.0f) _cam_ang.x() = -89.0f;
         // Let yaw wrap around from -180 to +180 and vice versa
         if (_cam_ang.y() > 180.0f || _cam_ang.y() < -180.0f) {
@@ -1310,11 +1410,11 @@ void DZSimApplication::tickEvent() {
 
     // Update viewing angles of game input for server
     _currentGameInput.viewingAnglePitch = _cam_ang.x();
-    _currentGameInput.viewingAngleYaw   = _cam_ang.y();
+    _currentGameInput.viewingAngleYaw = _cam_ang.y();
 
     // Send game input to server
     _gameServer.SendNewPlayerInput(_currentGameInput);
-    
+
     // Remember current client frame's game input for client-side prediction
     _prevGameInputs.push_back(_currentGameInput);
 
@@ -1363,8 +1463,8 @@ void DZSimApplication::tickEvent() {
             // Determine end of player input range of this server frame
             auto playerInputEndIt = std::find_if(playerInputBeginIt, _prevGameInputs.end(),
                 [&nextStateTime](const sim::PlayerInputState& pis) {
-                return pis.time > nextStateTime;
-            });
+                    return pis.time > nextStateTime;
+                });
 
             predictedWorldState.DoTimeStep(simStepSize, playerInputBeginIt, playerInputEndIt);
             predictedWorldState.time = nextStateTime; // Adjust world state time to account for simulation time scale
@@ -1397,7 +1497,7 @@ void DZSimApplication::tickEvent() {
         _cam_pos = _latest_csgo_client_data.player_pos_eye;
     }
     // Override camera position if GSI cam imitation is enabled
-    else if(_gui_state.gsi.IN_imitate_spec_cam) {
+    else if (_gui_state.gsi.IN_imitate_spec_cam) {
         if (latest_new_gsi_cam_pos.has_value())
             _cam_pos = latest_new_gsi_cam_pos.value() + Vector3(0, 0,
                 CSGO_PLAYER_EYE_LEVEL_STANDING);
@@ -1440,6 +1540,13 @@ void DZSimApplication::tickEvent() {
     }
 }
 
+#ifndef DZSIM_WEB_PORT
+// Called after processing all input events and before drawEvent()
+void DZSimApplication::tickEvent() {
+    DoUpdate();
+}
+#endif
+
 // CSGO's vertical FOV is fixed. CSGO's horizontal FOV depends on the screen's
 // aspect ratio (which is width/height)
 Matrix4 CalcCsgoPerspectiveProjection(float aspect_ratio, Magnum::Deg vert_fov) {
@@ -1469,7 +1576,25 @@ void DZSimApplication::CalcViewProjTransformation() {
     _view_proj_transformation = projection_transformation * view_transformation;
 }
 
+// Returned vector is normalized
+Vector3 DZSimApplication::GetCameraForwardVector()
+{
+    auto pitch_sincos = Math::sincos(Deg{ -_cam_ang[0] });
+    auto yaw_sincos   = Math::sincos(Deg{ +_cam_ang[1] });
+    return {
+        yaw_sincos.second * pitch_sincos.second,
+        yaw_sincos.first * pitch_sincos.second,
+        pitch_sincos.first
+    };
+}
+
 void DZSimApplication::drawEvent() {
+#ifdef DZSIM_WEB_PORT
+    // The Emscripten application doesn't have tickEvent().
+    // -> We need to update everytime we draw.
+    DoUpdate();
+#endif
+
     GL::defaultFramebuffer.clear(
         GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 
@@ -1499,6 +1624,7 @@ void DZSimApplication::drawEvent() {
         }
 
         _world_renderer.Draw(
+            _ren_world,
             _view_proj_transformation,
             player_feet_pos,
             hori_player_speed,
@@ -1517,8 +1643,10 @@ void DZSimApplication::drawEvent() {
     // Draw prominent horizontal velocity number
     if (_bsp_map && _gui_state.vis.IN_display_hori_vel_text) {
         switch (_gui_state.vis.IN_geo_vis_mode) {
-            case _gui_state.vis.GLID_OF_CSGO_SESSION:
-            case _gui_state.vis.GLID_AT_SPECIFIC_SPEED:
+            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GEO_TYPE:
+                break;
+            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GLID_OF_CSGO_SESSION:
+            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GLID_AT_SPECIFIC_SPEED:
                 float* imgui_col4 = _gui_state.vis.IN_col_hori_vel_text;
                 Color4 c = { imgui_col4[0], imgui_col4[1], imgui_col4[2], imgui_col4[3]};
                 _big_text_renderer.DrawNumber(
@@ -1527,6 +1655,7 @@ void DZSimApplication::drawEvent() {
                     _gui.GetTotalGuiScaling() * _gui_state.vis.IN_hori_vel_text_size,
                     _gui_state.vis.IN_hori_vel_text_pos
                 );
+                break;
         }
     }
 

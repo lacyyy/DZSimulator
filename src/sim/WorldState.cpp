@@ -1,4 +1,4 @@
-#include "WorldState.h"
+#include "sim/WorldState.h"
 
 #include <chrono>
 #include <iterator>
@@ -10,7 +10,7 @@
 #include <Corrade/Utility/Debug.h>
 
 #include "GlobalVars.h"
-#include "CSGOConstants.h"
+#include "CsgoConstants.h"
 
 using namespace Magnum;
 

@@ -166,7 +166,7 @@ nlohmann/json:
     SOFTWARE.
 
 *********************************************************************************************
-OpenSSL:
+OpenSSL (used only in native DZSimulator builds, not in web DZSimulator build):
 *********************************************************************************************
 
       LICENSE ISSUES

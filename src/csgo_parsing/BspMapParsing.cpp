@@ -1,4 +1,4 @@
-#include "BspMapParsing.h"
+#include "csgo_parsing/BspMapParsing.h"
 
 #include <algorithm>
 #include <map>
@@ -10,9 +10,9 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
-#include "AssetFileReader.h"
-#include "BspMapLumps.h"
-#include "utils.h"
+#include "csgo_parsing/AssetFileReader.h"
+#include "csgo_parsing/BspMapLumps.h"
+#include "csgo_parsing/utils.h"
 
 using namespace csgo_parsing;
 using namespace Magnum;
@@ -1357,12 +1357,6 @@ static utils::RetCode _ParseBspMapFile(BspMap& dest_bsp_map,
         return header_parse_status; // Return header parse error
 
     std::string parse_warning_msg = header_parse_status.desc_msg;
-
-    // Do these lumps have useful data?
-    Debug{} << "LUMP_IDX_PROPCOLLISION len =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PROPCOLLISION].file_len;
-    Debug{} << "LUMP_IDX_PROPHULLS len     =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PROPHULLS    ].file_len;
-    Debug{} << "LUMP_IDX_PHYSDISP len      =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PHYSDISP     ].file_len;
-    Debug{} << "LUMP_IDX_PHYSCOLLIDE len   =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PHYSCOLLIDE  ].file_len;
 
     // Parse lumps
     utils::RetCode lump_data_parse_status = ParseLumpData(opened_reader, dest_bsp_map);

@@ -1,4 +1,4 @@
-#include "MenuWindow.h"
+#include "gui/MenuWindow.h"
 
 #include <cstdio>
 
@@ -257,14 +257,16 @@ void MenuWindow::Draw()
             // ----
             if (_gui_state.rcon.OUT_fail_msg.length() > 0)
                 ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                    _gui_state.rcon.OUT_fail_msg.c_str());
+                    "%s", _gui_state.rcon.OUT_fail_msg.c_str());
 
             ImGui::Text("");
 
+#ifndef DZSIM_WEB_PORT
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f,0.86f,0.46f,0.4f));
             if (ImGui::Button("How to fix lag when used as CSGO overlay"))
                 ShowOverlayLagAdvice();
             ImGui::PopStyleColor(1);
+#endif
 
             ImGui::Separator();
             ImGui::Text("");
@@ -362,11 +364,14 @@ void MenuWindow::Draw()
         if (ImGui::Button("Why is this not a cheat and how does it work?"))
             ShowTechnicalities();
 
-        if (ImGui::Button("Show planned features"))
-            ShowPlannedFeatures();
+        if (ImGui::Button("How accurately is CSGO movement simulated?"))
+            ShowMovementRecreationDetails();
 
         if (ImGui::Button("Show known issues/bugs"))
             ShowKnownIssues();
+
+        if (ImGui::Button("Show planned features"))
+            ShowPlannedFeatures();
 
         ImGui::Text("");
 
@@ -409,14 +414,18 @@ void MenuWindow::Draw()
                 build_info::thirdparty::GetMagnumPluginsVersionStr());
             ImGui::BulletText("Magnum Integration %s",
                 build_info::thirdparty::GetMagnumIntegrationVersionStr());
+#ifndef DZSIM_WEB_PORT
             ImGui::BulletText("SDL %s",
                 build_info::thirdparty::GetSdlVersionStr());
+#endif
             ImGui::BulletText("Dear ImGui %s",
                 build_info::thirdparty::GetImGuiVersionStr());
             ImGui::BulletText("Asio %s",
                 build_info::thirdparty::GetAsioVersionStr());
+#ifndef DZSIM_WEB_PORT
             ImGui::BulletText("OpenSSL %s",
                 build_info::thirdparty::GetOpenSSLVersionStr());
+#endif
             ImGui::BulletText("cpp-httplib %s",
                 build_info::thirdparty::GetCppHttpLibVersionStr());
             ImGui::BulletText("nlohmann/json %s",
@@ -429,6 +438,7 @@ void MenuWindow::Draw()
             ImGui::TreePop();
         }
 
+#ifndef DZSIM_WEB_PORT
         if (ImGui::TreeNode("Acknowledgements"))
         {
             ImGui::Text("");
@@ -438,6 +448,7 @@ void MenuWindow::Draw()
 
             ImGui::TreePop();
         }
+#endif
 
         ImGui::Text("");
 
@@ -527,6 +538,18 @@ void MenuWindow::ShowTechnicalities()
     );
 }
 
+void MenuWindow::ShowMovementRecreationDetails()
+{
+    _gui_state.popup.QueueMsgInfo(
+        "While this app tries to recreate CSGO player movement as accurately as"
+        " possible, there are some differences:\n\n"
+        "  - Walking and rampsliding on props can be slightly inaccurate (up to"
+        " 1 unit).\n"
+        "  - ...\n"
+        "  - ...\n"
+    );
+}
+
 void MenuWindow::ShowKnownIssues()
 {
     _gui_state.popup.QueueMsgWarn(
@@ -554,7 +577,7 @@ void MenuWindow::ShowPlannedFeatures()
     );
 }
 
-void gui::MenuWindow::ShowOverlayLagAdvice()
+void MenuWindow::ShowOverlayLagAdvice()
 {
     _gui_state.popup.QueueMsgInfo(
         "When you use DZSimulator as an overlay on top of CSGO, you might "
@@ -824,6 +847,7 @@ void MenuWindow::DrawVideoSettings()
 
     ImGui::Text("");
 
+#ifndef DZSIM_WEB_PORT
     { // Overlay setting
         ImGui::Checkbox("Enable overlay mode",
             &_gui_state.video.IN_overlay_mode_enabled);
@@ -867,6 +891,7 @@ void MenuWindow::DrawVideoSettings()
     }
 
     ImGui::Text("");
+#endif
 
     // GUI scale setting
     int max_gui_scale_slider_pct = 100.0f * _gui.MAX_USER_GUI_SCALING_FACTOR;
@@ -887,8 +912,9 @@ std::string MenuWindow::GetDisplayName(int idx, int w, int h)
         + " (" + std::to_string(w) + "x" + std::to_string(h) + ")";
 }
 
-void gui::MenuWindow::DrawOther()
+void MenuWindow::DrawOther()
 {
+#ifndef DZSIM_WEB_PORT
     // @PORTING Replace "Windows Explorer" with something else fitting for
     //          Unix and Emscripten.
     if (ImGui::Button("Show user settings file in Windows Explorer"))
@@ -901,9 +927,10 @@ void gui::MenuWindow::DrawOther()
         "3. Delete user settings file\n"
         "4. Re-open DZSimulator"
     );
+#endif
 }
 
-void gui::MenuWindow::DrawTestSettings()
+void MenuWindow::DrawTestSettings()
 {
 #ifndef NDEBUG
     if (ImGui::Button("Show ImGui Demo Window"))

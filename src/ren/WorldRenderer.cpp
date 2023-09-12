@@ -1,4 +1,4 @@
-#include "WorldRenderer.h"
+#include "ren/WorldRenderer.h"
 
 #include <string>
 #include <vector>
@@ -11,53 +11,35 @@
 #include <Magnum/Math/Matrix4.h>
 
 #include "csgo_parsing/BrushSeparation.h"
-#include "CSGOConstants.h"
+#include "CsgoConstants.h"
+#include "ren/RenderableWorld.h"
 #include "utils_3d.h"
+#include "WorldCreator.h"
 
 using namespace Magnum;
 using namespace Math::Literals;
-using namespace rendering;
+using namespace ren;
 
 namespace BrushSep = csgo_parsing::BrushSeparation;
 
 WorldRenderer::WorldRenderer(const Utility::Resource& resources,
         gui::GuiState& gui_state)
-    : _resources { resources }
-    , _gui_state { gui_state }
+    : _resources{ resources }
+    , _gui_state{ gui_state }
 {
 }
 
-void WorldRenderer::InitShaders()
+void WorldRenderer::InitWithOpenGLContext()
 {
     _glid_shader_instanced     = GlidabilityShader3D{  true, _resources };
     _glid_shader_non_instanced = GlidabilityShader3D{ false, _resources };
     _flat_shader = Shaders::FlatGL3D{ };
+
+    _mesh_bump_mine = WorldCreator::CreateBumpMineMesh();
 }
 
-void WorldRenderer::UnloadGeometry()
-{
-    _map_geo.reset(); // Destruct all mesh data
-}
-
-void WorldRenderer::LoadBspMapGeometry(
-    std::shared_ptr<const csgo_parsing::BspMap> bsp_map)
-{
-    UnloadGeometry(); // Make sure previous map geometry is deallocated
-    
-    // TODO only create this once, not every map load
-    _mesh_bump_mine = WorldCreation::CreateBumpMineMesh();
-
-    std::string map_geo_creation_errors;
-    _map_geo =
-        WorldCreation::CreateCsgoMapGeometry(bsp_map, &map_geo_creation_errors);
-
-    if (!map_geo_creation_errors.empty()) {
-        Debug{} << map_geo_creation_errors.c_str();
-        _gui_state.popup.QueueMsgWarn(map_geo_creation_errors);
-    }
-}
-
-void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
+void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
+    const Matrix4& view_proj_transformation,
     const Vector3& player_feet_pos,
     float hori_player_speed,
     const std::vector<Vector3>& bump_mine_positions)
@@ -69,8 +51,12 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         0.0f
     ); // vector must be normalized
 
+#ifdef DZSIM_WEB_PORT
+    bool has_world_diffuse_lighting = true;
+#else
     // Don't do lighting in overlay, it is inaccurate compared to CSGO's lighting
     bool has_world_diffuse_lighting = !_gui_state.video.IN_overlay_mode_enabled;
+#endif
 
     bool glidability_vis_globally_disabled =
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_AT_SPECIFIC_SPEED &&
@@ -104,9 +90,12 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
     }
 
     GL::Renderer::setFrontFace(GL::Renderer::FrontFace::ClockWise);
+
+#ifndef DZSIM_WEB_PORT
     GL::Renderer::setPolygonMode(GL::Renderer::PolygonMode::Fill);
     //GL::Renderer::setPolygonMode(GL::Renderer::PolygonMode::Line);
     //GL::Renderer::setLineWidth(1.0f);
+#endif
 
     // Draw displacements
     _glid_shader_non_instanced
@@ -115,14 +104,14 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_displacements))
         .SetColorOverrideEnabled(glidability_vis_globally_disabled)
         .SetDiffuseLightingEnabled(has_world_diffuse_lighting)
-        .draw(_map_geo->mesh_displacements);
+        .draw(ren_world->mesh_displacements);
 
     // Draw displacement boundaries
     if (_gui_state.vis.IN_draw_displacement_edges)
         _flat_shader
             .setTransformationProjectionMatrix(view_proj_transformation)
             .setColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_disp_boundary))
-            .draw(_map_geo->mesh_displacement_boundaries);
+            .draw(ren_world->mesh_displacement_boundaries);
 
     // Draw bump mines - they're currently the only thing drawn with CCW vertex winding
     // TODO use instancing?
@@ -149,7 +138,7 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         .SetColorOverrideEnabled(glidability_vis_globally_disabled)
         .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_sprops))
         .SetDiffuseLightingEnabled(has_world_diffuse_lighting);
-    for (GL::Mesh& instanced_sprop_mesh : _map_geo->instanced_static_prop_meshes) {
+    for (GL::Mesh& instanced_sprop_mesh : ren_world->instanced_static_prop_meshes) {
         _glid_shader_instanced.draw(instanced_sprop_mesh);
     }
 
@@ -158,8 +147,8 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
     // Determine draw order of brush categories
     std::vector<BrushSep::Category> brush_cat_draw_order;
     std::vector<BrushSep::Category> last_drawn_brush_cats;
-    brush_cat_draw_order.reserve(_map_geo->brush_category_meshes.size());
-    for (const auto &kv : _map_geo->brush_category_meshes) {
+    brush_cat_draw_order.reserve(ren_world->brush_category_meshes.size());
+    for (const auto &kv : ren_world->brush_category_meshes) {
         BrushSep::Category b_cat = kv.first;
 
         // Transparent things must be the last things being drawn!
@@ -204,28 +193,38 @@ void WorldRenderer::Draw(const Matrix4& view_proj_transformation,
         case BrushSep::GRENADECLIP: b_col = _gui_state.vis.IN_col_grenade_clip; break;
         }
 
+        // Don't draw if alpha is zero.
+        // Useful for developing in cases where transparency causes issues
+        // (e.g. things disappearing behind transparent surfaces).
+        if (b_col[3] == 0.0f)
+            continue;
+
         _glid_shader_non_instanced
             .SetFinalTransformationMatrix(view_proj_transformation)
             .SetOverrideColor(CvtImguiCol4(b_col))
             .SetColorOverrideEnabled(visualize_glidability == false)
             .SetDiffuseLightingEnabled(has_brush_mesh_diffuse_lighting)
-            .draw(_map_geo->brush_category_meshes[b_cat]);
+            .draw(ren_world->brush_category_meshes[b_cat]);
     }
 
     // ANYTHING BEING DRAWN AFTER HERE WILL NOT BE VISIBLE BEHIND
     // TRANSPARENT BRUSHES
 
-    // Draw trigger_push entities that can push players
-    _glid_shader_non_instanced
-        .SetFinalTransformationMatrix(view_proj_transformation)
-        .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_trigger_push))
-        .SetColorOverrideEnabled(true)
-        .SetDiffuseLightingEnabled(true)
-        .draw(_map_geo->trigger_push_meshes);
+    // Draw trigger_push entities that can push players.
+    // Don't draw if alpha is zero.
+    // Useful for developing in cases where transparency causes issues
+    // (e.g. things disappearing behind transparent surfaces).
+    if(_gui_state.vis.IN_col_trigger_push[3] != 0.0f)
+        _glid_shader_non_instanced
+            .SetFinalTransformationMatrix(view_proj_transformation)
+            .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_trigger_push))
+            .SetColorOverrideEnabled(true)
+            .SetDiffuseLightingEnabled(true)
+            .draw(ren_world->trigger_push_meshes);
 
 }
 
-Magnum::Color4 rendering::WorldRenderer::CvtImguiCol4(float* im_col4)
+Magnum::Color4 WorldRenderer::CvtImguiCol4(float* im_col4)
 {
     return Magnum::Color4(im_col4[0], im_col4[1], im_col4[2], im_col4[3]);
 }

@@ -1,4 +1,4 @@
-#include "RemoteConsole.h"
+#include "csgo_integration/RemoteConsole.h"
 
 #include <functional>
 #include <iostream>

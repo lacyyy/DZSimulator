@@ -58,7 +58,7 @@ namespace _unused_VertBufUpdateDemo {
         GL::Mesh mesh;
 
         // Stores position and color per vertex
-        GL::Buffer vertex_buffer;
+        GL::Buffer vertex_buffer{ GL::Buffer::TargetHint::Array };
 
         // The original faces that make up the structure of the mesh and buffer
         const std::vector<std::vector<Vector3>> faces;
@@ -152,7 +152,7 @@ namespace _unused_VertBufUpdateDemo {
             num_vertices += 3 * (face.size() - 2);
 
         // Allocate vertex buffer
-        GL::Buffer vertex_buf;
+        GL::Buffer vertex_buf{ GL::Buffer::TargetHint::Array };
         vertex_buf.setData({ nullptr, num_vertices * sizeof(Vertex) },
             GL::BufferUsage::DynamicDraw); // StaticDraw is just as fast?!
 

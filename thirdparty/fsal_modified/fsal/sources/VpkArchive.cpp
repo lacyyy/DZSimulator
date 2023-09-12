@@ -66,7 +66,7 @@ Status VPKReader::OpenArchive(FileSystem fs, Location directory,
     if (!m_index)
         return false;
 
-	VPKHeader_v2 header;
+    VPKHeader_v2 header;
 
     if (m_index.Read((uint8_t*)&header, sizeof(uint32_t) * 3).state != success)
         return false;
@@ -75,11 +75,11 @@ Status VPKReader::OpenArchive(FileSystem fs, Location directory,
     if (header.Version != 1 && header.Version != 2)
         return false;
 
-	if (header.Version == 2)
-	{
-		if (m_index.Seek(0)     .state != success) return false;
-		if (m_index.Read(header).state != success) return false;
-	}
+    if (header.Version == 2)
+    {
+        if (m_index.Seek(0)     .state != success) return false;
+        if (m_index.Read(header).state != success) return false;
+    }
 
 	//printf( "Signature: 0x%08x\n", header.Signature);
 	//printf( "Version: %d\n", header.Version);

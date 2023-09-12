@@ -1,12 +1,12 @@
-#ifndef RENDERING_GLIDABILITYSHADER3D_H_
-#define RENDERING_GLIDABILITYSHADER3D_H_
+#ifndef REN_GLIDABILITYSHADER3D_H_
+#define REN_GLIDABILITYSHADER3D_H_
 
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/Shaders/GenericGL.h>
 
-namespace rendering {
+namespace ren {
 
     class GlidabilityShader3D : public Magnum::GL::AbstractShaderProgram {
     public:
@@ -71,6 +71,6 @@ namespace rendering {
 
     };
 
-} // namespace rendering
+} // namespace ren
 
-#endif // RENDERING_GLIDABILITYSHADER3D_H_
+#endif // REN_GLIDABILITYSHADER3D_H_

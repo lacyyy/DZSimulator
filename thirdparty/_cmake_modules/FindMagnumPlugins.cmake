@@ -25,6 +25,7 @@
 #  FreeTypeFont                 - FreeType font
 #  GlslangShaderConverter       - Glslang shader converter
 #  GltfImporter                 - glTF importer
+#  GltfSceneConverter           - glTF converter
 #  HarfBuzzFont                 - HarfBuzz font
 #  IcoImporter                  - ICO importer
 #  JpegImageConverter           - JPEG image converter
@@ -38,6 +39,7 @@
 #  PngImporter                  - PNG importer
 #  PrimitiveImporter            - Primitive importer
 #  SpirvToolsShaderConverter    - SPIR-V Tools shader converter
+#  SpngImporter                 - PNG importer using libspng
 #  StanfordImporter             - Stanford PLY importer
 #  StanfordSceneConverter       - Stanford PLY converter
 #  StbDxtImageConverter         - BC1/BC3 image compressor using stb_dxt
@@ -47,6 +49,7 @@
 #  StbTrueTypeFont              - TrueType font using stb_truetype
 #  StbVorbisAudioImporter       - OGG audio importer using stb_vorbis
 #  StlImporter                  - STL importer
+#  UfbxImporter                 - FBX and OBJ importer using ufbx
 #  WebPImporter                 - WebP importer
 #
 # If Magnum is built with MAGNUM_BUILD_DEPRECATED enabled, these additional
@@ -139,6 +142,8 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES MeshTools)
     elseif(_component STREQUAL StanfordSceneConverter)
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES MeshTools)
+    elseif(_component STREQUAL UfbxImporter)
+        list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES AnyImageImporter)
     elseif(_component STREQUAL TinyGltfImporter)
         # TODO remove when the deprecated plugin is gone
         list(APPEND _MAGNUMPLUGINS_${_component}_MAGNUM_DEPENDENCIES AnyImageImporter)
@@ -160,14 +165,14 @@ set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
     AssimpImporter AstcImporter BasisImageConverter BasisImporter DdsImporter
     DevIlImageImporter DrFlacAudioImporter DrMp3AudioImporter
     DrWavAudioImporter Faad2AudioImporter FreeTypeFont GlslangShaderConverter
-    GltfImporter HarfBuzzFont IcoImporter JpegImageConverter JpegImporter
-    KtxImageConverter KtxImporter MeshOptimizerSceneConverter
+    GltfImporter GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter
+    JpegImporter KtxImageConverter KtxImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
     OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
-    SpirvToolsShaderConverter StanfordImporter StanfordSceneConverter
-    StbDxtImageConverter StbImageConverter StbImageImporter
-    StbResizeImageConverter StbTrueTypeFont StbVorbisAudioImporter StlImporter
-    WebPImporter)
+    SpirvToolsShaderConverter SpngImporter StanfordImporter
+    StanfordSceneConverter StbDxtImageConverter StbImageConverter
+    StbImageImporter StbResizeImageConverter StbTrueTypeFont
+    StbVorbisAudioImporter StlImporter UfbxImporter WebPImporter)
 # Nothing is enabled by default right now
 set(_MAGNUMPLUGINS_IMPLICITLY_ENABLED_COMPONENTS )
 
@@ -270,7 +275,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
 
             # Dynamic plugins don't have any prefix (e.g. `lib` on Linux),
             # search with empty prefix and then reset that back so we don't
-            # accidentaly break something else
+            # accidentally break something else
             set(_tmp_prefixes "${CMAKE_FIND_LIBRARY_PREFIXES}")
             set(CMAKE_FIND_LIBRARY_PREFIXES "${CMAKE_FIND_LIBRARY_PREFIXES};")
 
@@ -379,6 +384,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
                 INTERFACE_LINK_LIBRARIES Glslang::Glslang)
 
         # GltfImporter has no dependencies
+        # GltfSceneConverter has no dependencies
 
         # HarfBuzzFont plugin dependencies
         elseif(_component STREQUAL HarfBuzzFont)
@@ -466,6 +472,12 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES SpirvTools::SpirvTools SpirvTools::Opt)
 
+        # SpngImporter plugin dependencies
+        elseif(_component STREQUAL SpngImporter)
+            find_package(Spng REQUIRED)
+            set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES Spng::Spng)
+
         # StanfordImporter has no dependencies
         # StanfordSceneConverter has no dependencies
         # StbDxtImageConverter has no dependencies
@@ -475,6 +487,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # StbTrueTypeFont has no dependencies
         # StbVorbisAudioImporter has no dependencies
         # StlImporter has no dependencies
+        # UfbxImporter has no dependencies
         # TinyGltfImporter has no dependencies
 
         # WebPImporter plugin dependencies
@@ -493,8 +506,14 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             mark_as_advanced(_MAGNUMPLUGINS_${_COMPONENT}_INCLUDE_DIR)
         endif()
 
-        # Automatic import of static plugins
-        if(_component IN_LIST _MAGNUMPLUGINS_PLUGIN_COMPONENTS AND _MAGNUMPLUGINS_${_COMPONENT}_INCLUDE_DIR)
+        # Automatic import of static plugins. Skip in case the include dir was
+        # not found -- that'll fail later with a proper message. Skip it also
+        # if the include dir doesn't contain the generated configure.h, which
+        # is the case with Magnum as a subproject and given plugin not enabled
+        # -- there it finds just the sources, where's just configure.h.cmake,
+        # and that's not useful for anything. The assumption here is that it
+        # will fail later anyway on the binary not being found.
+        if(_component IN_LIST _MAGNUMPLUGINS_PLUGIN_COMPONENTS AND _MAGNUMPLUGINS_${_COMPONENT}_INCLUDE_DIR AND EXISTS ${_MAGNUMPLUGINS_${_COMPONENT}_INCLUDE_DIR}/configure.h)
             file(READ ${_MAGNUMPLUGINS_${_COMPONENT}_INCLUDE_DIR}/configure.h _magnumPlugins${_component}Configure)
             string(FIND "${_magnumPlugins${_component}Configure}" "#define MAGNUM_${_COMPONENT}_BUILD_STATIC" _magnumPlugins${_component}_BUILD_STATIC)
             if(NOT _magnumPlugins${_component}_BUILD_STATIC EQUAL -1)

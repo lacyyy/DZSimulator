@@ -27,13 +27,6 @@ Magnum::Matrix4 utils_3d::CalcModelTransformationMatrix(
     return model_transformation;
 }
 
-Vector3 utils_3d::CalcNormalCcwFront(const Vector3& v1, const Vector3& v2,
-    const Vector3& v3)
-{
-    // Here we assume the cross product will never be the zero vector!
-    return Math::cross(v3 - v2, v1 - v2).normalized();
-}
-
 Vector3 utils_3d::CalcNormalCwFront(const Vector3& v1, const Vector3& v2,
     const Vector3& v3)
 {

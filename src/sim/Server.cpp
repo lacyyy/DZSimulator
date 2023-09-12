@@ -1,4 +1,4 @@
-#include "Server.h"
+#include "sim/Server.h"
 
 #include <algorithm>
 #include <chrono>
@@ -9,7 +9,9 @@
 #include <utility>
 #include <vector>
 
+#ifndef DZSIM_WEB_PORT
 #include <windows.h> // For setting thread priority
+#endif
 
 #include <Magnum/Magnum.h>
 #include <Corrade/Utility/Debug.h>
@@ -77,9 +79,12 @@ void Server::Start()
 
     _sh_stopped = false;
     _cl_thread = std::thread([this]() {
+
+#ifndef DZSIM_WEB_PORT
         if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL)) {
             Error{} << "[ERR] [Thread-Server] SetThreadPriority() failed!";
         }
+#endif
 
         Clock::time_point simulationStart = Clock::now();
         do {
