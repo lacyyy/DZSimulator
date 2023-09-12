@@ -1358,12 +1358,6 @@ static utils::RetCode _ParseBspMapFile(BspMap& dest_bsp_map,
 
     std::string parse_warning_msg = header_parse_status.desc_msg;
 
-    // Do these lumps have useful data?
-    Debug{} << "LUMP_IDX_PROPCOLLISION len =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PROPCOLLISION].file_len;
-    Debug{} << "LUMP_IDX_PROPHULLS len     =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PROPHULLS    ].file_len;
-    Debug{} << "LUMP_IDX_PHYSDISP len      =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PHYSDISP     ].file_len;
-    Debug{} << "LUMP_IDX_PHYSCOLLIDE len   =" << dest_bsp_map.header.lump_dir[LUMP_IDX_PHYSCOLLIDE  ].file_len;
-
     // Parse lumps
     utils::RetCode lump_data_parse_status = ParseLumpData(opened_reader, dest_bsp_map);
     if (!lump_data_parse_status.successful())

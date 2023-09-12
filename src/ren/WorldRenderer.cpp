@@ -22,8 +22,8 @@ namespace BrushSep = csgo_parsing::BrushSeparation;
 
 WorldRenderer::WorldRenderer(const Utility::Resource& resources,
         gui::GuiState& gui_state)
-    : _resources { resources }
-    , _gui_state { gui_state }
+    : _resources{ resources }
+    , _gui_state{ gui_state }
 {
 }
 

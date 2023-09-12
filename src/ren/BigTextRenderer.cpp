@@ -70,7 +70,7 @@ void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_dat
         Text::Alignment::TopRight
     );
     
-    // Can we move the cache into the renderer constructor for optimization?
+    // @Optimization Can we move the cache into the renderer constructor?
     size_t number_text_glyph_cnt = std::strlen(NUMBER_TEXT_GLYPHS);
     _number_text.reset(
         new Text::Renderer2D(*_font, *_cache, 50.0f, Text::Alignment::MiddleCenter));
