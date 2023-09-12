@@ -13,7 +13,10 @@ using namespace csgo_parsing::BrushSeparation;
 
 // -------- SOLID BRUSHES ---------------------------------------------------------------------------------
 
+// FIXME the "solid category", includes solid brushes and sky brushes, but it does not have playerclips,ladders,...
+// FIXME TODO brush separation should be split into "visual" and "functional" separation
 bool IS_BRUSH_SOLID(const BspMap::Brush& b) {
+    // FIXME? Returns true for sky brushes
     if (b.HasFlags(BspMap::Brush::WATER) || b.HasFlags(BspMap::Brush::LADDER))
         return false;
     //Debug{} << b.contents;
