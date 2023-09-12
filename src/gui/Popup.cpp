@@ -1,9 +1,10 @@
+#include "gui/Popup.h"
+
+#include <cfloat>
 #include <sstream>
 
-#include "Popup.h"
-
-#include "Gui.h"
-#include "GuiState.h"
+#include "gui/Gui.h"
+#include "gui/GuiState.h"
 
 using namespace std::string_literals;
 using namespace gui;

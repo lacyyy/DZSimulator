@@ -1,4 +1,4 @@
-#include "BspMapParsing.h"
+#include "csgo_parsing/BspMapParsing.h"
 
 #include <algorithm>
 #include <map>
@@ -10,9 +10,9 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
-#include "AssetFileReader.h"
-#include "BspMapLumps.h"
-#include "utils.h"
+#include "csgo_parsing/AssetFileReader.h"
+#include "csgo_parsing/BspMapLumps.h"
+#include "csgo_parsing/utils.h"
 
 using namespace csgo_parsing;
 using namespace Magnum;

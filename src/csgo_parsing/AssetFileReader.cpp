@@ -1,4 +1,4 @@
-#include "AssetFileReader.h"
+#include "csgo_parsing/AssetFileReader.h"
 
 #include <cmath>
 

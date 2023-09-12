@@ -1,4 +1,4 @@
-#include "BspMap.h"
+#include "csgo_parsing/BspMap.h"
 
 #include <cassert>
 #include <cmath>

@@ -1,4 +1,4 @@
-#include "PhyModelParsing.h"
+#include "csgo_parsing/PhyModelParsing.h"
 
 #include <utility>
 #include <vector>

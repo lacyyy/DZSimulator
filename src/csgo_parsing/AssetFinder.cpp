@@ -1,4 +1,4 @@
-#include "AssetFinder.h"
+#include "csgo_parsing/AssetFinder.h"
 
 #ifndef DZSIM_WEB_PORT
 // Here we only use Windows API calls to read registry entries. This is always
@@ -24,7 +24,7 @@
 #include <fsal.h>
 #include <Magnum/Magnum.h>
 
-#include "utils.h"
+#include "csgo_parsing/utils.h"
 
 using namespace csgo_parsing;
 using namespace csgo_parsing::AssetFinder;

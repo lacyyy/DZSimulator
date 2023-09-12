@@ -1,4 +1,4 @@
-#include "BrushSeparation.h"
+#include "csgo_parsing/BrushSeparation.h"
 
 #include <cstring>
 #include <string>

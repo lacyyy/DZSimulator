@@ -1,4 +1,4 @@
-#include "GlidabilityShader3D.h"
+#include "ren/GlidabilityShader3D.h"
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/Reference.h>
