@@ -1,7 +1,10 @@
 ## TASK LIST FOR THE NEXT RELEASED VERSION:
 
 - [ ] Increase security with CSGO's netconport
-    - Let user choose netconport value 
+    - NOTE: Check out the [Source RCON Protocol](https://developer.valvesoftware.com/wiki/Source_RCON_Protocol) alternative first, supposedly slightly safer than netcon (psychonic: "RCon has some very limited brute force protection iirc"). Can it return client position values through `getpos`?
+    - However we choose to connect to CSGO, make sure that method also works for CS2
+    - Automatically disconnect from CSGO once CSGO joins an online (VAC-secured) server?
+    - Let user choose netconport value
     - On first startup, randomly generate strong password (long and humanly readable, what's the max length?)
     - Add option to generate a new password
     - Can we detect what launch options are currently set in Steam for CSGO? Warn the user if not set correctly?
@@ -12,16 +15,22 @@
     - Check for responses: "Bad password attempt from net console" or "This server is password protected for console access. Must send PASS command"
 - [ ] Add option "Don't show this message again" to message that pops up when DZSim update is available on GitHub
 
+- [ ] Give user a performance warning when loading dz_arctic or dz_csgoworld_*. (Maybe detect total sprop triangle count?)
+- [ ] Make DZSimulator launch with a black window, not a white one
+
+- [ ] Test DispInfo parsing with new knowledge, see [here](https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/disp_vbsp.cpp#L325-L328) and [here](https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/public/builddisp.cpp#L762-L768)
+- [ ] Investigate undesirable displacement collisions while rampsliding: Are only badly sewn displacement edges to blame? Only visualize those edges? Or are triangle edge planes or collision epsilons in the displacement collision code to blame? Visualize that?
+    - reproducible rampslide fail, blacksite, 128tick, standing: `ent_fire !self runscriptcode "self.SetOrigin(Vector(-55,-6900,1200));self.SetVelocity(Vector(0,1700,0))"`
 - [ ] Add "Effective Steepness" visualization mode (that only takes horizontal impact from player to surface into account)
 - [ ] Add "Effective Rampslide POV" visualization mode (where all surfaces, incl. bevel planes(!), are pushed outwards by half the player's AABB. Maybe shift the world down by half player height to make it feel more natural)
 - [ ] Add crosshair (changeable size?)
 - [ ] Visualize push direction, power, type and activation of trigger_push
-- [ ] Fix Z-fighting between water and push triggers
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
     - confirm with vscript again!
     - small arrows that float up
     - left and right edge of the screen: Z velocity scale from 1000 (bottom end) to 0 (top end)
     - highlighted range between 500 and 100
+- [ ] Visualize when air acceleration is increased during a jump (ask KZ people about this)
 - [ ] Visualize 1, sometimes 2 player trajectories: no exo boost and full exo boost
     - Only draw downwards part of trajectory? No culling? Precompile into mesh that gets scaled?
 - [ ] Visualize player velocity, shown as colored bar, overlaying:
@@ -33,16 +42,19 @@
 - [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
 - [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
 - [ ] Add hotkeys for frequent UI actions (e.g. toggling overlay mode, visualization mode, connecting to csgo, show displacement edges)
-- [ ] Automate Git submodule installation (With a script? With CMake?)
+- [ ] Automate Git submodule installation (With a script? With CMake? With [CPM](https://github.com/cpm-cmake/CPM.cmake)?)
 
 ## KNOWN ISSUES, PRIORITIZED:
 
+- [ ] `maps/workshop/2362387875/aim_rogue_inferno.bsp` fails to load
+- [ ] In the "Only up" CSGO map, there's a solid wooden plank (a func_brush) right at the beginning. Why does DZSimulator not show it? Whatever solid object is there, make DZSim show it!
+- [ ] Joining the `GitHubChecker` thread can block for 10-20 seconds, it then prints: `[GitHubChecker] ERROR: GET /gists/78dc2c304cfc9d0db7c1c6e9e2859fab failed with error code: 2`
+    - Might be caused by GitHub API outage
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
 - [ ] Disgusting brush mesh Z fighting
 - [ ] Draw order of transparent stuff makes transparent stuff disappear when looking through another transparent type.
     - Each transparent face needs to be ordered by depth before being drawn
     - Wide lines disappear behind transparent surfaces, split the lines on them
-- [ ] Visuals, Fix vertical water face on Sirocco at "Tower One" and on Ember at "Rock Pool C"
 - [ ] dz_arctic has terrible FPS, why?
 - [ ] Investigate "DISP_VPHYSICS found bad displacement collision face" error that makes displacements non-solid, what are the exact criteria for that?
     - Make DZSim visualize those "error displacements" in a special way?
@@ -61,7 +73,7 @@
         - Draw rings/zones that the player must move through to perform a trick (e.g. like this https://youtu.be/X_-eoDyhIjM?t=183)
     - Add visualization mode: Surface Inclination ?
     - Parse and visualize entities/values not yet parsed from map file (sorted by priority):
-        - prop_dynamic (e.g. motor boats at Sirocco's and Blacksite's rescue zones)
+        - prop_dynamic (e.g. motor boats at Sirocco's and Blacksite's rescue zones), also add collision tests with them
         - Horizontal sun angle for diffuse lighting (On Blacksite it should be ~ 135 degrees)
         - The trigger that insta-kills on County
         - Whatever disables fall dmg in the haystack on vineyard
@@ -77,13 +89,14 @@
     - Option to show popups about:
         - Boost amount, e.g., "3x trigger_push boost of 40" or "Bump Mine boost: 10% up, 90% horizontal"
         - Activation precision, e.g. "activating the Bump Mine had a chance of 60% from the maximum 80%. Precision of 75%."
+    - Visualize surfaces that the player is likely to impact on (by extrapolating player's trajectory)
+    - Visualize current 'turning radius' of player in the air: The tightest air-strafe routes to the left and right in which the player doesn't lose horizontal speed
+        - Maybe also project the shown route on the ground for better orientation
     - Visualize how optimally the player is strafing (check out community servers, how do they do it?)
         - Average the player's strafe efficiency over time and determine glidable surfaces with that? (or set efficiency with user setting)
     - Add bots that walk around for practicing stomp and knife kills
     - Implement the entire CSGO player movement as accurately as possible (without using leaked CSGO source code!)
         - What implementation details of that are missing from source-sdk-2013 code?
-            - TraceLine? Can that be used with the sdk's DLL files?
-                - Can DLL files be compiled into DZSim statically? If it's big, can certain functions be extracted from the DLL?
         - Simulate one/multiple slides and detect upcoming obstacles, visualize to avoid in advance
         - Bunnyhop fail visualisation: show how many ticks too late/early the jump was?!
     - Add ability to slow down time?

@@ -1,3 +1,8 @@
+### CS2 REVERSE ENGINEERING PLANS
+- Figure out new collision mechanics incl. how bevel planes are created
+    - Visualize bevel planes with [this script](https://github.com/GameChaos/cs2_things/blob/main/scripts/vscripts/raytracing.lua). Note that VScripts need to be enabled by patching binaries.
+
+
 ## CSGO MECHANICS REVERSE ENGINEERING, IDEAS AND FINDINGS 
 
 ### FINDINGS (some unsure, a bit old, should retest)
@@ -11,19 +16,11 @@
 ### USEFUL COMMANDS
 - ConVar "cl_pdump 1" prints a lot of movement related values and states
 - Could ConVar "r_visualizetraces 1" help understanding knife mechanics? (vid on this topic: https://youtu.be/VRG1cFXOen4)
+    - VERY detailed information on DZ knife mechanics: https://youtu.be/HzR-f_SY-Gk?t=94
 - Could command "ent_bbox player" help understanding effects of cl_interp and cl_interp_ratio?
 - Use "cl_weapon_debug_show_accuracy 2" to reverse taser mechanics
 
 ### IDEAS
-- **DISPLACEMENTS**
-    - displacement collision code: https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/dispcoll.cpp
-    - Could rampslide stops be caused by displacement transitions / sewing / failed sewing? or just awful disp collision?
-        - reproducible slide stop, blacksite, 128tick, standing: `ent_fire !self runscriptcode "self.SetOrigin(Vector(-55,-6900,1200));self.SetVelocity(Vector(0,1700,0))"`
-    - displacement errors cause them to become not solid. when loading de_dust2, console prints:
-        - DISP_VPHYSICS found bad displacement collision face (252.50 1542.13 147.50) (250.00 1543.00 155.00) (250.00 1543.50 155.00) at tri 25
-        - DISP_VPHYSICS entire displacement vdisp_0318 will have no collision, dimensions (6.00 14.00 32.00) from (249.00 1537.00 124.00) to (255.00 1551.00 156.00)
-- **BRUSHES**
-    - collision algorithm? https://youtu.be/YnCG6fbTQ-I
 - **STRAFE MECHANIC**
     - Use `"+left;+moveleft"` keybind, also at different FPS, to see if FPS has effect on strafe efficiency
 - **SOLID OBJECTS (from public/bspflags.h)**

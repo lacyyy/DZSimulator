@@ -176,6 +176,7 @@ these commands might do the job if you're on Windows:
     1. Go to `http://localhost:8000` in Chrome to visit the DZSimulator website
 - DZSimulator's web build uses a fixed amount of memory
     - You should specify the maximum amount of used memory in the top-level `CMakeLists.txt` through the `DZSIM_WEB_PORT_MAX_MEM_USAGE` variable
+        - Note: More and more displacement collision caches are created during gameplay, test the worst case of this!
 - DZSimulator's web build silently stack-overflows if assertions are disabled
     - In the top-level `CMakeLists.txt` you can
         - enable/disable assertions through an Emscripten linker option

@@ -17,5 +17,6 @@
 - Test "portable-file-dialog" library on different platforms. Message Boxes? File Dialogs?
 
 ### ON LINUX:
+- First, try running the Windows version of DZSimulator on Linux using WINE!
 - Test Linux with WSL? Use WSL integration in Visual Studio 2022?
 - Use Visual Studio's [default Linux configure preset](https://learn.microsoft.com/en-us/cpp/build/cmake-presets-vs?view=msvc-170#linux-example)?
