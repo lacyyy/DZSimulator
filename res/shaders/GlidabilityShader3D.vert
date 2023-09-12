@@ -37,7 +37,8 @@ float CalcDiffuseLight(in vec3 surface_normal) {
     return 0.5 + 0.5 * AMBIENT_LIGHT + 0.5 * (1.0 - AMBIENT_LIGHT) * brightness;
 }
 
-// ClipVelocity taken from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
 vec3 ClipVelocity(in vec3 obj_vel, in vec3 surface_normal) {
     const float overbounce = 1.0;
     
@@ -52,7 +53,7 @@ vec3 ClipVelocity(in vec3 obj_vel, in vec3 surface_normal) {
 
     return clipped_vel;
 }
-// end of source-sdk-2013 code
+// --------- end of source-sdk-2013 code ---------
 
 // Send vertex color to fragment shader, optionally darkened by diffuse lighting
 void UseVertexColor(in vec4 col, in vec3 surface_normal) {

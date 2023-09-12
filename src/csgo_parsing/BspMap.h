@@ -11,9 +11,13 @@
 
 namespace csgo_parsing {
 
-// Most of this info is taken from source-sdk-2013/<...>/src/public/bspfile.h
 class BspMap {
 public:
+    // -------- start of source-sdk-2013 code --------
+    // Most of the information in here is taken from these 2 sources:
+    //   - source-sdk-2013/<...>/src/public/bspfile.h
+    //   - https://developer.valvesoftware.com/wiki/BSP_%28Source_1%29
+
     static const size_t HEADER_LUMP_CNT = 64;
 
     static const size_t MAX_ENTITIES = 20480;
@@ -217,6 +221,7 @@ public:
         uint32_t file_len; // byte count of file contents at file_offset
         uint32_t crc32; // file checksum
     };
+    // --------- end of source-sdk-2013 code ---------
 
     // --------------------------------------------------------------------------
 

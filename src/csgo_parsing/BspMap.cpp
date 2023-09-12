@@ -41,16 +41,18 @@ BspMap::BspMap(Containers::ArrayView<const uint8_t> bsp_file_content)
 {
 }
 
-// Taken from source-sdk-2013/<...>/src/public/bspfile.h
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/public/bspfile.h)
 bool BspMap::DispTri::HasTag_SURFACE()     const { return tags & (1<<0); }
 bool BspMap::DispTri::HasTag_WALKABLE()    const { return tags & (1<<1); } 
 bool BspMap::DispTri::HasTag_BUILDABLE()   const { return tags & (1<<2); }
 bool BspMap::DispTri::HasFlag_SURFPROP1()  const { return tags & (1<<3); }
 bool BspMap::DispTri::HasFlag_SURFPROP2()  const { return tags & (1<<4); }
 bool BspMap::DispTri::HasTag_REMOVE()      const { return tags & (1<<5); }
-// end of source-sdk-2013 code
+// --------- end of source-sdk-2013 code ---------
 
-// Taken from source-sdk-2013/<...>/src/public/bspflags.h
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/public/bspflags.h)
 bool BspMap::TexInfo::HasFlag_LIGHT()      const { return flags & ((uint32_t)1 <<  0); }
 bool BspMap::TexInfo::HasFlag_SKY2D()      const { return flags & ((uint32_t)1 <<  1); }
 bool BspMap::TexInfo::HasFlag_SKY()        const { return flags & ((uint32_t)1 <<  2); }
@@ -67,7 +69,7 @@ bool BspMap::TexInfo::HasFlag_NOSHADOWS()  const { return flags & ((uint32_t)1 <
 bool BspMap::TexInfo::HasFlag_NODECALS()   const { return flags & ((uint32_t)1 << 13); }
 bool BspMap::TexInfo::HasFlag_NOCHOP()     const { return flags & ((uint32_t)1 << 14); }
 bool BspMap::TexInfo::HasFlag_HITBOX()     const { return flags & ((uint32_t)1 << 15); }
-// end of source-sdk-2013 code
+// --------- end of source-sdk-2013 code ---------
 
 bool BspMap::Brush::HasFlags(uint32_t flags) const { return contents & flags; }
 

@@ -135,6 +135,8 @@ const float CSGO_CVAR_SV_KNIFE_ATTACK_EXTEND_FROM_PLAYER_AABB = 10.0f; // (def: 
 const float CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MIN = 100.0f;
 const float CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MAX = 500.0f;
 
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
 
 // https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/gamemovement.cpp#L4591-L4594
 // This value is irrelevant to rampsliding: If you are currently in walk mode
@@ -155,5 +157,6 @@ const float CSGO_CONST_MIN_LEAVE_GROUND_VEL_Z = 250.0f;
 // is walkable is determined by the cvar sv_standable_normal
 const float CSGO_CONST_MIN_NO_GROUND_CHECKS_VEL_Z = 140.0f;
 
+// --------- end of source-sdk-2013 code ---------
 
 #endif // CSGOCONSTANTS_H_

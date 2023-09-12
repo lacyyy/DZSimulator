@@ -68,7 +68,7 @@ Information for developers follows here.
 
 See [LICENSE.txt](LICENSE.txt). ***Read it***, there are some important license clarifications.
 
-All third party software in this repo is accompanied by their corresponding license information. An exception from this is source code stemming from Valve Corp.'s [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013): It's clearly marked with comments like *`// taken from source-sdk-2013/<...>`* and its "Source 1 SDK License" can be read in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
+All third party software in this repo is accompanied by their corresponding license information. An exception from this is source code stemming from Valve Corp.'s [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013): It's clearly marked with comments like *`// ---- start of source-sdk-2013 code ----`* and its "Source 1 SDK License" can be read in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
 
 DZSimulator uses some of the third party software present in this repo. Those that are used and require legal notices when distributed in **binary** form are listed in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
 

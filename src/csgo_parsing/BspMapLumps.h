@@ -1,7 +1,11 @@
 #ifndef CSGO_PARSING_BSPMAPLUMPS_H_
 #define CSGO_PARSING_BSPMAPLUMPS_H_
 
-// Mostly taken from source-sdk-2013/<...>/src/public/bspfile.h
+// -------- start of source-sdk-2013 code --------
+// Most of the information in here is taken from these 2 sources:
+//   - source-sdk-2013/<...>/src/public/bspfile.h
+//   - https://developer.valvesoftware.com/wiki/BSP_%28Source_1%29
+// Some lumps might be wrongly named in regard to CSGO map files!
 
 #define LUMP_IDX_ENTITIES                       ( 0)
 #define LUMP_IDX_PLANES                         ( 1)
@@ -67,7 +71,6 @@
 #define LUMP_IDX_OVERLAY_SYSTEM_LEVELS          (61)
 #define LUMP_IDX_PHYSLEVEL                      (62)
 #define LUMP_IDX_DISP_MULTIBLEND                (63)
-
-// end of source-sdk-2013 code
+// --------- end of source-sdk-2013 code ---------
 
 #endif // CSGO_PARSING_BSPMAPLUMPS_H_
