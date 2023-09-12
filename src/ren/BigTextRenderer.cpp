@@ -129,7 +129,7 @@ void BigTextRenderer::DrawDisclaimer(float gui_scaling)
     
 }
 
-void ren::BigTextRenderer::DrawNumber(
+void BigTextRenderer::DrawNumber(
     int number, const Magnum::Color4& col, float scaling, Vector2 pos)
 {
     Vector2i window_size = _app.windowSize();

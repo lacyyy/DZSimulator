@@ -69,7 +69,7 @@ static bool ClipLineToCameraPlane(Vector3& start, Vector3& end, const Vector4& c
     return false; // At least some part of the line is in front of the camera plane
 }
 
-void ren::WideLineRenderer::Init()
+void WideLineRenderer::Init()
 {
     // Delayed member construction here (not in constructor) because they
     // require a GL context
@@ -98,13 +98,13 @@ void ren::WideLineRenderer::Init()
     _z_line_mesh = MeshTools::compileLines(MeshTools::generateLines(mesh_data_z_line));
 }
 
-void ren::WideLineRenderer::HandleViewportEvent(
+void WideLineRenderer::HandleViewportEvent(
     const Application::ViewportEvent& /*event*/)
 {
     // ...
 }
 
-void ren::WideLineRenderer::DrawAABB(
+void WideLineRenderer::DrawAABB(
     const Color4& aabb_col, const Vector3& aabb_center_pos, const Vector3& aabb_extents,
     const Matrix4& view_proj_transformation,
     const Vector3& cam_pos, const Vector3& cam_dir_normal, bool no_depth_test)
@@ -213,7 +213,7 @@ void ren::WideLineRenderer::DrawAABB(
     GL::Renderer::setDepthMask(true);
 }
 
-void ren::WideLineRenderer::DrawLine(
+void WideLineRenderer::DrawLine(
     const Color4& color, Vector3 start, Vector3 end,
     const Matrix4& view_proj_transformation,
     const Vector3& cam_pos, const Vector3& cam_dir_normal, bool no_depth_test)

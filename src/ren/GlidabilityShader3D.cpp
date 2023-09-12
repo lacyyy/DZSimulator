@@ -164,19 +164,19 @@ GlidabilityShader3D::SetHorizontalPlayerSpeed(float player_speed_hori)
     return *this;
 }
 
-GlidabilityShader3D& ren::GlidabilityShader3D::SetSlideSuccessColor(const Magnum::Color4& c)
+GlidabilityShader3D& GlidabilityShader3D::SetSlideSuccessColor(const Magnum::Color4& c)
 {
     setUniform(_uniform_slide_success_color, c);
     return *this;
 }
 
-GlidabilityShader3D& ren::GlidabilityShader3D::SetSlideAlmostFailColor(const Magnum::Color4& c)
+GlidabilityShader3D& GlidabilityShader3D::SetSlideAlmostFailColor(const Magnum::Color4& c)
 {
     setUniform(_uniform_slide_almost_fail_color, c);
     return *this;
 }
 
-GlidabilityShader3D& ren::GlidabilityShader3D::SetSlideFailColor(const Magnum::Color4& c)
+GlidabilityShader3D& GlidabilityShader3D::SetSlideFailColor(const Magnum::Color4& c)
 {
     setUniform(_uniform_slide_fail_color, c);
     return *this;

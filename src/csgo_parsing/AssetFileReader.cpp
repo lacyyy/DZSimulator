@@ -64,7 +64,7 @@ bool AssetFileReader::OpenFileFromGameFiles(const std::string& game_file_path)
     return true;
 }
 
-bool csgo_parsing::AssetFileReader::OpenFileFromMemory(
+bool AssetFileReader::OpenFileFromMemory(
     Corrade::Containers::ArrayView<const uint8_t> file_data)
 {
     _impl->pos = 0;
@@ -87,7 +87,7 @@ bool csgo_parsing::AssetFileReader::OpenFileFromMemory(
     }
 }
 
-bool csgo_parsing::AssetFileReader::OpenSubFileFromCurrentlyOpenedFile(
+bool AssetFileReader::OpenSubFileFromCurrentlyOpenedFile(
     size_t subfile_pos, size_t subfile_len)
 {
     _impl->pos = 0;
@@ -106,7 +106,7 @@ bool csgo_parsing::AssetFileReader::OpenSubFileFromCurrentlyOpenedFile(
     return true;
 }
 
-bool csgo_parsing::AssetFileReader::IsOpenedInFile()
+bool AssetFileReader::IsOpenedInFile()
 {
     return _impl->file;
 }

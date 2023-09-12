@@ -562,7 +562,7 @@ void MenuWindow::ShowPlannedFeatures()
     );
 }
 
-void gui::MenuWindow::ShowOverlayLagAdvice()
+void MenuWindow::ShowOverlayLagAdvice()
 {
     _gui_state.popup.QueueMsgInfo(
         "When you use DZSimulator as an overlay on top of CSGO, you might "
@@ -897,7 +897,7 @@ std::string MenuWindow::GetDisplayName(int idx, int w, int h)
         + " (" + std::to_string(w) + "x" + std::to_string(h) + ")";
 }
 
-void gui::MenuWindow::DrawOther()
+void MenuWindow::DrawOther()
 {
 #ifndef DZSIM_WEB_PORT
     // @PORTING Replace "Windows Explorer" with something else fitting for
@@ -915,7 +915,7 @@ void gui::MenuWindow::DrawOther()
 #endif
 }
 
-void gui::MenuWindow::DrawTestSettings()
+void MenuWindow::DrawTestSettings()
 {
 #ifndef NDEBUG
     if (ImGui::Button("Show ImGui Demo Window"))

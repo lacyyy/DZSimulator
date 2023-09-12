@@ -31,7 +31,7 @@ BspMap::BspMap(const std::string& abs_file_path)
 {
 }
 
-csgo_parsing::BspMap::BspMap(Containers::ArrayView<const uint8_t> bsp_file_content)
+BspMap::BspMap(Containers::ArrayView<const uint8_t> bsp_file_content)
     : file_origin{
         .type = FileOrigin::MEMORY,
         .abs_file_path = "",

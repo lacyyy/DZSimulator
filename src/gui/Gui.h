@@ -113,8 +113,8 @@ private:
 
 
     // Let modules access this class's private members
-    friend class MenuWindow;
-    friend class Popup;
+    friend class gui::MenuWindow;
+    friend class gui::Popup;
 };
 
 } // namespace gui
