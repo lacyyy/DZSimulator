@@ -305,6 +305,15 @@ target_sources(DZSimulator PRIVATE
     "src/InputHandler.cpp"
     "src/SavedUserDataHandler.cpp"
     "src/utils_3d.cpp"
+    "src/WorldCreator.cpp"
+
+    "src/coll/BVH.cpp"
+    "src/coll/CollidableWorld.cpp"
+    "src/coll/CollidableWorld-brush.cpp"
+    "src/coll/CollidableWorld-displacement.cpp"
+    "src/coll/CollidableWorld-funcbrush.cpp"
+    "src/coll/CollidableWorld-staticprop.cpp"
+    "src/coll/SweptTrace.cpp"
 
     "src/csgo_integration/Gsi.cpp"
     "src/csgo_integration/Handler.cpp"
@@ -325,8 +334,8 @@ target_sources(DZSimulator PRIVATE
     "src/ren/_unused_VertBufUpdateDemo.cpp"
     "src/ren/BigTextRenderer.cpp"
     "src/ren/GlidabilityShader3D.cpp"
-    "src/ren/WideLineRenderer.cpp"
-    "src/ren/WorldCreation.cpp"
+    "src/ren/RenderableWorld.cpp"
+    "src/ren/WideLineRenderer.cpp"    
     "src/ren/WorldRenderer.cpp"
 
     "src/sim/Server.cpp"

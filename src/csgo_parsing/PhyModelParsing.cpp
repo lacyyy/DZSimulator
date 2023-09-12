@@ -80,7 +80,7 @@ using namespace Magnum;
 
 utils::RetCode
 csgo_parsing::ParsePhyModel(
-    std::vector<std::vector<Magnum::Vector3>>* dest_tris,
+    std::vector<std::vector<std::vector<Vector3>>>* dest_section_tris,
     std::string* dest_surfaceprop,
     AssetFileReader& opened_reader,
     size_t max_byte_read_count,
@@ -220,11 +220,11 @@ csgo_parsing::ParsePhyModel(
             if (v3_idx > highest_vertex_idx) highest_vertex_idx = v3_idx;
         }
 
-        if (!ignore_section)
+        if (!ignore_section && !cur_section.empty())
             sections.emplace_back(std::move(cur_section));
     }
     
-    std::vector<Magnum::Vector3> vertices;
+    std::vector<Vector3> vertices;
 
     if (highest_vertex_idx >= 0) { // If any vertex indices were read
         int32_t num_vertices = highest_vertex_idx + 1;
@@ -287,22 +287,24 @@ csgo_parsing::ParsePhyModel(
     if (dest_surfaceprop)
         *dest_surfaceprop = std::move(surface_properties);
 
-    if (dest_tris) {
-        dest_tris->clear();
+    if (dest_section_tris) {
+        dest_section_tris->clear();
+        dest_section_tris->reserve(sections.size());
 
-        size_t total_tri_count = 0;
-        for (const auto& section : sections)
-            total_tri_count += section.size() / 3;
-        dest_tris->reserve(total_tri_count);
+        // Collect triangles of each section separately
+        for (const std::vector<uint16_t>& section : sections) {
+            std::vector<std::vector<Vector3>> tris;
+            tris.reserve(section.size() / 3);
 
-        for (const auto& section : sections) {
             for (size_t i = 0; i < section.size(); i += 3) {
                 // Invert triangle order to get triangles with clockwise vertex winding
-                dest_tris->push_back({
+                tris.push_back({
                     vertices[section[i]],
-                    vertices[section[i+2]],
-                    vertices[section[i+1]]});
+                    vertices[section[i + 2]],
+                    vertices[section[i + 1]] });
             }
+
+            dest_section_tris->emplace_back(std::move(tris));
         }
     }
 

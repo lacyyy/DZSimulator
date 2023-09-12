@@ -11,10 +11,9 @@
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Shaders/FlatGL.h>
 
-#include "csgo_parsing/BspMap.h"
 #include "gui/GuiState.h"
 #include "ren/GlidabilityShader3D.h"
-#include "WorldCreation.h"
+#include "ren/RenderableWorld.h"
 
 namespace ren {
 
@@ -23,13 +22,11 @@ public:
     WorldRenderer(
         const Corrade::Utility::Resource& resources, gui::GuiState& gui_state);
 
-    // Initialize shaders, requires an OpenGL context to be active.
-    void InitShaders();
+    // Initialize shaders and meshes that require an OpenGL context to be active.
+    void InitWithOpenGLContext();
 
-    void UnloadGeometry(); // Deallocates map data
-    void LoadBspMapGeometry(std::shared_ptr<const csgo_parsing::BspMap> bsp_map);
-
-    void Draw(const Magnum::Matrix4& view_proj_transformation,
+    void Draw(std::shared_ptr<RenderableWorld> ren_world,
+        const Magnum::Matrix4& view_proj_transformation,
         const Magnum::Vector3& player_feet_pos,
         float hori_player_speed,
         const std::vector<Magnum::Vector3>& bump_mine_positions);
@@ -44,9 +41,6 @@ private:
     GlidabilityShader3D _glid_shader_instanced{ Magnum::NoCreate };
     GlidabilityShader3D _glid_shader_non_instanced{ Magnum::NoCreate };
     Magnum::Shaders::FlatGL3D _flat_shader{ Magnum::NoCreate };
-
-    // World meshes
-    std::unique_ptr<ren::CsgoMapGeometry> _map_geo{ nullptr };
 
     // Other meshes
     Magnum::GL::Mesh _mesh_bump_mine{ Magnum::NoCreate };

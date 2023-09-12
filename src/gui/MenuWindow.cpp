@@ -364,11 +364,14 @@ void MenuWindow::Draw()
         if (ImGui::Button("Why is this not a cheat and how does it work?"))
             ShowTechnicalities();
 
-        if (ImGui::Button("Show planned features"))
-            ShowPlannedFeatures();
+        if (ImGui::Button("How accurately is CSGO movement simulated?"))
+            ShowMovementRecreationDetails();
 
         if (ImGui::Button("Show known issues/bugs"))
             ShowKnownIssues();
+
+        if (ImGui::Button("Show planned features"))
+            ShowPlannedFeatures();
 
         ImGui::Text("");
 
@@ -532,6 +535,18 @@ void MenuWindow::ShowTechnicalities()
         "As you can see, that's completely legit and requires the permission "
         "to set the server's ConVar \"sv_cheats\" to 1, therefore not being "
         "possible and exploitable in online matches!"
+    );
+}
+
+void MenuWindow::ShowMovementRecreationDetails()
+{
+    _gui_state.popup.QueueMsgInfo(
+        "While this app tries to recreate CSGO player movement as accurately as"
+        " possible, there are some differences:\n\n"
+        "  - Walking and rampsliding on props can be slightly inaccurate (up to"
+        " 1 unit).\n"
+        "  - ...\n"
+        "  - ...\n"
     );
 }
 

@@ -69,7 +69,7 @@ static bool ClipLineToCameraPlane(Vector3& start, Vector3& end, const Vector4& c
     return false; // At least some part of the line is in front of the camera plane
 }
 
-void WideLineRenderer::Init()
+void WideLineRenderer::InitWithOpenGLContext()
 {
     // Delayed member construction here (not in constructor) because they
     // require a GL context

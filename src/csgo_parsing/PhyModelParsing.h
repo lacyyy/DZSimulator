@@ -12,9 +12,9 @@
 
 namespace csgo_parsing {
 
-    // @param dest_tris If parsing is successful, list of triangles are appended
-    //                  to the std::vector pointed to by dest_tris. Triangles
-    //                  have clockwise vertex winding.
+    // @param dest_tris If parsing is successful, a list of sections is put in
+    //                  the std::vector pointed to by dest_section_tris. Each
+    //                  section is a list of triangles with clockwise vertex winding.
     // @param dest_surfaceprop If parsing is successful, the PHY model's surface
     //                         property string is written into the std::string
     //                         pointed to by dest_surfaceprop.
@@ -28,7 +28,7 @@ namespace csgo_parsing {
     // @return Code of returned RetCode is either SUCCESS or ERROR_PHY_PARSING_FAILED.
     //         ERROR_PHY_PARSING_FAILED has an error description.
     utils::RetCode ParsePhyModel(
-        std::vector<std::vector<Magnum::Vector3>>* dest_tris,
+        std::vector<std::vector<std::vector<Magnum::Vector3>>>* dest_section_tris,
         std::string* dest_surfaceprop,
         AssetFileReader& opened_reader,
         size_t max_byte_read_count = std::numeric_limits<size_t>::max(),

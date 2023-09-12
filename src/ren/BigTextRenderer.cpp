@@ -21,7 +21,8 @@ BigTextRenderer::BigTextRenderer(Application& app,
     , _font_plugin_mgr {font_plugin_mgr}
 {}
 
-void BigTextRenderer::Init(const Containers::ArrayView<const char>& raw_font_data)
+void BigTextRenderer::InitWithOpenGLContext(
+    const Containers::ArrayView<const char>& raw_font_data)
 {
     // Delayed member construction here (not in constructor) because they
     // require a GL context

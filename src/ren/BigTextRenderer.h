@@ -33,7 +33,8 @@ namespace ren {
         BigTextRenderer(Application& app,
             Corrade::PluginManager::Manager<Magnum::Text::AbstractFont>& font_plugin_mgr);
 
-        void Init(const Corrade::Containers::ArrayView<const char>& raw_font_data);
+        void InitWithOpenGLContext(
+            const Corrade::Containers::ArrayView<const char>& raw_font_data);
 
         void HandleViewportEvent(
             const Application::ViewportEvent& event);

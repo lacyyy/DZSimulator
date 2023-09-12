@@ -21,11 +21,13 @@ const float CSGO_PLAYER_EYE_LEVEL_STANDING = 64.093811f;
 const float CSGO_PLAYER_EYE_LEVEL_CROUCHING = 46.076218f;
 const float CSGO_PLAYER_FEET_LEVEL = 0.031250f; // "cl_showpos 2" and "getpos_exact" show feet position
 
+//// TODO move this constant's definition and all its other occurrences somewhere
+////      else, maybe into CollidableWorld?
 //// this is limited by the network fractional bits used for coords
 //// because net coords will be only be accurate to 5 bits fractional
 //// Standard collision test epsilon
 //// 1/32nd inch collision epsilon
-//#define DIST_EPSILON (0.03125)
+//const float DIST_EPSILON = 0.03125f;
 
 // Maybe this is 18 + 2 * DIST_EPSILON
 const float CSGO_MAX_STAIR_STEP_HEIGHT = 18.05f; // testing shows it's between 18.042999 and 18.0625

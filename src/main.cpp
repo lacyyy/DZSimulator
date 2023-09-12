@@ -23,11 +23,13 @@
 #endif
 
 #include "build_info.h"
+#include "coll/CollidableWorld.h"
 #include "csgo_integration/Gsi.h"
 #include "csgo_integration/Handler.h"
 #include "csgo_integration/RemoteConsole.h"
 #include "csgo_parsing/AssetFinder.h"
 #include "csgo_parsing/BspMapParsing.h"
+#include "GitHubChecker.h"
 #include "gui/Gui.h"
 #include "InputHandler.h"
 #include "ren/BigTextRenderer.h"
@@ -35,7 +37,7 @@
 #include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
 #include "sim/Server.h"
-#include "GitHubChecker.h"
+#include "WorldCreator.h"
 
 // Allow window on a resolution of 800x600
 #define MIN_WINDOW_WIDTH  768
@@ -105,6 +107,11 @@ class DZSimApplication: public Platform::Application {
         size_t _num_received_gsi_states = 0;
 
         GitHubChecker _update_checker;
+
+        // Map data
+        std::shared_ptr<csgo_parsing::BspMap>  _bsp_map;
+        std::shared_ptr<coll::CollidableWorld> _coll_world;
+        std::shared_ptr<ren ::RenderableWorld> _ren_world;
 
         ren::WorldRenderer _world_renderer;
 
@@ -226,8 +233,6 @@ class DZSimApplication: public Platform::Application {
             _inputs.HandleKeyReleaseEvent(event);
         }
         
-        std::shared_ptr<csgo_parsing::BspMap> _bsp_map;
-
         Matrix4 _view_proj_transformation; // = projection_matrix * view_matrix
 };
 
@@ -438,9 +443,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _gui.Init(font_data_disp, font_data_mono);
 
     // Initialization of members that require a GL context to be active
-    _big_text_renderer.Init(font_data_disp);
-    _wide_line_renderer.Init();
-    _world_renderer.InitShaders();
+    _big_text_renderer .InitWithOpenGLContext(font_data_disp);
+    _wide_line_renderer.InitWithOpenGLContext();
+    _world_renderer    .InitWithOpenGLContext();
 
     // Enable transparency
     GL::Renderer::enable(GL::Renderer::Feature::Blending);
@@ -712,8 +717,9 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
 {
     // Deallocate previous map data to minimize peak RAM usage during parsing
     // RAM USAGE NOT REALLY TESTED YET!
-    _bsp_map.reset();
-    _world_renderer.UnloadGeometry();
+    _ren_world .reset();
+    _coll_world.reset();
+    _bsp_map   .reset();
 
     // Embedded map files must not rely on assets from the game directory.
     // -> Indexing game directory assets for them is unnecessary
@@ -765,7 +771,16 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     if (!bsp_parse_status.desc_msg.empty())
         _gui_state.popup.QueueMsgWarn(bsp_parse_status.desc_msg);
 
-    _world_renderer.LoadBspMapGeometry(_bsp_map);
+    std::string world_init_errors;
+    auto initialized_worlds =
+        WorldCreator::InitFromBspMap(_bsp_map, &world_init_errors);
+    _ren_world  = initialized_worlds.first;
+    _coll_world = initialized_worlds.second;
+
+    if (!world_init_errors.empty()) {
+        Debug{} << world_init_errors.c_str();
+        _gui_state.popup.QueueMsgWarn(world_init_errors);
+    }
 
     if (_bsp_map->player_spawns.size() > 0) {
         csgo_parsing::BspMap::PlayerSpawn& playerSpawn =
@@ -1609,6 +1624,7 @@ void DZSimApplication::drawEvent() {
         }
 
         _world_renderer.Draw(
+            _ren_world,
             _view_proj_transformation,
             player_feet_pos,
             hori_player_speed,

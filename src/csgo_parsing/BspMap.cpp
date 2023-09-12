@@ -77,6 +77,9 @@ bool BspMap::Brush::HasFlags(uint32_t flags) const { return contents & flags; }
 // Return true if 2 vertices are so close together they should be considered the same
 bool BspMap::AreVerticesEquivalent(const Vector3& a, const Vector3& b)
 {
+    // Maybe we should just do it like here:
+    // https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/public/mathlib/mathlib.h#L2152-L2166
+
     const Float EPSILON = 1.0e-05f;
     const Float EPSILON_SQUARED = EPSILON * EPSILON;
 
@@ -407,23 +410,10 @@ std::vector<std::vector<Vector3>> BspMap::GetBrushFaceVertices(const std::set<si
         //   - Axial brushsides can be marked as "bevel planes"
 
         // Get AABB of brush from its axial planes (which might be bevel planes)
-        Vector3 mins { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
-        Vector3 maxs { HUGE_VALF, HUGE_VALF, HUGE_VALF };
-        for (size_t i = 0; i < brush.num_sides; ++i) {
-            const Plane& plane = this->planes[this->brushsides[brush.first_side + i].plane_num];
-            for (int axis = 0; axis < 3; axis++) {
-                if (plane.normal[axis] == -1.0f) if (-plane.dist > mins[axis]) mins[axis] = -plane.dist;
-                if (plane.normal[axis] ==  1.0f) if ( plane.dist < maxs[axis]) maxs[axis] =  plane.dist;
-            }
-        }
-        // Abort in Debug build if any of the 6 axial planes was missing
-        for (int i = 0; i < 3; i++) {
-            if (mins[i] == -HUGE_VALF || maxs[i] == HUGE_VALF) {
-                Debug{} << "UNEXPECTED PARSE INPUT: Brush at index" << brush_idx
-                    << "does not have all 6 axial brushsides!";
-                assert(0);
-            }
-        }
+        Vector3 mins, maxs;
+        bool valid_brush = GetBrushAABB(brush_idx, &mins, &maxs);
+        if (!valid_brush)
+            continue;
 
         // Start the cutting process with faces of a small AABB of the brush.
         // Starting with a large box would lead to float imprecisions and degenerate faces.
@@ -641,6 +631,38 @@ std::vector<std::vector<Vector3>> BspMap::GetBrushFaceVertices(const std::set<si
     return finalFaces;
 }
 
+bool BspMap::GetBrushAABB(size_t brush_idx,
+    Vector3* aabb_mins, Vector3* aabb_maxs) const
+{
+    // Every brush on a CSGO map has at least 6 unique axial brushsides that
+    // describe its AABB.
+    Vector3 mins = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
+    Vector3 maxs = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
+
+    const Brush& brush = brushes[brush_idx];
+    for (size_t i = 0; i < brush.num_sides; i++) {
+        const Plane& plane = planes[brushsides[brush.first_side + i].plane_num];
+        for (int axis = 0; axis < 3; axis++) {
+            if (plane.normal[axis] == -1.0f && -plane.dist > mins[axis]) mins[axis] = -plane.dist;
+            if (plane.normal[axis] == +1.0f &&  plane.dist < maxs[axis]) maxs[axis] =  plane.dist;
+        }
+    }
+
+    // Check if an axial plane is missing
+    for (int axis = 0; axis < 3; axis++) {
+        if (mins[axis] == -HUGE_VALF || maxs[axis] == HUGE_VALF) {
+            Debug{} << "UNEXPECTED PARSE INPUT: Brush at index" << brush_idx
+                << "does not have all 6 axial brushsides!";
+            assert(0); // Assert in Debug
+            return false; // failure
+        }
+    }
+
+    if (aabb_mins) *aabb_mins = mins;
+    if (aabb_maxs) *aabb_maxs = maxs;
+    return true; // success
+}
+
 // The first model in the models array is "worldspawn", containing the geometry of the whole map
 // excluding entities (but including func_detail brushes)
 std::set<size_t> BspMap::GetModelBrushIndices_worldspawn() const
@@ -697,11 +719,11 @@ bool BspMap::Ent_func_brush::IsSolid() const
     return true;
 }
 
-bool BspMap::DispInfo::HasFlag_NO_PHYSICS_COLL() const { return flags & ((uint32_t)1 <<  1); }
-bool BspMap::DispInfo::HasFlag_NO_HULL_COLL()    const { return flags & ((uint32_t)1 <<  2); }
-bool BspMap::DispInfo::HasFlag_NO_RAY_COLL()     const { return flags & ((uint32_t)1 <<  3); }
-bool BspMap::DispInfo::HasFlag_UNKNOWN_1()       const { return flags & ((uint32_t)1 << 30); }
-bool BspMap::DispInfo::HasFlag_UNKNOWN_2()       const { return flags & ((uint32_t)1 << 31); }
+bool BspMap::DispInfo::HasFlag_NO_PHYSICS_COLL() const { return flags & FLAG_NO_PHYSICS_COLL; }
+bool BspMap::DispInfo::HasFlag_NO_HULL_COLL()    const { return flags & FLAG_NO_HULL_COLL;    }
+bool BspMap::DispInfo::HasFlag_NO_RAY_COLL()     const { return flags & FLAG_NO_RAY_COLL;     }
+bool BspMap::DispInfo::HasFlag_UNKNOWN_1()       const { return flags & FLAG_UNKNOWN_1;       }
+bool BspMap::DispInfo::HasFlag_UNKNOWN_2()       const { return flags & FLAG_UNKNOWN_2;       }
 
 bool BspMap::StaticProp::IsNotSolid()          const { return solid == 0; }
 bool BspMap::StaticProp::IsSolidWithAABB()     const { return solid == 2; }

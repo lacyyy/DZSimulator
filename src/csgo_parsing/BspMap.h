@@ -1,6 +1,7 @@
 #ifndef CSGO_PARSING_BSPMAP_H_
 #define CSGO_PARSING_BSPMAP_H_
 
+#include <cfloat>
 #include <set>
 #include <string>
 #include <vector>
@@ -118,11 +119,22 @@ public:
         uint32_t power;
         uint32_t flags; // not documented on Valve Dev Community's "BSP File Format" page
         uint16_t map_face; // which map face this displacement comes from, index into faces array
+
+        // FIXME: Apparently, flags are only set if MSb is set.
+        //  TEST: Are there dispinfos without the MSb set?
+        // https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/public/builddisp.cpp#L762-L768
+        // https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/disp_vbsp.cpp#L325-L328
+
         bool HasFlag_NO_PHYSICS_COLL() const;
         bool HasFlag_NO_HULL_COLL()    const; // if not solid to player and bump mines
         bool HasFlag_NO_RAY_COLL()     const;
         bool HasFlag_UNKNOWN_1()       const;
         bool HasFlag_UNKNOWN_2()       const; // every displacement seems to have this flag
+        static const uint32_t FLAG_NO_PHYSICS_COLL = ((uint32_t)1 <<  1);
+        static const uint32_t FLAG_NO_HULL_COLL    = ((uint32_t)1 <<  2);
+        static const uint32_t FLAG_NO_RAY_COLL     = ((uint32_t)1 <<  3);
+        static const uint32_t FLAG_UNKNOWN_1       = ((uint32_t)1 << 30);
+        static const uint32_t FLAG_UNKNOWN_2       = ((uint32_t)1 << 31);
     };
 
     struct TexInfo {
@@ -334,8 +346,8 @@ public:
     };
 
     // worldspawn entity
-    Magnum::Vector3 world_mins = { -INFINITY, -INFINITY, -INFINITY }; // ???
-    Magnum::Vector3 world_maxs = {  INFINITY,  INFINITY,  INFINITY }; // ???
+    Magnum::Vector3 world_mins = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF }; // ???
+    Magnum::Vector3 world_maxs = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF }; // ???
     int32_t map_version = -1; // same as map_revision in bsp file header
     std::string sky_name;
     std::string detail_material;
@@ -362,12 +374,17 @@ public:
     std::vector<std::vector<Magnum::Vector3>> GetDisplacementFaceVertices() const;
     std::vector<std::vector<Magnum::Vector3>> GetDisplacementBoundaryFaceVertices() const;
 
+    // A returned face (std::vector<Magnum::Vector3>) is never empty
     std::vector<std::vector<Magnum::Vector3>> GetBrushFaceVertices(
         const std::set<size_t>& brush_indices, // list of all brush indices that we want to look at
         bool (*pred_Brush)(const Brush&) = nullptr, // brush selection function
         bool (*pred_BrushSide)(const BrushSide&, const BspMap&) = nullptr) // brushside selection function
         const;
 
+    // If brush is invalid, false is returned and aabb_mins and aabb_maxs do not
+    // get set.
+    bool GetBrushAABB(size_t brush_idx,
+        Magnum::Vector3* aabb_mins, Magnum::Vector3* aabb_maxs) const;
 
     std::set<size_t> GetModelBrushIndices_worldspawn() const; // worldspawn is model idx 0
     std::set<size_t> GetModelBrushIndices(uint32_t model_index) const;

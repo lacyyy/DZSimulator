@@ -23,7 +23,7 @@ namespace ren {
 #endif
 
     public:
-        void Init(); // Call this after an OpenGL context was created
+        void InitWithOpenGLContext(); // Call this after an OpenGL context was created
 
         void HandleViewportEvent(const Application::ViewportEvent& event);
 
