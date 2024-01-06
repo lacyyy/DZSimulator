@@ -8,7 +8,7 @@
 
 using namespace Magnum;
 
-Magnum::Matrix4 utils_3d::CalcModelTransformationMatrix(
+Matrix4 utils_3d::CalcModelTransformationMatrix(
     const Vector3& obj_pos, const Vector3& obj_ang, float uniform_scale)
 {
     // Order of transformations is important!
@@ -37,9 +37,9 @@ Vector3 utils_3d::CalcNormalCwFront(const Vector3& v1, const Vector3& v2,
 // Returns true if the normal vector of the triangle described by three vertices
 // in clockwise direction has a positive Z component
 bool utils_3d::IsCwTriangleFacingUp(
-    const Magnum::Vector3& v1,
-    const Magnum::Vector3& v2,
-    const Magnum::Vector3& v3)
+    const Vector3& v1,
+    const Vector3& v2,
+    const Vector3& v3)
 {
     Vector3 v1_to_v3 = v3 - v1;
     Vector3 v1_to_v2 = v2 - v1;
