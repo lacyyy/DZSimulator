@@ -30,6 +30,11 @@ void BigTextRenderer::InitWithOpenGLContext(
     _indices  = GL::Buffer{ GL::Buffer::TargetHint::ElementArray };
     _shader = Shaders::DistanceFieldVectorGL2D{};
 
+    // @Optimization If the creation of the glyph cache takes too long, take a
+    //               look at this conversation incl. Magnum's author:
+    // https://matrix.to/#/!expMvWuzfDKKWnhbss:gitter.im/$23lvK_El1JM6OklpNkM3fJ55NrwVezRyhCtp6xu8_q4?via=gitter.im&via=integrations.ems.host&via=phanerox.com
+    // I pray this link still works and points to the right message in the future.
+
     // Unscaled glyph cache texture size
     const Vector2i original_cache_tex_size = Vector2i{ 2048 };
 

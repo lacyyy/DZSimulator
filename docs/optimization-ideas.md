@@ -7,14 +7,23 @@ We should probably utilize Tracy instead of profiling with VS: https://github.co
 Or try out Magnum's built-in profiler: https://doc.magnum.graphics/magnum/classMagnum_1_1DebugTools_1_1FrameProfiler.html
 
 ### LOADING TIME REDUCTION:
+
 - Compile with Clang or GCC instead of MSVC, any speed improvements?
 - PARSING CSGO MAPS:
+    - Take a look at [Kaitai Struct](https://kaitai.io)
     - Load struct fields directly into memory IF it's safe to assume that PCs today all have twos-complement and little-endian architectures
         - Are there guarantees for this on WASM/Emscripten?
     - Load packed PHY files in order of their position in the BSP file without reopening it each time?
     - Don't parse/load lumps we don't need (leafface lump? face lump?)
 
 ### FRAME TIME REDUCTION:
+
+- Reducing vertex data on the GPU might increase FPS significantly
+    - Change GPU vertex data layout to minimize memory footprint?
+	- https://x.com/SebAaltonen/status/1731317041032770018?s=20
+- Move trajectory calculations from the vertex shader to the fragment shader?
+- Some form of occlusion culling?
+    - Only worth it for big complex static props?
 - World-Player collision detection
     - Measure impact of __forceinline in displacement collision code
 - During gameplay, displacement collision cache creation might infrequently cause stutters. Measure!
@@ -27,7 +36,7 @@ Or try out Magnum's built-in profiler: https://doc.magnum.graphics/magnum/classM
 - Vertex shader of GlidabilityShader3D: Avoid divisions by precalculating inverse values? Or by restructuring equations?
 - Collision meshes: Remove triangles that are completely encompassed by another coll model section?
 - Don't draw individual sections of collision models if they're entirely absorbed by solid brushes!
-	- Absorption can be checked by testing if all vertices of a section are "behind" all planes of a brush
+    - Absorption can be checked by testing if all vertices of a section are "behind" all planes of a brush
     - Is this even possible/viable when collision models are drawn using OpenGL's "instancing"?
 - Don't draw displacement triangles if they're entirely absorbed by solid brushes!
     - Test: Calc percentage of total count of affected triangles
@@ -42,6 +51,7 @@ Or try out Magnum's built-in profiler: https://doc.magnum.graphics/magnum/classM
     - Does the DZSimulator browser tab always have high CPU usage, even when not selected/minimized? Is this avoidable?
 
 ### RAM USAGE REDUCTION:
+
 - Reduce RAM usage, especially peak usage
     - Decide: Work with mesh faces as triangles (a list of 3 vertices) or as polygons (a list of 3+ vertices). Reduces nested std::vector usage?
         - Should probably just replace std::vector size=3 with a Triangle struct...
@@ -52,7 +62,10 @@ Or try out Magnum's built-in profiler: https://doc.magnum.graphics/magnum/classM
     - More and more displacement collision caches are created during gameplay. Maybe delete caches of displacements that are far away or infrequently collided with?
 
 ### EXECUTABLE SIZE REDUCTION:
+
 - Use [Bloaty](https://github.com/google/bloaty)
+- Use [SizeBench](https://github.com/microsoft/SizeBench) for windows EXEs
+- Use [weave](https://github.com/evmar/weave) for WASM files
 - Replace embedded font files with smaller / less comprehensive ones
 - Compress embedded map, font and other files with ZIP compression before embedding
     - Is decoding them again detrimental for startup time?
@@ -63,5 +76,6 @@ Or try out Magnum's built-in profiler: https://doc.magnum.graphics/magnum/classM
     - [Configure server-side compression of WASM executable](https://doc.magnum.graphics/magnum/platforms-html5.html#platforms-html5-code-size-server)
 
 ### COMPILE TIME REDUCTION:
+
 - Use a tool that analyzes a project's `#include`s
 - nlohmann's single-header JSON library might contribute a lot to build time

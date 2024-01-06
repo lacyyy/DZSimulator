@@ -28,6 +28,7 @@ struct CollisionModel { // For the sake of precomputation, we store both planes 
     //               indices into the vertex array.
     //               Could half floats be precise enough for vert positions?
     //               If yes, look up available half float intrinsics.
+    //               https://github.com/Maratyszcza/FP16 ??
     std::vector<std::vector<std::vector<Magnum::Vector3>>> section_tris;
 };
 
