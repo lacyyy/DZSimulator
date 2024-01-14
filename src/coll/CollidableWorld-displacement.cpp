@@ -1584,15 +1584,15 @@ bool CDispCollTree::EdgeCrossAxis(const SweptTrace& trace, unsigned short iPlane
     vecEnd[OTHER_AXIS1] = trace.info.startpos[OTHER_AXIS1] + trace.info.delta[OTHER_AXIS1];
     vecEnd[OTHER_AXIS2] = trace.info.startpos[OTHER_AXIS2] + trace.info.delta[OTHER_AXIS2];
 
-    float flExpandDist =  flDist
-                        - (vecNormal[OTHER_AXIS1] * vecExtent[OTHER_AXIS1])
-                        + (vecNormal[OTHER_AXIS2] * vecExtent[OTHER_AXIS2]);
-    float flStart =  (vecNormal[OTHER_AXIS1] * trace.info.startpos[OTHER_AXIS1])
-                   + (vecNormal[OTHER_AXIS2] * trace.info.startpos[OTHER_AXIS2])
-                   - flExpandDist;
-    float flEnd =  (vecNormal[OTHER_AXIS1] * vecEnd[OTHER_AXIS1])
-                 + (vecNormal[OTHER_AXIS2] * vecEnd[OTHER_AXIS2])
-                 - flExpandDist;
+    float flExpandDist =  flDist -
+                          (vecNormal[OTHER_AXIS1] * vecExtent[OTHER_AXIS1] +
+                           vecNormal[OTHER_AXIS2] * vecExtent[OTHER_AXIS2]);
+    float flStart = (vecNormal[OTHER_AXIS1] * trace.info.startpos[OTHER_AXIS1] +
+                     vecNormal[OTHER_AXIS2] * trace.info.startpos[OTHER_AXIS2])
+                    - flExpandDist;
+    float flEnd = (vecNormal[OTHER_AXIS1] * vecEnd[OTHER_AXIS1] +
+                   vecNormal[OTHER_AXIS2] * vecEnd[OTHER_AXIS2])
+                  - flExpandDist;
     return ResolveRayPlaneIntersect(flStart, flEnd, vecNormal, flDist, pHelper);
 }
 
