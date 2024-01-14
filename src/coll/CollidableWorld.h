@@ -64,6 +64,8 @@ private:
     friend class WorldCreator;
     // BVH is heavily tied to this class, let it access private members.
     friend class BVH;
+    // Debugger needs to debug, let it access private members.
+    friend class Debugger;
 };
 
 } // namespace coll

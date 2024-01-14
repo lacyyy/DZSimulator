@@ -9,6 +9,7 @@
 #include <Magnum/Math/Vector3.h>
 
 #include "coll/CollidableWorld_Impl.h"
+#include "coll/Debugger.h"
 
 using namespace coll;
 using namespace Magnum;
@@ -28,6 +29,8 @@ void CollidableWorld::DoSweptTrace(SweptTrace* trace)
         return;
     }
 
+    coll::Debugger::DebugStart_Trace(trace->info);
+
     // Do nothing if sweep distance of the swept trace is effectively zero.
     if (trace->info.delta.isZero()) {
         // Assert here for testing purposes, as it's currently unknown if
@@ -36,10 +39,13 @@ void CollidableWorld::DoSweptTrace(SweptTrace* trace)
         // TODO Test if movement is processed correctly with this abort. If it
         //      is, remove this assert.
         assert(false);
+
+        coll::Debugger::DebugFinish_Trace(trace->results);
         return;
     }
 
     pImpl->bvh->DoSweptTrace(trace, *this);
+    coll::Debugger::DebugFinish_Trace(trace->results);
 }
 
 bool CollidableWorld::DoesAabbIntersectAnyDisplacement(

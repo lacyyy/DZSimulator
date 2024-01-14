@@ -135,6 +135,10 @@ private:
     void _GetAabbsContainingPoint_r(const Node& node, const Magnum::Vector3& pt,
         std::vector<Magnum::Vector3>* aabb_mins_list,
         std::vector<Magnum::Vector3>* aabb_maxs_list);
+
+private:
+    // Debugger needs to debug, let it access private members.
+    friend class Debugger;
 };
     
 } // namespace coll

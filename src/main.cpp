@@ -24,11 +24,13 @@
 
 #include "build_info.h"
 #include "coll/CollidableWorld.h"
+#include "coll/SweptTrace.h"
 #include "csgo_integration/Gsi.h"
 #include "csgo_integration/Handler.h"
 #include "csgo_integration/RemoteConsole.h"
 #include "csgo_parsing/AssetFinder.h"
 #include "csgo_parsing/BspMapParsing.h"
+#include "coll/Debugger.h" // The build might break if this header is included in some other line. No idea what's wrong.
 #include "GitHubChecker.h"
 #include "gui/Gui.h"
 #include "InputHandler.h"
@@ -157,6 +159,8 @@ class DZSimApplication: public Platform::Application {
         bool LoadBspMap(std::string file_path, bool load_from_embedded_files=false);
 
         void ConfigureGameKeyBindings();
+
+        void ShootTestTraceOutFromCamera();
 
         void viewportEvent(ViewportEvent& event) override;
         
@@ -714,7 +718,11 @@ void DZSimApplication::UpdateGuiCsgoMapPaths() {
 // Returns success
 bool DZSimApplication::LoadBspMap(std::string file_path,
     bool load_from_embedded_files)
+
 {
+    if (coll::Debugger::IS_ENABLED)
+        coll::Debugger::Reset();
+
     // Deallocate previous map data to minimize peak RAM usage during parsing
     // RAM USAGE NOT REALLY TESTED YET!
     _ren_world .reset();
@@ -863,6 +871,32 @@ void DZSimApplication::ConfigureGameKeyBindings() {
     _inputs.SetKeyReleasedCallback_mouse("MWheelUp", [this]() {
         this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_JUMP); });
 
+    // ----
+
+    _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
+        ShootTestTraceOutFromCamera();
+    });
+
+}
+
+void DZSimApplication::ShootTestTraceOutFromCamera()
+{
+    if (!_coll_world)                                    return;
+    if (!coll::Debugger::IS_ENABLED)                     return;
+    if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
+
+    float trace_length = 600.0f;
+    Vector3 delta = trace_length * GetCameraForwardVector();
+    Vector3 hull_mins = { -16.0f, -16.0f,  0.0f };
+    Vector3 hull_maxs = { +16.0f, +16.0f, 72.0f };
+    Vector3 start = _cam_pos - 0.5f * (hull_maxs + hull_mins) + Vector3{ 0.0f, 0.0f, 15.0f };
+    coll::SweptTrace tr(
+        start,
+        start + delta,
+        hull_mins,
+        hull_maxs
+    );
+    _coll_world->DoSweptTrace(&tr);
 }
 
 void DZSimApplication::viewportEvent(ViewportEvent& event)
@@ -1629,6 +1663,11 @@ void DZSimApplication::drawEvent() {
             player_feet_pos,
             hori_player_speed,
             bump_mine_positions);
+
+        if (coll::Debugger::IS_ENABLED)
+            coll::Debugger::Draw(_cam_pos, GetCameraForwardVector(),
+                _view_proj_transformation,
+                _wide_line_renderer, _coll_world, _gui_state);
 
         GL::Renderer::disable(GL::Renderer::Feature::Blending);
     }

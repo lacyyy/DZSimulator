@@ -313,6 +313,7 @@ target_sources(DZSimulator PRIVATE
     "src/coll/CollidableWorld-displacement.cpp"
     "src/coll/CollidableWorld-funcbrush.cpp"
     "src/coll/CollidableWorld-staticprop.cpp"
+    "src/coll/Debugger.cpp"
     "src/coll/SweptTrace.cpp"
 
     "src/csgo_integration/Gsi.cpp"

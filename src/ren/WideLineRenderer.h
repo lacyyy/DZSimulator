@@ -46,6 +46,17 @@ namespace ren {
             bool no_depth_test = false
         );
 
+        // Usable for visualizing normals. ind_normal must be normalized
+        void DrawDirectionIndicator(
+            const Magnum::Color4& color,
+            const Magnum::Vector3 ind_pos,
+            const Magnum::Vector3 ind_normal,
+            const Magnum::Matrix4& view_proj_transformation,
+            const Magnum::Vector3& cam_pos,
+            const Magnum::Vector3& cam_dir_normal,
+            bool no_depth_test = false
+        );
+
     private:
         Magnum::Shaders::LineGL3D _shader_cap_style_butt { Magnum::NoCreate };
         Magnum::Shaders::LineGL3D _shader_cap_style_round{ Magnum::NoCreate };

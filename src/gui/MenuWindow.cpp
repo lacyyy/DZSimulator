@@ -6,6 +6,7 @@
 #include <Corrade/Utility/Path.h>
 
 #include "build_info.h"
+#include "coll/Debugger.h"
 #include "gui/Gui.h"
 #include "gui/GuiState.h"
 #include "SavedUserDataHandler.h"
@@ -350,6 +351,11 @@ void MenuWindow::Draw()
     }
 
 #ifndef NDEBUG
+    if (ImGui::CollapsingHeader("Collision Debugging (Debug only)"))
+    {
+        DrawCollisionDebugging();
+    }
+
     if (ImGui::CollapsingHeader("Test Settings (Debug only)"))
     {
         DrawTestSettings();
@@ -927,6 +933,13 @@ void MenuWindow::DrawOther()
         "3. Delete user settings file\n"
         "4. Re-open DZSimulator"
     );
+#endif
+}
+
+void MenuWindow::DrawCollisionDebugging()
+{
+#ifndef NDEBUG
+    coll::Debugger::DrawImGuiElements(_gui_state);
 #endif
 }
 

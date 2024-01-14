@@ -13,6 +13,7 @@
 
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
+#include "coll/Debugger.h"
 #include "coll/SweptTrace.h"
 #include "csgo_parsing/BspMap.h"
 
@@ -1011,6 +1012,11 @@ void CDispCollTree::AABBTree_CalcBounds()
     }
 }
 
+bool CDispCollTree::IsCacheGenerated() const
+{
+    return m_aTrisCache.size() == GetTriSize();
+}
+
 void CDispCollTree::EnsureCacheIsCreated()
 {
     if (m_aTrisCache.size() == GetTriSize())
@@ -1227,8 +1233,11 @@ bool CDispCollTree::AABBTree_SweepAABB(SweptTrace* trace)
             int iTri1 = m_leaves[leafIndex].m_tris[1];
             CDispCollTri* pTri0 = &m_aTris[iTri0];
             CDispCollTri* pTri1 = &m_aTris[iTri1];
+
+            coll::Debugger::DebugStart_DispCollLeafHit(*this, leafIndex);
             SweepAABBTriIntersect(trace, iTri0, pTri0);
             SweepAABBTriIntersect(trace, iTri1, pTri1);
+            coll::Debugger::DebugFinish_DispCollLeafHit();
         }
     }
 

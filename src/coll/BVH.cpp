@@ -17,6 +17,7 @@
 #include "coll/CollidableWorld_Impl.h"
 #include "coll/CollidableWorld-funcbrush.h"
 #include "coll/CollidableWorld-staticprop.h"
+#include "coll/Debugger.h"
 #include "coll/SweptTrace.h"
 #include "csgo_parsing/BrushSeparation.h"
 #include "csgo_parsing/BspMap.h"
@@ -122,6 +123,13 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
         return; // Can't trace against non-existent BVH
     const Node& root_node = nodes[0];
 
+#if 0 // Debugging switch
+    // Trace against all leaves for debugging purposes
+    for (size_t i = 1; i < leaves.size(); i++)
+        DoSweptTraceAgainstLeaf(trace, leaves[i], c_world);
+    return;
+#endif
+
     // @Optimization Doing an intersection between the AABB that encloses the
     //               trace sweep and the AABB of the root BVH node is possibly
     //               cheaper than doing an accurate sweep against AABB of the
@@ -160,10 +168,14 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
 
         // Traverse candidate
         if (candidate.node_or_leaf_idx < 0) { // If candidate is a leaf
-            const Leaf& leaf = leaves[-candidate.node_or_leaf_idx];
+            int32_t leaf_idx = -candidate.node_or_leaf_idx;
+            const Leaf& leaf = leaves[leaf_idx];
+
             // @Optimization Make sure CDispCollTree code doesn't do the same
             //               AABB check that we already do.
+            coll::Debugger::DebugStart_BroadPhaseLeafHit(leaf, leaf_idx);
             DoSweptTraceAgainstLeaf(trace, leaf, c_world);
+            coll::Debugger::DebugFinish_BroadPhaseLeafHit();
         }
         else { // If candidate is a node
             const Node& parent_node = nodes[candidate.node_or_leaf_idx];

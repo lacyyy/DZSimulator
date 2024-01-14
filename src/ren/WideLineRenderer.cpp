@@ -1,25 +1,31 @@
 #include "ren/WideLineRenderer.h"
 
+#include <cassert>
 #include <cmath>
 
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Angle.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Distance.h>
 #include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Vector2.h>
+#include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Vector4.h>
 #include <Magnum/MeshTools/CompileLines.h>
 #include <Magnum/MeshTools/GenerateLines.h>
 #include <Magnum/Shaders/Line.h>
 #include <Magnum/Trade/MeshData.h>
 
+#include "utils_3d.h"
+
 using namespace ren;
 using namespace Magnum;
+using namespace utils_3d;
 
 
 // FIXME:
@@ -299,4 +305,68 @@ void WideLineRenderer::DrawLine(
     GL::Renderer::enable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::enable(GL::Renderer::Feature::FaceCulling);
     GL::Renderer::setDepthMask(true);
+}
+
+void WideLineRenderer::DrawDirectionIndicator(
+    const Color4& color, const Vector3 ind_pos, const Vector3 ind_normal,
+    const Matrix4& view_proj_transformation,
+    const Vector3& cam_pos, const Vector3& cam_dir_normal, bool no_depth_test)
+{
+    // Draw line in normal direction
+    DrawLine(
+        Color3{ 1.0f, 1.0f, 1.0f },
+        ind_pos,
+        ind_pos + 14.0f * ind_normal,
+        view_proj_transformation,
+        cam_pos, cam_dir_normal, no_depth_test
+    );
+
+    if (!ind_normal.isNormalized()) {
+        assert(0);
+        return;
+    }
+
+    // Step 1: Create a vector that's linearly independent to the input normal.
+    //         Approach: Add 5 to the smallest vector component.
+    //         I can't prove this produces a linearly independent vector, but it seems so.
+    int smallest_idx = 0;
+    if (Math::abs(ind_normal[1]) < Math::abs(ind_normal[smallest_idx])) smallest_idx = 1;
+    if (Math::abs(ind_normal[2]) < Math::abs(ind_normal[smallest_idx])) smallest_idx = 2;
+
+    Vector3 linearly_independent_vec = ind_normal;
+    linearly_independent_vec[smallest_idx] += 5.0f;
+
+    // Step 2: Create a vector perpendicular to the input normal.
+    Vector3 perp_vec_1 = Math::cross(ind_normal, linearly_independent_vec);
+
+    if (perp_vec_1.isZero()) { // Shouldn't happen
+        assert(0);
+        return;
+    }
+    perp_vec_1 = perp_vec_1.normalized();
+
+    // Step 3: Create a vector perpendicular to both the previous vector and
+    //         the input normal.
+    Vector3 perp_vec_2 = Math::cross(ind_normal, perp_vec_1);
+
+    // At this point, ind_normal, perp_vec_1 and perp_vec_2 are all
+    // perpendicular to each other and have length 1.
+
+    // Draw lines in the plane
+    const float CIRCLE_RAY_LENGTH = 10.0f;
+    const size_t NUM_CIRCLE_RAYS = 12;
+    const float ANGLE_DELTA = 360.0f / (float)NUM_CIRCLE_RAYS;
+    Color4 circle_col = { 1.0f * color.rgb(), color.a() };
+    for (float angle = 0.0f; angle < 360.0f; angle += ANGLE_DELTA) {
+        auto sin_cos = Math::sincos(Deg{ angle });
+        Vector3 v = sin_cos.second * perp_vec_1 + sin_cos.first * perp_vec_2;
+
+        DrawLine(
+            circle_col,
+            ind_pos,
+            ind_pos + CIRCLE_RAY_LENGTH * v,
+            view_proj_transformation,
+            cam_pos, cam_dir_normal, no_depth_test
+        );
+    }
 }

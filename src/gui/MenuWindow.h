@@ -29,6 +29,8 @@ namespace gui {
 
         void DrawOther();
 
+        void DrawCollisionDebugging();
+
         void DrawTestSettings();
 
         Gui& _gui;

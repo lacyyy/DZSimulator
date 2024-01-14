@@ -165,6 +165,7 @@ public:
     inline int Nodes_CalcCount(int nPower) const;
     inline int Nodes_GetIndexFromComponents(int x, int y) const;
 
+    bool IsCacheGenerated() const;
     void EnsureCacheIsCreated();
     void Uncache();
 
@@ -219,6 +220,10 @@ private:
     // Collision cache, created and destroyed by EnsureCacheIsCreated() and Uncache()
     std::vector<CDispCollTriCache> m_aTrisCache;
     std::vector<Magnum::Vector3>   m_aEdgePlanes;
+
+private:
+    // Debugger needs to debug, let it access private members.
+    friend class Debugger;
 };
 
 // Purpose: get the child node index given the current node index and direction

@@ -146,6 +146,12 @@ public:
         std::string OUT_latest_json_payload = "";
     } gsi;
 
+    struct CollisionDebugging { // Only available in Debug builds
+        // Show all displacements that ...
+        bool IN_showDispsForHullColl = false;   // ... are used for hull traces
+        bool IN_showDispsWithCollCache = false; // ... have generated a collision cache
+    } coll_debug;
+
     struct TestSettings { // Settings that can only be adjusted in Debug builds
         float IN_slider1 = 0.1f;
         float IN_slider2 = 0.1f;
