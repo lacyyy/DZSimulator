@@ -336,9 +336,10 @@ target_sources(DZSimulator PRIVATE
     "src/ren/BigTextRenderer.cpp"
     "src/ren/GlidabilityShader3D.cpp"
     "src/ren/RenderableWorld.cpp"
-    "src/ren/WideLineRenderer.cpp"    
+    "src/ren/WideLineRenderer.cpp"
     "src/ren/WorldRenderer.cpp"
 
+    "src/sim/CsgoMovement.cpp"
     "src/sim/Server.cpp"
     "src/sim/WorldState.cpp"
 )

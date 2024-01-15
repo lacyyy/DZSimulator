@@ -16,10 +16,13 @@
 #include "coll/Debugger.h"
 #include "coll/SweptTrace.h"
 #include "csgo_parsing/BspMap.h"
+#include "utils_3d.h"
+
 
 using namespace coll;
 using namespace Magnum;
 using namespace csgo_parsing;
+using namespace utils_3d;
 
 
 uint64_t CollidableWorld::GetSweptTraceCost_Displacement(uint32_t dispcoll_idx)
@@ -666,7 +669,7 @@ void CDispCollTri::CalcPlane(std::vector<Vector3>& m_aVerts)
     };
 
     m_vecNormal = Math::cross(vecEdges[1], vecEdges[0]);
-    m_vecNormal = m_vecNormal.normalized();
+    NormalizeInPlace(m_vecNormal);
     m_flDist = Math::dot(m_vecNormal, m_aVerts[GetVert(0)]);
 
     // Calculate the signbits for the plane - fast test.
@@ -1399,11 +1402,7 @@ bool CDispCollTree::Cache_EdgeCrossAxisX(const Vector3& vecEdge,
 {
     // Calculate the normal: edge x axisX = ( 0.0, edgeZ, -edgeY )
     Vector3 vecNormal{ 0.0f, vecEdge.z(), -vecEdge.y() };
-
-    // Normalize
-    float vecLen = vecNormal.length();
-    if (vecLen < 1e-8f) vecNormal = { 0.0f, 0.0f, 0.0f }; // Skip this plane
-    else                vecNormal *= 1.0f / vecLen;
+    NormalizeInPlace(vecNormal);
 
     // Check for zero length normals.
     if ((vecNormal.y() == 0.0f) || (vecNormal.z() == 0.0f)) {
@@ -1451,11 +1450,7 @@ bool CDispCollTree::Cache_EdgeCrossAxisY(const Vector3& vecEdge,
 {
     // Calculate the normal: edge x axisY = ( -edgeZ, 0.0, edgeX )
     Vector3 vecNormal{ -vecEdge.z(), 0.0f, vecEdge.x() };
-
-    // Normalize
-    float vecLen = vecNormal.length();
-    if (vecLen < 1e-8f) vecNormal = { 0.0f, 0.0f, 0.0f }; // Skip this plane
-    else                vecNormal *= 1.0f / vecLen;
+    NormalizeInPlace(vecNormal);
 
     // Check for zero length normals
     if ((vecNormal.x() == 0.0f) || (vecNormal.z() == 0.0f)) {
@@ -1501,11 +1496,7 @@ bool CDispCollTree::Cache_EdgeCrossAxisZ(const Vector3& vecEdge,
 {
     // Calculate the normal: edge x axisZ = ( edgeY, -edgeX, 0.0 )
     Vector3 vecNormal{ vecEdge.y(), -vecEdge.x(), 0.0f };
-
-    // Normalize
-    float vecLen = vecNormal.length();
-    if (vecLen < 1e-8f) vecNormal = { 0.0f, 0.0f, 0.0f }; // Skip this plane
-    else                vecNormal *= 1.0f / vecLen;
+    NormalizeInPlace(vecNormal);
 
     // Check for zero length normals
     if ((vecNormal.x() == 0.0f) || (vecNormal.y() == 0.0f)) {

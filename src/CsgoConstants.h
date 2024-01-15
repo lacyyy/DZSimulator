@@ -6,6 +6,23 @@
 using namespace Magnum::Math::Literals;
 
 
+//// TODO Move these constant's and all their other occurrences somewhere else,
+////      maybe into CollidableWorld?
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/public/coordsize.h)
+const unsigned int CSGO_COORD_INTEGER_BITS    = 14;
+const unsigned int CSGO_COORD_FRACTIONAL_BITS = 5;
+const size_t       CSGO_COORD_DENOMINATOR     = 1 << CSGO_COORD_FRACTIONAL_BITS;
+const float        CSGO_COORD_RESOLUTION      = 1.0f / (float)CSGO_COORD_DENOMINATOR;
+
+// this is limited by the network fractional bits used for coords
+// because net coords will be only be accurate to 5 bits fractional
+// Standard collision test epsilon
+// 1/32nd inch collision epsilon
+const float CSGO_DIST_EPSILON = 0.03125f;
+// --------- end of source-sdk-2013 code ---------
+
+
 const float CSGO_TICKRATE = 64.0f; // Matchmaking Danger Zone server tickrate
 
 // CSGO's horizontal FOV depends on resolution aspect ratio
@@ -21,17 +38,6 @@ const float CSGO_PLAYER_EYE_LEVEL_STANDING = 64.093811f;
 const float CSGO_PLAYER_EYE_LEVEL_CROUCHING = 46.076218f;
 const float CSGO_PLAYER_FEET_LEVEL = 0.031250f; // "cl_showpos 2" and "getpos_exact" show feet position
 
-//// TODO move this constant's definition and all its other occurrences somewhere
-////      else, maybe into CollidableWorld?
-//// this is limited by the network fractional bits used for coords
-//// because net coords will be only be accurate to 5 bits fractional
-//// Standard collision test epsilon
-//// 1/32nd inch collision epsilon
-//const float DIST_EPSILON = 0.03125f;
-
-// Maybe this is 18 + 2 * DIST_EPSILON
-const float CSGO_MAX_STAIR_STEP_HEIGHT = 18.05f; // testing shows it's between 18.042999 and 18.0625
-
 // CSGO convars' default values in the Danger Zone(!) gamemode
 const float CSGO_CVAR_SV_ACCELERATE = 5.5f; // Linear acceleration amount for when player walks
 const bool  CSGO_CVAR_SV_ACCELERATE_USE_WEAPON_SPEED = 1; // whether or not player acceleration is affected by carried weapons
@@ -41,8 +47,9 @@ const float CSGO_CVAR_CL_SIDESPEED = 450.0f;
 const float CSGO_CVAR_SV_STOPSPEED = 80.0f; // Minimum stopping speed when on ground.
 const float CSGO_CVAR_SV_FRICTION = 5.2f; // World friction.
 const float CSGO_CVAR_SV_GRAVITY = 800.0f; // World gravity. units / (second^2)
-const float CSGO_CVAR_SV_MAXSPEED = 320.0f;
+const float CSGO_CVAR_SV_MAXSPEED = 320.0f; // Seems useless, actual max speed seems to be 260
 const float CSGO_CVAR_SV_MAXVELOCITY = 3500.0f; // Maximum speed any ballistically moving object is allowed to attain per axis.
+const float CSGO_CVAR_SV_STEPSIZE = 18.0f; // Hidden CSGO CVar
 
 const float CSGO_CVAR_SV_AIRACCELERATE           = 12.0f; // no description
 const float CSGO_CVAR_SV_AIRACCELERATE_PARACHUTE =  2.6f; // no description

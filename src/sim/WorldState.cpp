@@ -2,18 +2,19 @@
 
 #include <chrono>
 #include <iterator>
-#include <thread> // FIXME remove this after debug code was removed
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Functions.h>
-#include <Corrade/Utility/Debug.h>
 
-#include "GlobalVars.h"
 #include "CsgoConstants.h"
+#include "sim/CsgoMovement.h"
+#include "utils_3d.h"
 
 using namespace Magnum;
 
+using namespace utils_3d;
+using namespace coll;
 using namespace sim;
 
 WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& stateB, float phase)
@@ -29,6 +30,8 @@ WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& s
     interpState.player.position += phase * (stateB.player.position - stateA.player.position);
 
     // TODO Interpolate Bumpmines (do we need unique IDs for them?)
+
+    // NOTE: Player movement state is not being interpolated.
 
     return interpState;
 }
@@ -46,9 +49,12 @@ void WorldState::DoTimeStep(double stepSize_sec,
     // Caution: This time advancement does not account for simulation time scale!
     this->time += std::chrono::nanoseconds{ (long long)(1e9 * timeDelta) };
 
+    // Abort if no map is loaded
+    if (!g_coll_world)
+        return;
+
     // Conclusions drawn from player input
-    bool tryJump = false;
-    bool walkMode = false;
+    bool tryAttack = false;
 
     // Parse player input, chronologically
     for (auto pisIt = playerInputBeginIt; pisIt != playerInputEndIt; ++pisIt) {
@@ -56,9 +62,8 @@ void WorldState::DoTimeStep(double stepSize_sec,
             // Get counter reference for this input cmd
             unsigned int& inputCmdActiveCount = this->player.inputCmdActiveCount(cmd);
 
-            // Try to jump if cmd is '+jump' and the jump key wasn't pressed before
-            if (cmd == PlayerInputState::Command::PLUS_JUMP && inputCmdActiveCount == 0) {
-                tryJump = true;
+            if (cmd == PlayerInputState::Command::PLUS_ATTACK && inputCmdActiveCount == 0) {
+                tryAttack = true;
             }
 
             // Determine if the cmd is a '+cmd' or a '-cmd'
@@ -98,84 +103,116 @@ void WorldState::DoTimeStep(double stepSize_sec,
     }
 
     // W,A,S,D inputs only take effect if their state was 'pressed' at the start of the tick (i.e. at the end of this tick's input queue)
-    bool tryMoveForward = this->player.inputCmdActiveCount_forward != 0;
-    bool tryMoveBack = this->player.inputCmdActiveCount_back != 0;
-    bool tryMoveLeft = this->player.inputCmdActiveCount_moveleft != 0;
-    bool tryMoveRight = this->player.inputCmdActiveCount_moveright != 0;
+    bool tryMoveForward = this->player.inputCmdActiveCount_forward   != 0;
+    bool tryMoveBack    = this->player.inputCmdActiveCount_back      != 0;
+    bool tryMoveLeft    = this->player.inputCmdActiveCount_moveleft  != 0;
+    bool tryMoveRight   = this->player.inputCmdActiveCount_moveright != 0;
 
-    Vector3 forward_dir_xy{ Math::cos(Deg{this->player.angles.y()        }), Math::sin(Deg{this->player.angles.y()        }), 0.0f };
-    Vector3 moveright_dir_xy{ Math::cos(Deg{this->player.angles.y() - 90.0f}), Math::sin(Deg{this->player.angles.y() - 90.0f}), 0.0f };
+    // Toggle CSGO and flying movement
+    if (this->player.inputCmdActiveCount_attack2 != 0) {
+        // ---- FLYING MOVEMENT ----
+        Vector3 forward_dir_xy  { Math::cos(Deg{this->player.angles.y()        }), Math::sin(Deg{this->player.angles.y()        }), 0.0f };
+        Vector3 moveright_dir_xy{ Math::cos(Deg{this->player.angles.y() - 90.0f}), Math::sin(Deg{this->player.angles.y() - 90.0f}), 0.0f };
 
-    Vector3 wish_dir_xy = { 0.0f, 0.0f, 0.0f };
-    if (tryMoveForward && !tryMoveBack) wish_dir_xy += forward_dir_xy;
-    else if (tryMoveBack && !tryMoveForward) wish_dir_xy -= forward_dir_xy;
-    if (tryMoveRight && !tryMoveLeft) wish_dir_xy += moveright_dir_xy;
-    else if (tryMoveLeft && !tryMoveRight) wish_dir_xy -= moveright_dir_xy;
-    if (wish_dir_xy.x() == 0.0f && wish_dir_xy.y() == 0.0f) {
-        this->player.velocity.x() = 0.0f;
-        this->player.velocity.y() = 0.0f;
+        Vector3 wish_dir_xy = { 0.0f, 0.0f, 0.0f };
+        if      (tryMoveForward && !tryMoveBack   ) wish_dir_xy += forward_dir_xy;
+        else if (tryMoveBack    && !tryMoveForward) wish_dir_xy -= forward_dir_xy;
+        if      (tryMoveRight   && !tryMoveLeft   ) wish_dir_xy += moveright_dir_xy;
+        else if (tryMoveLeft    && !tryMoveRight  ) wish_dir_xy -= moveright_dir_xy;
+        if (wish_dir_xy.x() == 0.0f && wish_dir_xy.y() == 0.0f) {
+            this->player.velocity.x() = 0.0f;
+            this->player.velocity.y() = 0.0f;
+        }
+        else {
+            NormalizeInPlace(wish_dir_xy);
+
+            float WALK_SPEED = 250.0f;
+            if (this->player.inputCmdActiveCount_speed) WALK_SPEED *= 12;
+
+            this->player.velocity.x() = WALK_SPEED * wish_dir_xy.x();
+            this->player.velocity.y() = WALK_SPEED * wish_dir_xy.y();
+        }
+
+        if (this->player.inputCmdActiveCount_jump != 0) {
+            if (this->player.inputCmdActiveCount_speed)
+                this->player.velocity.z() = 6 * 300.0f;
+            else
+                this->player.velocity.z() = 300.0f;
+        }
+        else if (this->player.inputCmdActiveCount_duck != 0) {
+            this->player.velocity.z() = 6 * -300.0f;
+        }
+        else {
+            this->player.velocity.z() = 0.0f;
+        }
+
+        this->player.position += timeDelta * this->player.velocity;
     }
     else {
-        wish_dir_xy = wish_dir_xy.normalized();
+        // ---- CSGO MOVEMENT ----
 
-        Float WALK_SPEED = 250.0f;
-        if (this->player.inputCmdActiveCount_speed) WALK_SPEED *= 12;
+        csgo_mv.m_nButtons = 0;
+        if (tryMoveForward)
+            csgo_mv.m_nButtons |= IN_FORWARD;
+        if (tryMoveBack)
+            csgo_mv.m_nButtons |= IN_BACK;
+        if (tryMoveLeft)
+            csgo_mv.m_nButtons |= IN_MOVELEFT;
+        if (tryMoveRight)
+            csgo_mv.m_nButtons |= IN_MOVERIGHT;
+        if (this->player.inputCmdActiveCount_jump != 0)
+            csgo_mv.m_nButtons |= IN_JUMP;
+        if (this->player.inputCmdActiveCount_speed != 0)
+            csgo_mv.m_nButtons |= IN_SPEED;
+        if (this->player.inputCmdActiveCount_duck != 0)
+            csgo_mv.m_nButtons |= IN_DUCK;
 
-        this->player.velocity.x() = WALK_SPEED * wish_dir_xy.x();
-        this->player.velocity.y() = WALK_SPEED * wish_dir_xy.y();
+        csgo_mv.m_flForwardMove = 0.0f;
+        if (tryMoveForward) csgo_mv.m_flForwardMove += 450.0f; // cl_forwardspeed ?
+        if (tryMoveBack)    csgo_mv.m_flForwardMove -= 450.0f; // cl_backspeed ?
+
+        csgo_mv.m_flSideMove = 0.0f;
+        if (tryMoveRight) csgo_mv.m_flSideMove += 450.0f; // cl_sidespeed  ?
+        if (tryMoveLeft)  csgo_mv.m_flSideMove -= 450.0f; // cl_sidespeed  ?
+
+        // TODO This is redundant, don't need this m_vecViewAngles global var
+        csgo_mv.m_vecViewAngles = this->player.angles;
+        csgo_mv.m_vecAbsOrigin  = this->player.position;
+        //csgo_mv.m_vecVelocity   = this->player.velocity;
+
+        // Temporary: On attack input, boost player in looking direction 
+        if (tryAttack) {
+            Vector3 forward;
+            AngleVectors(player.angles, &forward);
+            csgo_mv.m_vecVelocity += 1400 * forward;
+        }
+
+        // -------- start of source-sdk-2013 code --------
+        // (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
+        // (Original code found in ProcessMovement() function)
+
+        // Cropping movement speed scales mv->m_fForwardSpeed etc. globally
+        // Once we crop, we don't want to recursively crop again, so we set the crop
+        //  flag globally here once per usercmd cycle.
+        csgo_mv.m_iSpeedCropped = SPEED_CROPPED_RESET;
+
+        csgo_mv.m_flMaxSpeed = 260.0f; // Can see 260 value when running "cl_pdump 1" in CSGO
+
+        //Debug{} << "m_nButtons = " << csgo_mv.m_nButtons;
+        //Debug{} << "m_flForwardMove = " << csgo_mv.m_flForwardMove;
+        //Debug{} << "m_flSideMove    = " << csgo_mv.m_flSideMove;
+        //Debug{} << "m_vecViewAngles = " << csgo_mv.m_vecViewAngles;
+        //Debug{} << "m_vecAbsOrigin  = " << csgo_mv.m_vecAbsOrigin;
+        //Debug{} << "m_vecVelocity   = " << csgo_mv.m_vecVelocity;
+
+        csgo_mv.PlayerMove(timeDelta);
+        csgo_mv.FinishMove();
+        // --------- end of source-sdk-2013 code ---------
+
+        // After all Source engine movement code was run, update relevant results in
+        // our structures
+        this->player.position = csgo_mv.m_vecAbsOrigin;
+        //this->player.velocity = csgo_mv.m_vecVelocity;
+        this->player.crouched = csgo_mv.m_bDucked;
     }
-
-    if (this->player.inputCmdActiveCount_jump != 0) {
-        if (this->player.inputCmdActiveCount_speed)
-            this->player.velocity.z() = 6 * 300.0f;
-        else
-            this->player.velocity.z() = 300.0f;
-    }
-    else if (this->player.inputCmdActiveCount_duck != 0) {
-        this->player.velocity.z() = 6 * -300.0f;
-    }
-    else {
-        this->player.velocity.z() = 0.0f;
-    }
-
-
-    static Float baseZ = this->player.position.z(); // ground level
-
-    // Temporary: If standing on ground
-    //if (tryJump && this->player.position.z() <= baseZ) {
-    //    if (this->player.inputCmdActiveCount_speed)
-    //        this->player.velocity.z() = 4 * CSGO_CVAR_SV_JUMP_IMPULSE;
-    //    else
-    //        this->player.velocity.z() = CSGO_CVAR_SV_JUMP_IMPULSE;
-    //}
-
-    // CONFIRMED: CSGO first applies gravity to velocity, then applies velocity to position!
-    //            Jump impulse velocity must not be set between these 2 steps!
-    // 1. Apply gravity to vertical velocity
-    //this->player.velocity.z() -= timeDelta * CSGO_CVAR_SV_GRAVITY;
-    // 2. Apply velocity to position
-    this->player.position += timeDelta * this->player.velocity;
-
-    // Temporary: enforce test ground level
-    //if (this->player.position.z() < baseZ) {
-    //    this->player.position.z() = baseZ;
-    //    this->player.velocity.z() = 0.0f;
-    //}
-
-    //ACQUIRE_COUT(Debug{} << wState.player.position.z();)
-
-    //size_t x = 0;
-    //auto target_sleep_end = Clock::now() + std::chrono::microseconds{ 500 };
-    //while (Clock::now() < target_sleep_end) {
-    //    std::this_thread::yield();
-    //    //std::this_thread::sleep_for(std::chrono::microseconds{ 1 });
-    //    //++x;
-    //}
-    //auto sleep_end = Clock::now();
-    //auto sleep_deviation_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(sleep_end - target_sleep_end).count();
-    //static long long max_yielddev_ns = -1000000;
-    //if (sleep_deviation_ns > max_yielddev_ns)
-    //    max_yielddev_ns = sleep_deviation_ns;
-    //Debug{} << "maxyielddev =" << max_yielddev_ns / 1e6f << "ms";
-    //Debug{} << "x =" << x;
 }

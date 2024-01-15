@@ -1,12 +1,43 @@
 #include "utils_3d.h"
 
+#include <cfloat>
 #include <cmath>
 
 #include <Magnum/Math/Angle.h>
 #include <Magnum/Math/Constants.h>
+#include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Vector3.h>
 
 using namespace Magnum;
+
+
+Vector3 utils_3d::GetNormalized(const Vector3& vec)
+{
+    // -------- start of source-sdk-2013 code --------
+    // (taken and modified from source-sdk-2013/<...>/src/public/mathlib/vector.h)
+    // (Original code found in _VMX_VectorNormalize() function)
+
+    // Note: Zero vectors are normalized to zero vectors.
+    //       -> Need an epsilon here, otherwise NANs could appear.
+    float invLength = 1.0f / (vec.length() + FLT_EPSILON);
+    return vec * invLength;
+    // --------- end of source-sdk-2013 code ---------
+}
+
+float utils_3d::NormalizeInPlace(Vector3& vec)
+{
+    // -------- start of source-sdk-2013 code --------
+    // (taken and modified from source-sdk-2013/<...>/src/public/mathlib/vector.h)
+    // (Original code found in _VMX_VectorNormalize() function)
+
+    // Note: Zero vectors are normalized to zero vectors.
+    //       -> Need an epsilon here, otherwise NANs could appear.
+    float length = vec.length();
+    float invLength = 1.0f / (length + FLT_EPSILON);
+    vec = vec * invLength;
+    return length;
+    // --------- end of source-sdk-2013 code ---------
+}
 
 Matrix4 utils_3d::CalcModelTransformationMatrix(
     const Vector3& obj_pos, const Vector3& obj_ang, float uniform_scale)
@@ -46,3 +77,50 @@ bool utils_3d::IsCwTriangleFacingUp(
     float normal_z_component = v1_to_v2.y() * v1_to_v3.x() - v1_to_v2.x() * v1_to_v3.y();
     return normal_z_component > 0.0f;
 }
+
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/mathlib/mathlib_base.cpp)
+
+// Euler QAngle -> Basis Vectors.  Each vector is optional
+void utils_3d::AngleVectors(const Vector3& angles,
+    Vector3* forward, Vector3* right, Vector3* up)
+{
+    auto pitch_sincos = Math::sincos(Deg{ angles[0] });
+    auto   yaw_sincos = Math::sincos(Deg{ angles[1] });
+    auto  roll_sincos = Math::sincos(Deg{ angles[2] });
+
+    float sy = yaw_sincos.first;
+    float cy = yaw_sincos.second;
+    float sr = roll_sincos.first;
+    float cr = roll_sincos.second;
+    float sp = pitch_sincos.first;
+    float cp = pitch_sincos.second;
+
+    if (forward)
+    {
+        *forward = {
+            cp * cy,
+            cp * sy,
+            -sp
+        };
+    }
+
+    if (right)
+    {
+        *right = {
+            (-1 * sr * sp * cy + -1 * cr * -sy),
+            (-1 * sr * sp * sy + -1 * cr * cy),
+            -1 * sr * cp
+        };
+    }
+
+    if (up)
+    {
+        *up = {
+            (cr * sp * cy + -sr * -sy),
+            (cr * sp * sy + -sr * cy),
+            cr * cp
+        };
+    }
+}
+// --------- end of source-sdk-2013 code ---------

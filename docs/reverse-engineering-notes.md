@@ -1,7 +1,7 @@
 ### CS2 REVERSE ENGINEERING PLANS
 - Figure out new collision mechanics incl. how bevel planes are created
     - Visualize bevel planes with [this script](https://github.com/GameChaos/cs2_things/blob/main/scripts/vscripts/raytracing.lua). Note that VScripts need to be enabled by patching binaries.
-
+- Does CS2 do the exact same 4-quadrant standable ground check like CSGO does?
 
 ## CSGO MECHANICS REVERSE ENGINEERING, IDEAS AND FINDINGS 
 

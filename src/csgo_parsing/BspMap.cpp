@@ -202,7 +202,6 @@ std::vector<std::vector<Vector3>> BspMap::GetDisplacementFaceVertices() const
 // @OPTIMIZATION: Merge boundary faces that can be merged (e.g. in displacement walls)
 std::vector<std::vector<Vector3>> BspMap::GetDisplacementBoundaryFaceVertices() const
 {
-    const float EPSILON = 0.00001f; // Min vector length allowed for normalization
     // By how much the boundary faces are placed above the displacement faces
     const float BOUNDARY_HOVER_DIST = 2.0f;
     // Ratio of boundary width to displacement tile width
@@ -290,9 +289,9 @@ std::vector<std::vector<Vector3>> BspMap::GetDisplacementBoundaryFaceVertices() 
                     offset_dir += outermost_edge_normals[i - 1];
                 if (i != num_row_verts - 1)
                     offset_dir += outermost_edge_normals[i];
-                if(offset_dir.length() > EPSILON)
-                    v += BOUNDARY_HOVER_DIST * offset_dir.normalized();
+                NormalizeInPlace(offset_dir);
 
+                v += BOUNDARY_HOVER_DIST * offset_dir;
                 boundary_mesh_vertices[0].push_back(v);
             }
             // Calculate inner vertex line of the boundary mesh
@@ -305,8 +304,9 @@ std::vector<std::vector<Vector3>> BspMap::GetDisplacementBoundaryFaceVertices() 
                     offset_dir += outermost_edge_normals[i - 1];
                 if (i != num_row_verts - 1)
                     offset_dir += outermost_edge_normals[i];
-                if (offset_dir.length() > EPSILON)
-                    v += BOUNDARY_HOVER_DIST * offset_dir.normalized();
+                NormalizeInPlace(offset_dir);
+
+                v += BOUNDARY_HOVER_DIST * offset_dir;
 
                 Vector3 true_inwards_vec = (secnd_outermost_vertices[i] -
                                             first_outermost_vertices[i]);
@@ -319,25 +319,18 @@ std::vector<std::vector<Vector3>> BspMap::GetDisplacementBoundaryFaceVertices() 
                         Vector3 tmp = Math::cross((first_outermost_vertices[i - 1] -
                                                    first_outermost_vertices[i]),
                                                   outermost_edge_normals[i - 1]);
-                        if (tmp.length() > EPSILON)
-                            inwards_vec += tmp.normalized();
+                        inwards_vec += GetNormalized(tmp);
                     }
                         
                     if (i != num_row_verts - 1) {
                         Vector3 tmp = Math::cross((first_outermost_vertices[i] -
                                                    first_outermost_vertices[i + 1]),
                                                   outermost_edge_normals[i]);
-                        if (tmp.length() > EPSILON)
-                            inwards_vec += tmp.normalized();
+                        inwards_vec += GetNormalized(tmp);
                     }
 
-                    if (inwards_vec.length() > EPSILON) {
-                        inwards_vec = inwards_vec.normalized();
-                        inwards_vec *= true_inwards_vec.length();
-                    }
-                    else {
-                        inwards_vec = { 0.0f, 0.0f, 0.0f };
-                    }
+                    NormalizeInPlace(inwards_vec);
+                    inwards_vec *= true_inwards_vec.length();
                 }
                 v += BOUNDARY_THICKNESS * inwards_vec;
 

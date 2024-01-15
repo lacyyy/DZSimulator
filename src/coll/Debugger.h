@@ -1,14 +1,12 @@
 #ifndef COLL_DEBUGGER_H_
 #define COLL_DEBUGGER_H_
 
-#include <memory>
 #include <string>
 
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Vector3.h>
 
 #include "coll/BVH.h"
-#include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld-displacement.h"
 #include "coll/SweptTrace.h"
 #include "gui/GuiState.h"
@@ -66,7 +64,6 @@ public:
         const Magnum::Vector3& cam_dir_normal,
         const Magnum::Matrix4& view_proj_transformation,
         ren::WideLineRenderer& wide_line_ren,
-        std::shared_ptr<coll::CollidableWorld> coll_world,
         gui::GuiState& gui_state
     );
 

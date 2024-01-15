@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "sim/CsgoMovement.h"
 #include "sim/Entities/BumpmineProjectile.h"
 #include "sim/Entities/Player.h"
 #include "sim/PlayerInputState.h"
@@ -19,6 +20,7 @@ public:
     Clock::time_point latest_player_input_time;
 
     // World state
+    CsgoMovement csgo_mv;
     Entities::Player player;
     std::vector<Entities::BumpmineProjectile> bumpmine_projectiles;
 

@@ -12,8 +12,11 @@
 #include <Magnum/Math/Vector3.h>
 #include <portable-file-dialogs.h>
 
+#include "utils_3d.h"
+
 using namespace Magnum;
 using namespace ren;
+using namespace utils_3d;
 
 GlidabilityShader3D::GlidabilityShader3D(NoCreateT)
     : AbstractShaderProgram { NoCreate }
@@ -139,7 +142,7 @@ GlidabilityShader3D::SetLightDirection(const Vector3& light_dir)
     if(light_dir.isNormalized())
         setUniform(_uniform_light_dir, light_dir);
     else
-        setUniform(_uniform_light_dir, light_dir.normalized());
+        setUniform(_uniform_light_dir, GetNormalized(light_dir));
     return *this;
 }
 

@@ -32,6 +32,7 @@
 #include "csgo_parsing/BspMapParsing.h"
 #include "coll/Debugger.h" // The build might break if this header is included in some other line. No idea what's wrong.
 #include "GitHubChecker.h"
+#include "GlobalVars.h"
 #include "gui/Gui.h"
 #include "InputHandler.h"
 #include "ren/BigTextRenderer.h"
@@ -56,7 +57,11 @@
 #define RCON_HOST "127.0.0.1"
 #define RCON_PORT 34755
 
-#define CLIENT_INTERPOLATION true
+// FIXME CRASH
+// Interpolation is currently off because the trace system isn't multithread-safe yet.
+// If on, the client and server would do traces simultaneously and possibly crash.
+// Take a look at g_DispCollPlaneIndexHash.
+#define CLIENT_INTERPOLATION false
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -112,7 +117,7 @@ class DZSimApplication: public Platform::Application {
 
         // Map data
         std::shared_ptr<csgo_parsing::BspMap>  _bsp_map;
-        std::shared_ptr<coll::CollidableWorld> _coll_world;
+        //std::shared_ptr<coll::CollidableWorld> _coll_world; // Moved to globals, temporarily
         std::shared_ptr<ren ::RenderableWorld> _ren_world;
 
         ren::WorldRenderer _world_renderer;
@@ -726,7 +731,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     // Deallocate previous map data to minimize peak RAM usage during parsing
     // RAM USAGE NOT REALLY TESTED YET!
     _ren_world .reset();
-    _coll_world.reset();
+    g_coll_world.reset(); // FIXME CRASH I think there's a race condition with the server thread
     _bsp_map   .reset();
 
     // Embedded map files must not rely on assets from the game directory.
@@ -783,7 +788,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     auto initialized_worlds =
         WorldCreator::InitFromBspMap(_bsp_map, &world_init_errors);
     _ren_world  = initialized_worlds.first;
-    _coll_world = initialized_worlds.second;
+    g_coll_world = initialized_worlds.second; // FIXME CRASH I think there's a race condition with the server thread
 
     if (!world_init_errors.empty()) {
         Debug{} << world_init_errors.c_str();
@@ -791,9 +796,8 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     }
 
     if (_bsp_map->player_spawns.size() > 0) {
-        csgo_parsing::BspMap::PlayerSpawn& playerSpawn =
-            _bsp_map->player_spawns[0];
-        _cam_pos = playerSpawn.origin;
+        csgo_parsing::BspMap::PlayerSpawn& playerSpawn = _bsp_map->player_spawns[0];
+        _cam_pos = playerSpawn.origin; // wrong cam pos
         _cam_ang = playerSpawn.angles;
         _currentClientWorldState.player.position = playerSpawn.origin;
         _currentClientWorldState.player.angles = playerSpawn.angles;
@@ -881,7 +885,7 @@ void DZSimApplication::ConfigureGameKeyBindings() {
 
 void DZSimApplication::ShootTestTraceOutFromCamera()
 {
-    if (!_coll_world)                                    return;
+    if (!g_coll_world)                                   return;
     if (!coll::Debugger::IS_ENABLED)                     return;
     if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
 
@@ -896,7 +900,7 @@ void DZSimApplication::ShootTestTraceOutFromCamera()
         hull_mins,
         hull_maxs
     );
-    _coll_world->DoSweptTrace(&tr);
+    g_coll_world->DoSweptTrace(&tr); // FIXME CRASH I think there's a race condition with the server thread
 }
 
 void DZSimApplication::viewportEvent(ViewportEvent& event)
@@ -1537,7 +1541,8 @@ void DZSimApplication::DoUpdate() {
                 CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
     else { // Take position from our server's game state
-        _cam_pos = _currentClientWorldState.player.position;
+        _cam_pos = _currentClientWorldState.player.position
+            + Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
 
     sim::Server::PerformanceStats serverPerf = _gameServer.GetPerformanceStats();
@@ -1613,12 +1618,13 @@ void DZSimApplication::CalcViewProjTransformation() {
 // Returned vector is normalized
 Vector3 DZSimApplication::GetCameraForwardVector()
 {
-    auto pitch_sincos = Math::sincos(Deg{ -_cam_ang[0] });
-    auto yaw_sincos   = Math::sincos(Deg{ +_cam_ang[1] });
+    // TODO Maybe Utilize the new AngleVectors function for this?
+    auto pitch_sincos = Math::sincos(Deg{ _cam_ang[0] });
+    auto yaw_sincos   = Math::sincos(Deg{ _cam_ang[1] });
     return {
         yaw_sincos.second * pitch_sincos.second,
         yaw_sincos.first * pitch_sincos.second,
-        pitch_sincos.first
+        -pitch_sincos.first
     };
 }
 
@@ -1667,7 +1673,7 @@ void DZSimApplication::drawEvent() {
         if (coll::Debugger::IS_ENABLED)
             coll::Debugger::Draw(_cam_pos, GetCameraForwardVector(),
                 _view_proj_transformation,
-                _wide_line_renderer, _coll_world, _gui_state);
+                _wide_line_renderer, _gui_state);
 
         GL::Renderer::disable(GL::Renderer::Feature::Blending);
     }

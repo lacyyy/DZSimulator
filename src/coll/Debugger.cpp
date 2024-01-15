@@ -18,6 +18,7 @@
 #include "coll/CollidableWorld-displacement.h"
 #include "coll/SweptTrace.h"
 #include "csgo_parsing/BspMap.h"
+#include "GlobalVars.h"
 #include "ren/WideLineRenderer.h"
 
 using namespace Magnum;
@@ -401,7 +402,6 @@ void Debugger::Draw(
     const Vector3& cam_dir_normal,
     const Matrix4& view_proj_transformation,
     ren::WideLineRenderer& wide_line_ren,
-    std::shared_ptr<coll::CollidableWorld> coll_world,
     gui::GuiState& gui_state)
 {
     if (!Debugger::IS_ENABLED)
@@ -531,8 +531,8 @@ void Debugger::Draw(
 
     if (gui_state.coll_debug.IN_showDispsForHullColl) {
         const Color3 color = Color3{ 1.0f, 0.0f, 1.0f };
-        if (coll_world && coll_world->pImpl->hull_disp_coll_trees) {
-            for (const CDispCollTree& dispcoll : *coll_world->pImpl->hull_disp_coll_trees) {
+        if (g_coll_world && g_coll_world->pImpl->hull_disp_coll_trees) {
+            for (const CDispCollTree& dispcoll : *g_coll_world->pImpl->hull_disp_coll_trees) {
                 if (dispcoll.CheckFlags(DispInfo::FLAG_NO_HULL_COLL))
                     continue;
 
@@ -546,10 +546,10 @@ void Debugger::Draw(
 
     // Note: This draws after the other displacement visualizations in order to
     //       overdraw them. The following visualization is more important.
-    if (gui_state.coll_debug.IN_showDispsWithCollCache && coll_world) {
+    if (gui_state.coll_debug.IN_showDispsWithCollCache && g_coll_world) {
         const Color3 color = Color3{ 1.0f, 1.0f, 0.0f };
-        if (coll_world && coll_world->pImpl->hull_disp_coll_trees) {
-            for (const CDispCollTree& dispcoll : *coll_world->pImpl->hull_disp_coll_trees) {
+        if (g_coll_world && g_coll_world->pImpl->hull_disp_coll_trees) {
+            for (const CDispCollTree& dispcoll : *g_coll_world->pImpl->hull_disp_coll_trees) {
                 if (!dispcoll.IsCacheGenerated())
                     continue;
 
