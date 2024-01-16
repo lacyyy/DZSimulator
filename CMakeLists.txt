@@ -24,6 +24,7 @@ set(DZSIM_MAGNUM_INTEGRATION_DIR thirdparty/magnum-integration)
 set(DZSIM_OPENSSL_DIR            thirdparty/openssl-1.1.1s-bin/win-x64-static)
 set(DZSIM_PFD_DIR                thirdparty/portable-file-dialogs)
 set(DZSIM_SDL_DIR                thirdparty/SDL)
+set(DZSIM_TRACY_DIR              thirdparty/tracy)
 
 if(DZSIM_WEB_PORT) # Web build requirements
     # Require Emscripten to be installed and pointed to in CMakeUserPresets.json
@@ -120,13 +121,16 @@ endif()
 # Set Dear ImGui path
 set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/${DZSIM_IMGUI_DIR})
 
+# Set options before add_subdirectory()
+option(TRACY_ENABLE "Enable profiling with Tracy" OFF) # Disabled by default. Tracy has more options.
+
 # Add subprojects
 add_subdirectory(${DZSIM_CORRADE_DIR}            EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_DIR}             EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_PLUGINS_DIR}     EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_MAGNUM_INTEGRATION_DIR} EXCLUDE_FROM_ALL)
 add_subdirectory(${DZSIM_FSAL_DIR}               EXCLUDE_FROM_ALL)
-
+add_subdirectory(${DZSIM_TRACY_DIR}              EXCLUDE_FROM_ALL)
 
 # Add executable target (must be done after all add_subdirectory() calls,
 # otherwise Debug builds might fail to find DLLs after CMake's first configure)
@@ -228,6 +232,7 @@ target_link_libraries(DZSimulator PRIVATE
     MagnumIntegration::ImGui
     MagnumPlugins::StbImageImporter
     MagnumPlugins::StbTrueTypeFont
+    TracyClient
 )
 
 if(DZSIM_WEB_PORT)
@@ -261,6 +266,7 @@ target_include_directories(DZSimulator PUBLIC
     "${PROJECT_SOURCE_DIR}/${DZSIM_FSAL_DIR}/sources" # Add sources from fsal lib
     "${PROJECT_SOURCE_DIR}/${DZSIM_JSON_DIR}/include" # Add headers from header-only lib json
     "${PROJECT_SOURCE_DIR}/${DZSIM_PFD_DIR}/include" # Add single-header library to include path
+    "${PROJECT_SOURCE_DIR}/${DZSIM_TRACY_DIR}/public/tracy"
 )
 
 # For Emscripten copy the boilerplate next to the executable so it can be run

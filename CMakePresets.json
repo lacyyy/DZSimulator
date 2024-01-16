@@ -52,15 +52,19 @@
             }
         },
         {
-            "name": "win-x64-release-static-debuggable",
-            "displayName": " Windows x64 Release +Console +DebugInfo",
-            "description": "Target Windows x64 in Release mode, compile Magnum statically and enable debug info.",
+            "name": "win-x64-release-static-w-profiling",
+            "displayName": " Windows x64 Release +Profiling +Console +DebugInfo",
+            "description": "Target Windows x64 in Release mode, compile Magnum statically, enable console, debug info and profiling with Tracy.",
             "inherits": "win-x64-release-static",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "DZSIM_DISABLE_CONSOLE_WINDOW": {
                     "type": "BOOL",
                     "value": "OFF"
+                },
+                "TRACY_ENABLE": {
+                    "type": "BOOL",
+                    "value": "ON"
                 }
             }
         },

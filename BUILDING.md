@@ -1,4 +1,5 @@
 NOTE:
+
 - Building DZSimulator is only tested and recommended with Visual Studio 2022! These instructions for building with VSCode or the command line might not work!
 - Mainly, building for Windows is explained here. Rudimentary explanations to build for the web (Emscripten/WASM) can be found towards the end of the document.
 - Every `.cpp` file that gets added to the project must be added to the `target_sources()` command in the top-level [CMakeLists.txt](CMakeLists.txt) to be considered for compilation. Visual Studio might be able to do that semi-automatically, but double check it!
@@ -9,29 +10,35 @@ NOTE:
 Depending on your situation, downloading the entire repo requires different steps with varying effort.
 
 ### CASE 1
+
 Clone the repository recursively with
+
 ```
 git clone https://github.com/lacyyy/DZSimulator.git --recursive
 ```
 
 ### CASE 2
+
 If the repository was cloned non-recursively previously, you can get the missing submodules with
+
 ```
 git submodule update --init --recursive
 ```
 
 ### CASE 3
+
 If for some reason, you need to build this repo and it has empty submodule folders and no Git history (which is what you get when selecting "Download ZIP" or the default "Download Source code" on GitHub's releases page), you need to add the submodules manually!
 
-1. Delete all empty folders inside `thirdparty/`, the next steps will fail otherwise. Deleting the top-level `.gitmodules` file too is recommended. 
+1. Delete all empty folders inside `thirdparty/`, the next steps will fail otherwise. Deleting the top-level `.gitmodules` file too is recommended.
 1. In the repo folder (where `docs/`, `res/`, `src/` and `thirdparty/` reside), run:
+
     ```
     git init
     git add -A
     git commit -m "Added non-submodule DZSimulator files"
     ```
 
-1. Next, run these commands without changing the working directory to get the required submodules at specific versions (You can ignore the 'detached HEAD' advice): 
+1. Next, run these commands without changing the working directory to get the required submodules at specific versions (You can ignore the 'detached HEAD' advice):
     ```
     git submodule add https://github.com/chriskohlhoff/asio.git thirdparty/asio/
     git submodule add https://github.com/mosra/corrade.git thirdparty/corrade/
@@ -41,6 +48,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git submodule add https://github.com/mosra/magnum-plugins.git thirdparty/magnum-plugins/
     git submodule add https://github.com/mosra/toolchains.git thirdparty/toolchains/
     git submodule add https://github.com/libsdl-org/SDL.git thirdparty/SDL/
+    git submodule add https://github.com/wolfpld/tracy.git thirdparty/tracy/
     git -C thirdparty/asio/ checkout asio-1-23-0
     git -C thirdparty/corrade/ checkout c548c45aff4e1f08c707a61775ab3131ef735739
     git -C thirdparty/imgui/ checkout v1.88
@@ -49,8 +57,10 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git -C thirdparty/magnum-plugins/ checkout 7d1aba3fda3324ac3f0d0694e673350c1fbd55f8
     git -C thirdparty/toolchains/ checkout 65568a98fa48de0369f35e9788779fdfbe14cacc
     git -C thirdparty/SDL/ checkout release-2.0.22
+    git -C thirdparty/tracy/ checkout v0.10
     ```
 1. Check if the newly installed submodules have the right version by running `git submodule status`. The library versions are correct if you see the following hash values for each one:
+
     ```
     53dea9830964eee8b5c2a7ee0a65d6e268dc78a1 thirdparty/SDL (release-2.0.22)
     4915cfd8a1653c157a1480162ae5601318553eb8 thirdparty/asio (asio-1-23-0)
@@ -60,6 +70,7 @@ If for some reason, you need to build this repo and it has empty submodule folde
     1a66b05bd7db0a5484366054ddc678bebf79921e thirdparty/magnum-integration (v2020.06-181-g1a66b05)
     7d1aba3fda3324ac3f0d0694e673350c1fbd55f8 thirdparty/magnum-plugins (v2020.06-1205-g7d1aba3f)
     65568a98fa48de0369f35e9788779fdfbe14cacc thirdparty/toolchains (heads/master)
+    37aff70dfa50cf6307b3fee6074d627dc2929143 thirdparty/tracy (v0.10)
     ```
 
 1. Then commit these submodules into Git:
@@ -68,12 +79,12 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git commit -m "Added submodule DZSimulator files"
     ```
 
-
 ## <ins>STEP 2: Building the application (for Windows)</ins>
 
 NOTE: Build instructions of option 2 and 3 sometimes didn't work, perhaps installing Visual Studio with choosing the "Desktop development with C++" workload is always required...
 
 ### OPTION 1 (RECOMMENDED): **Building with Visual Studio**
+
 - Visual Studio 2022 or newer is recommended, Visual Studio 2019 might work too with CMake folder projects
 - Choose "Open a local folder" or File > Open > Folder and select the repo folder (where `docs/`, `res/`, `src/` and `thirdparty/` reside)
 - Make sure CMake presets are used in Visual Studio by setting: Tools > Options > CMake > General > "Prefer using CMake presets" or "Always use CMakePresets.json" or "Use CMake Presets if available"
@@ -108,25 +119,24 @@ NOTE: Build instructions of option 2 and 3 sometimes didn't work, perhaps instal
     ```
     cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-debug
     cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-release-static
-    cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-release-static-debuggable
+    cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-release-static-w-profiling
     ```
 1. Build (Choose command with your desired preset):
     ```
     cmake --build out/build/win-x64-debug --parallel --config Debug
     cmake --build out/build/win-x64-release-static --parallel --config Release
-    cmake --build out/build/win-x64-release-static-debuggable --parallel --config RelWithDebInfo	
+    cmake --build out/build/win-x64-release-static-w-profiling --parallel --config RelWithDebInfo
     ```
 1. Run the binary (Choose command with your desired preset):
     ```
     out\build\win-x64-debug\Debug\bin\DZSimulator.exe
     out\build\win-x64-release-static\Release\bin\DZSimulator.exe
-    out\build\win-x64-release-static-debuggable\Release\bin\DZSimulator.exe
+    out\build\win-x64-release-static-w-profiling\RelWithDebInfo\bin\DZSimulator.exe
     ```
 
 ## <ins>Appendix: Building for the web (Emscripten/WASM):</ins>
 
-1. First, you need to install [Emscripten](https://emscripten.org), version `3.1.20` specifically. Other versions might not behave as expected. Please refer to the official install instructions, but
-these commands might do the job if you're on Windows:
+1. First, you need to install [Emscripten](https://emscripten.org), version `3.1.20` specifically. Other versions might not behave as expected. Please refer to the official install instructions, but these commands might do the job if you're on Windows:
     ```
     cd /YOUR/EMSCRIPTEN/INSTALL/DIR/
     git clone https://github.com/emscripten-core/emsdk.git
@@ -161,6 +171,7 @@ these commands might do the job if you're on Windows:
 1. If building succeded and you want to place all newly built files required by the website in the directory specified by `CMAKE_INSTALL_PREFIX` in your `CMakeUserPresets.json` file, select Build > Install DZSimulatorProject
 
 ### Additional notes for web builds:
+
 - You must have built "Windows x64 Release" at least once before attempting to build for Emscripten
 - A website running DZSimulator must be configured as "[cross-origin isolated](https://web.dev/coop-coep/)" because DZSimulator uses the `SharedArrayBuffer` feature
 - To quickly test the website on your local machine:
