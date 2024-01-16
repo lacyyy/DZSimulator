@@ -70,7 +70,7 @@ See [LICENSE.txt](LICENSE.txt). ***Read it***, there are some important license 
 
 All third party software in this repo is accompanied by their corresponding license information. An exception from this is source code stemming from Valve Corp.'s [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013): It's clearly marked with comments like *`// ---- start of source-sdk-2013 code ----`* and its "Source 1 SDK License" can be read in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
 
-DZSimulator uses some of the third party software present in this repo. Those that are used and require legal notices when distributed in **binary** form are listed in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
+DZSimulator uses some of the third party software present in this repo. Those that are used in final release builds and require legal notices when distributed in **binary** form are listed in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
 
 Most software in this repo is licensed under permissive licenses. One notable exception is source code stemming from [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) that is licensed under the "Source 1 SDK License", imposing a few restrictions, **including only being allowed to distribute your derived software for free!** You can read its full details in [LICENSES-THIRD-PARTY.txt](LICENSES-THIRD-PARTY.txt).
 
@@ -94,6 +94,7 @@ DZSimulator source code that is not part of any third party software is availabl
 | [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) | GUI dialogs library | [**DWTFYWT License**](thirdparty/portable-file-dialogs/COPYING) |
 | [Noto Sans fonts](https://fonts.google.com/noto/specimen/Noto+Sans) | In-app fonts | [**SIL Open Font License**](res/fonts/OFL.txt) |
 | [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) | Game engine SDK | [**Source 1 SDK License**](LICENSES-THIRD-PARTY.txt) |
+| [Tracy](https://github.com/wolfpld/tracy) | Profiler, not used in release builds | **3-clause BSD License** (see `thirdparty/tracy/LICENSE`) |
 
 Third party software that is used but isn't listed here was released into the public domain.
 
