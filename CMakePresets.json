@@ -20,6 +20,9 @@
                     "hostOS": [
                         "Windows"
                     ]
+                },
+                "jetbrains.com/clion": {
+                    "toolchain": "Visual Studio"
                 }
             }
         },
