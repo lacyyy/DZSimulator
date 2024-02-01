@@ -651,8 +651,14 @@ bool BVH::CreateLeaves(CollidableWorld& c_world)
         const CollisionCache_StaticProp& sprop_coll_cache = iter->second;
 
         // Get exact, non-bloated AABB of static prop
-        Vector3 aabb_mins = sprop_coll_cache.aabb_mins;
-        Vector3 aabb_maxs = sprop_coll_cache.aabb_maxs;
+        Vector3 aabb_mins = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
+        Vector3 aabb_maxs = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
+        for (const auto& sprop_section_aabb : sprop_coll_cache.section_aabbs) {
+            for (int axis = 0; axis < 3; axis++) {
+                aabb_mins[axis] = Math::min(aabb_mins[axis], sprop_section_aabb.mins[axis]);
+                aabb_maxs[axis] = Math::max(aabb_maxs[axis], sprop_section_aabb.maxs[axis]);
+            }
+        }
         // Bloat AABB a little to account for collision calculation tolerances
         aabb_mins -= Vector3{ 1.0f, 1.0f, 1.0f };
         aabb_maxs += Vector3{ 1.0f, 1.0f, 1.0f };

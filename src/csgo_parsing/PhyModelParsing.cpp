@@ -1,7 +1,11 @@
 #include "csgo_parsing/PhyModelParsing.h"
 
+#include <cassert>
+#include <map>
 #include <utility>
 #include <vector>
+
+#include <Tracy.hpp>
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
@@ -10,6 +14,7 @@
 
 using namespace csgo_parsing;
 using namespace Magnum;
+using namespace utils_3d;
 
 // In CSGO's coordinate system, 1 unit is 1 inch (0.0254 meters)
 // Parsed collision models are scaled using the following factor:
@@ -80,12 +85,14 @@ using namespace Magnum;
 
 utils::RetCode
 csgo_parsing::ParsePhyModel(
-    std::vector<std::vector<std::vector<Vector3>>>* dest_section_tris,
+    std::vector<utils_3d::TriMesh>* dest_sections,
     std::string* dest_surfaceprop,
     AssetFileReader& opened_reader,
     size_t max_byte_read_count,
     bool include_shrink_wrap_shape)
 {
+    ZoneScoped;
+
     auto p_err = utils::RetCode::ERROR_PHY_PARSING_FAILED; // parsing error code
     std::string invalid_file_msg = "Invalid PHY file, ";
     std::string read_error_msg = "PHY file read error";
@@ -251,10 +258,9 @@ csgo_parsing::ParsePhyModel(
             // Swap Y and Z axis and invert vertical axis for valid vertex
             // positions in CSGO's coordinate system. Additionally, scale the
             // model to appear in CSGO at the right size.
-            vertices.emplace_back(
-                VPHY_MODEL_SCALE * vert_x,
-                VPHY_MODEL_SCALE * vert_z,
-                VPHY_MODEL_SCALE * -vert_y);
+            vertices.emplace_back(VPHY_MODEL_SCALE * vert_x,
+                                  VPHY_MODEL_SCALE * vert_z,
+                                  VPHY_MODEL_SCALE * -vert_y);
         }
     }
 
@@ -287,24 +293,88 @@ csgo_parsing::ParsePhyModel(
     if (dest_surfaceprop)
         *dest_surfaceprop = std::move(surface_properties);
 
-    if (dest_section_tris) {
-        dest_section_tris->clear();
-        dest_section_tris->reserve(sections.size());
+    if (dest_sections) {
+        dest_sections->clear();
+        dest_sections->reserve(sections.size());
 
-        // Collect triangles of each section separately
-        for (const std::vector<uint16_t>& section : sections) {
-            std::vector<std::vector<Vector3>> tris;
-            tris.reserve(section.size() / 3);
-
-            for (size_t i = 0; i < section.size(); i += 3) {
-                // Invert triangle order to get triangles with clockwise vertex winding
-                tris.push_back({
-                    vertices[section[i]],
-                    vertices[section[i + 2]],
-                    vertices[section[i + 1]] });
+        // Build TriMesh objects for each section separately
+        for (const std::vector<uint16_t>& vert_indices_of_section : sections)
+        {
+            std::vector<TriMesh::Tri> section_mesh_tris;
+            section_mesh_tris.reserve(vert_indices_of_section.size() / 3);
+            for (size_t i = 0; i < vert_indices_of_section.size(); i += 3) {
+                // Invert vertex order to get triangle with clockwise vertex winding order
+                TriMesh::Tri t = { .verts = { vert_indices_of_section[i],
+                                              vert_indices_of_section[i + 2],
+                                              vert_indices_of_section[i + 1] } };
+                section_mesh_tris.push_back(t);
             }
 
-            dest_section_tris->emplace_back(std::move(tris));
+            // Create LUT that translates from 'global' vertex indices to
+            // section-local vertex indices
+            std::map<TriMesh::VertIdx, TriMesh::VertIdx> vert_idx_lut;
+            for (const TriMesh::Tri& tri : section_mesh_tris) {
+                for (TriMesh::VertIdx v_idx : tri.verts) {
+                    // Register translation from old index to an unused new index
+                    // IF AND ONLY IF it doesn't already have a translation
+                    // registered, i.e. an entry in the LUT.
+                    TriMesh::VertIdx old_idx = v_idx;
+                    TriMesh::VertIdx potential_new_idx = vert_idx_lut.size();
+                    vert_idx_lut.insert({ old_idx, potential_new_idx });
+                }
+            }
+
+            // Translate triangles' vertex indices to new ones
+            for (TriMesh::Tri& tri : section_mesh_tris)
+                for (TriMesh::VertIdx& v_idx : tri.verts)
+                    v_idx = vert_idx_lut[v_idx];
+
+            // Copy vertices belonging to the current section (ordered by new index)
+            size_t num_section_vertices = vert_idx_lut.size();
+            std::vector<Vector3> section_mesh_vertices(num_section_vertices);
+            for (const auto [old_idx, new_idx] : vert_idx_lut)
+                section_mesh_vertices[new_idx] = vertices[old_idx];
+
+            // Create array of unique edges
+            size_t likely_num_section_unique_edges = (section_mesh_tris.size() * 3) / 2;
+            std::vector<TriMesh::Edge> section_mesh_edges;
+            section_mesh_edges.reserve(likely_num_section_unique_edges);
+            for (const TriMesh::Tri& tri : section_mesh_tris) {
+                // For every edge of every triangle
+                for (int i = 0; i < 3; i++) {
+                    TriMesh::VertIdx v1 = tri.verts[i];
+                    TriMesh::VertIdx v2 = tri.verts[(i+1) % 3];
+                    // Check if edge is not already in array
+                    bool novel = true;
+                    for (const TriMesh::Edge& other_edge : section_mesh_edges) { // @Optimization Improve this linear search?
+                        TriMesh::VertIdx other_v1 = other_edge.verts[0];
+                        TriMesh::VertIdx other_v2 = other_edge.verts[1];
+                        bool same_edge = (v1 == other_v1 && v2 == other_v2)
+                                      || (v1 == other_v2 && v2 == other_v1);
+                        if (same_edge) {
+                            novel = false;
+                            break;
+                        }
+                    }
+                    // If this edge was not already in array, add it
+                    if (novel)
+                        section_mesh_edges.push_back({ .verts = { v1, v2 } });
+                }
+            }
+
+            // Finalize this section's triangle mesh
+            section_mesh_vertices.shrink_to_fit();
+            section_mesh_edges   .shrink_to_fit();
+            section_mesh_tris    .shrink_to_fit();
+            TriMesh section_mesh = {
+                .vertices = std::move(section_mesh_vertices),
+                .edges    = std::move(section_mesh_edges),
+                .tris     = std::move(section_mesh_tris)
+            };
+#if 0 // Debugging switch to check properties of unsanitized PHY file inputs
+            DebugTestProperties_TriMesh(section_mesh);
+#endif
+            dest_sections->push_back(std::move(section_mesh));
         }
     }
 

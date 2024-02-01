@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <Tracy.hpp>
+
 // Include these 2 headers so that GL::Buffer::setData() accepts std::vector.
 // @Optimization Can we get rid of STL usage here?
 #include <Corrade/Containers/Array.h>
@@ -38,6 +40,7 @@ using namespace Magnum;
 using namespace csgo_parsing;
 using namespace ren;
 using namespace coll;
+using namespace utils_3d;
 
 // ------------------------------------------------------------------------
 // ----------------- Internal GL::Mesh creation functions -----------------
@@ -88,8 +91,7 @@ static void _AddFacesToVertBuf_Position_Normal(
         for (size_t tri = 0; tri < face.size() - 2; tri++) {
             // Individual normal calculation seems to be required, although
             // triangles *should* all face in the same direction?
-            Vector3 normal =
-                utils_3d::CalcNormalCwFront(face[0], face[tri+1], face[tri+2]);
+            Vector3 normal = CalcNormalCwFront(face[0], face[tri+1], face[tri+2]);
 
             VertBufElem_Pos_Nor vert1 = { face[0],       normal };
             VertBufElem_Pos_Nor vert2 = { face[tri + 1], normal };
@@ -98,6 +100,25 @@ static void _AddFacesToVertBuf_Position_Normal(
             vert_buf.push_back(vert2);
             vert_buf.push_back(vert3);
         }
+    }
+}
+
+// Helper function
+static void _AddFacesToVertBuf_Position_Normal(
+    const TriMesh& tri_mesh,
+    std::vector<VertBufElem_Pos_Nor>& vert_buf)
+{
+    for (const TriMesh::Tri& tri : tri_mesh.tris) {
+        const Vector3& v1 = tri_mesh.vertices[tri.verts[0]];
+        const Vector3& v2 = tri_mesh.vertices[tri.verts[1]];
+        const Vector3& v3 = tri_mesh.vertices[tri.verts[2]];
+        Vector3 normal = CalcNormalCwFront(v1, v2, v3);
+        VertBufElem_Pos_Nor vert1 = { v1, normal };
+        VertBufElem_Pos_Nor vert2 = { v2, normal };
+        VertBufElem_Pos_Nor vert3 = { v3, normal };
+        vert_buf.push_back(vert1);
+        vert_buf.push_back(vert2);
+        vert_buf.push_back(vert3);
     }
 }
 
@@ -130,15 +151,15 @@ static GL::Mesh GenMeshWithVertAttr_Position_Normal(
     return _CreateMeshFromVertBuf_Position_Normal(data_vertbuf);
 }
 
-// Same as above, but collects all faces from multiple lists of faces.
+// Same as above, but collects all faces from a list of TriMesh objects.
 static GL::Mesh GenMeshWithVertAttr_Position_Normal(
-    const std::vector<std::vector<std::vector<Vector3>>>& lists_of_faces)
+    const std::vector<TriMesh>& lists_of_tri_meshes)
 {
     // @Optimization Reserve correct amount of elements for data_vertbuf
     std::vector<VertBufElem_Pos_Nor> data_vertbuf;
 
-    for (const std::vector<std::vector<Vector3>>& face_list : lists_of_faces)
-        _AddFacesToVertBuf_Position_Normal(face_list, data_vertbuf);
+    for (const TriMesh& tri_mesh : lists_of_tri_meshes)
+        _AddFacesToVertBuf_Position_Normal(tri_mesh, data_vertbuf);
     return _CreateMeshFromVertBuf_Position_Normal(data_vertbuf);
 }
 
@@ -159,6 +180,8 @@ WorldCreator::InitFromBspMap(
     std::shared_ptr<const BspMap> bsp_map,
     std::string* dest_errors)
 {
+    ZoneScoped;
+
     std::shared_ptr<RenderableWorld> r_world = std::make_shared<RenderableWorld>();
     std::string error_msgs = "";
 
@@ -168,6 +191,7 @@ WorldCreator::InitFromBspMap(
     bool use_game_dir_assets = !bsp_map->is_embedded_map;
 
     {
+        ZoneScopedN("GenDispFaceMesh");
         Debug{} << "Parsing displacement face mesh";
         auto displacementFaces = bsp_map->GetDisplacementFaceVertices();
         r_world->mesh_displacements =
@@ -179,6 +203,7 @@ WorldCreator::InitFromBspMap(
     // for displacement boundary faces?
 
     { // @Optimization Maybe only load when "Show displacement edges" is ticked
+        ZoneScopedN("GenDispBoundaryMesh");
         Debug{} << "Parsing displacement boundary mesh";
         auto displacementBoundaryFaces =
             bsp_map->GetDisplacementBoundaryFaceVertices();
@@ -262,6 +287,8 @@ WorldCreator::InitFromBspMap(
         // Models can be referenced by solid and non-solid static props at the same time!
         if (!sprop.IsSolidWithVPhysics())
             continue;
+
+        ZoneScopedN("sprop phy load");
 
         // Path to ".mdl" file used by static prop
         const std::string& mdl_path = bsp_map->static_prop_model_dict[sprop.model_idx];
@@ -364,36 +391,57 @@ WorldCreator::InitFromBspMap(
 
         if (phy_file_read_err.empty()) { // If no error occurred on file open
             // A collision model consists of one or more "sections".
-            // A "section" is a list of triangles that describe a convex shape.
-            std::vector<std::vector<std::vector<Vector3>>> sections;
+            // A "section" is a triangle mesh that describes a convex shape.
+            std::vector<TriMesh> section_tri_meshes;
             std::string surface_property;
             // CSGO loads the phy model even if checksum of MDL and PHY are not identical.
+            // NOTE: If you change the way PHY models are parsed, please see
+            //       whether comments surrounding CollisionModel::section_tri_meshes
+            //       need to be updated! E.g. regarding edge duplicate-freeness guarantees.
             auto ret = ParsePhyModel(
-                &sections, &surface_property, phy_file_reader);
+                &section_tri_meshes, &surface_property, phy_file_reader);
 
             if (ret.successful()) {
-                GL::Mesh phy_mesh = GenMeshWithVertAttr_Position_Normal(sections);
+                ZoneScopedN("gen phy mesh + collmodel");
+                GL::Mesh phy_mesh = GenMeshWithVertAttr_Position_Normal(section_tri_meshes);
                 sprop_coll_meshes[mdl_path] = std::move(phy_mesh);
 
-                // Construct CollisionModel object for collision tests later on
-                const size_t section_cnt = sections.size();
-                CollisionModel cmodel = {
-                    .section_planes = std::vector<std::vector<BspMap::Plane>>(section_cnt),
-                    .section_tris = std::move(sections)
-                };
-                // Create plane of each triangle
-                for (size_t section_idx = 0; section_idx < section_cnt; section_idx++) {
-                    const auto& tris_of_section = cmodel.section_tris[section_idx];
-                    auto& planes_of_section = cmodel.section_planes[section_idx];
-                    planes_of_section.reserve(tris_of_section.size());
+                // For each section, get its AABB and create plane of each triangle
+                const size_t NUM_SECTIONS = section_tri_meshes.size();
+                std::vector<std::vector<BspMap::Plane>> section_planes(NUM_SECTIONS);
+                std::vector<CollisionModel::AABB>       section_aabbs (NUM_SECTIONS);
+                for (size_t section_idx = 0; section_idx < NUM_SECTIONS; section_idx++) {
+                    const TriMesh& section_tri_mesh = section_tri_meshes[section_idx];
+                    const std::vector<Vector3>& section_vertices = section_tri_mesh.vertices;
+                    auto& planes_of_section = section_planes[section_idx];
+                    planes_of_section.reserve(section_tri_mesh.tris.size());
 
-                    for (const std::vector<Vector3>& triangle : tris_of_section) {
-                        Vector3 plane_normal = utils_3d::CalcNormalCwFront(triangle[0], triangle[1], triangle[2]);
-                        float   plane_dist = Math::dot(plane_normal, triangle[0]);
+                    Vector3 section_aabb_mins = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
+                    Vector3 section_aabb_maxs = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
+                    for (const Vector3& vert : section_vertices) {
+                        for (int axis = 0; axis < 3; axis++) { // Add vertex to section's AABB
+                            section_aabb_mins[axis] = Math::min(section_aabb_mins[axis], vert[axis]);
+                            section_aabb_maxs[axis] = Math::max(section_aabb_maxs[axis], vert[axis]);
+                        }
+                    }
+                    section_aabbs[section_idx].mins = section_aabb_mins;
+                    section_aabbs[section_idx].maxs = section_aabb_maxs;
+
+                    for (const TriMesh::Tri& triangle : section_tri_mesh.tris) {
+                        const Vector3& v1 = section_vertices[triangle.verts[0]];
+                        const Vector3& v2 = section_vertices[triangle.verts[1]];
+                        const Vector3& v3 = section_vertices[triangle.verts[2]];
+                        Vector3 plane_normal = CalcNormalCwFront(v1, v2, v3);
+                        float   plane_dist = Math::dot(plane_normal, v1);
                         planes_of_section.emplace_back(plane_normal, plane_dist);
                     }
                 }
-                sprop_coll_models[mdl_path] = std::move(cmodel);
+                // Construct CollisionModel object
+                sprop_coll_models[mdl_path] = CollisionModel {
+                    .section_tri_meshes = std::move(section_tri_meshes),
+                    .section_planes     = std::move(section_planes),
+                    .section_aabbs      = std::move(section_aabbs)
+                };
             }
             else { // If parsing failed, get error msg
                 phy_file_read_err = ret.desc_msg;
@@ -424,7 +472,7 @@ WorldCreator::InitFromBspMap(
 
         // Compute static prop's transformation matrix
         InstanceData inst_d = {
-            utils_3d::CalcModelTransformationMatrix(
+            CalcModelTransformationMatrix(
                 sprop.origin, sprop.angles, sprop.uniform_scale)
         };
         sprop_instance_data[mdl_path].push_back(inst_d);
@@ -449,8 +497,9 @@ WorldCreator::InitFromBspMap(
 
         r_world->instanced_static_prop_meshes.emplace_back(std::move(mesh));
     }
-    // Precompute collision caches of each static prop.
+    // Precompute collision caches of each solid static prop.
     // MUST HAPPEN AFTER COLL MODEL CREATION!
+    Debug{} << "Creating collision caches of static props";
     // Keys are indices into BspMap::static_props, values are the caches.
     std::map<uint32_t, CollisionCache_StaticProp> coll_caches_sprop;
     for (size_t sprop_idx = 0; sprop_idx < bsp_map->static_props.size(); sprop_idx++) {
@@ -512,6 +561,7 @@ WorldCreator::InitFromBspMap(
 
     for (size_t i = 0; i < bCategories.size(); i++) {
         BrushSeparation::Category brushCat = bCategories[i];
+        ZoneScopedN("parse brush cat");
         Debug{} << "Parsing brush category" << brushCat;
 
         auto testFuncs = BrushSeparation::getBrushCategoryTestFuncs(brushCat);
@@ -575,7 +625,7 @@ WorldCreator::InitFromBspMap(
             std::vector<std::vector<Vector3>> water_surface_faces;
             for (auto& face : faces) {
                 // faces have clockwise vertex winding
-                if (utils_3d::IsCwTriangleFacingUp(face[0], face[1], face[2]))
+                if (IsCwTriangleFacingUp(face[0], face[1], face[2]))
                     water_surface_faces.push_back(std::move(face));
             }
             faces = std::move(water_surface_faces);
@@ -614,7 +664,7 @@ WorldCreator::InitFromBspMap(
         Vector3 z_fighting_resolver = trigger_push.only_falling_players ?
             Vector3{ 0.0f, 0.0f, 0.0f } : Vector3{ 0.0f, 0.0f, 1.0f };
 
-        Matrix4 trigger_push_transf = utils_3d::CalcModelTransformationMatrix(
+        Matrix4 trigger_push_transf = CalcModelTransformationMatrix(
             trigger_push.origin + z_fighting_resolver,
             trigger_push.angles
         );

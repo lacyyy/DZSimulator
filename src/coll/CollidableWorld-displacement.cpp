@@ -1671,6 +1671,8 @@ void CDispCollTree::SweepAABBTriIntersect(SweptTrace* trace, int iTri,
 
 CDispCollTree::CDispCollTree(size_t disp_info_idx, const BspMap& bsp_map)
 {
+    ZoneScoped;
+
     const BspMap::DispInfo& disp = bsp_map.dispinfos[disp_info_idx];
 
     // Copy the flags.

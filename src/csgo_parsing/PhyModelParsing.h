@@ -9,12 +9,20 @@
 
 #include "csgo_parsing/AssetFileReader.h"
 #include "csgo_parsing/utils.h"
+#include "utils_3d.h"
 
 namespace csgo_parsing {
 
-    // @param dest_tris If parsing is successful, a list of sections is put in
-    //                  the std::vector pointed to by dest_section_tris. Each
-    //                  section is a list of triangles with clockwise vertex winding.
+    // @param dest_sections If parsing is successful, a number of sections are
+    //                      put in the std::vector pointed to by dest_sections.
+    //                      Each section is a convex shape described by a
+    //                      triangle mesh.
+    //                      CAUTION: CSGO's PHY models might have *slightly*
+    //                               concave sections! Effects of this are unknown.
+    //                      Properties of returned TriMesh objects:
+    //                      - 'edges' array holds unique edges (GUARANTEED)
+    //                      - 'tris' array likely holds unique tris (not guaranteed)
+    //                      - 'vertices' array likely holds unique verts (not guaranteed)
     // @param dest_surfaceprop If parsing is successful, the PHY model's surface
     //                         property string is written into the std::string
     //                         pointed to by dest_surfaceprop.
@@ -28,7 +36,7 @@ namespace csgo_parsing {
     // @return Code of returned RetCode is either SUCCESS or ERROR_PHY_PARSING_FAILED.
     //         ERROR_PHY_PARSING_FAILED has an error description.
     utils::RetCode ParsePhyModel(
-        std::vector<std::vector<std::vector<Magnum::Vector3>>>* dest_section_tris,
+        std::vector<utils_3d::TriMesh>* dest_sections,
         std::string* dest_surfaceprop,
         AssetFileReader& opened_reader,
         size_t max_byte_read_count = std::numeric_limits<size_t>::max(),

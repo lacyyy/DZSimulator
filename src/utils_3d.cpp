@@ -1,11 +1,11 @@
 #include "utils_3d.h"
 
 #include <cfloat>
-#include <cmath>
 
 #include <Magnum/Math/Angle.h>
-#include <Magnum/Math/Constants.h>
 #include <Magnum/Math/Functions.h>
+#include <Magnum/Math/Matrix3.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Vector3.h>
 
 using namespace Magnum;
@@ -56,6 +56,17 @@ Matrix4 utils_3d::CalcModelTransformationMatrix(
         Matrix4::rotationX(Deg{ obj_ang[2] }) * // roll
         Matrix4::scaling({ uniform_scale, uniform_scale, uniform_scale });
     return model_transformation;
+}
+
+Quaternion utils_3d::CalcQuaternion(const Vector3& obj_ang) {
+    // @Optimization Are there faster algorithms for euler angle to quaternion conversion?
+    Matrix4 rotation_4x4 =
+        Matrix4::rotationZ(Deg{ obj_ang[1] }) * // yaw
+        Matrix4::rotationY(Deg{ obj_ang[0] }) * // pitch
+        Matrix4::rotationX(Deg{ obj_ang[2] });  // roll
+
+    Matrix3 rotation_3x3 = rotation_4x4.rotationScaling(); // Get upper-left 3x3 part
+    return Quaternion::fromMatrix(rotation_3x3);
 }
 
 Vector3 utils_3d::CalcNormalCwFront(const Vector3& v1, const Vector3& v2,
@@ -124,3 +135,60 @@ void utils_3d::AngleVectors(const Vector3& angles,
     }
 }
 // --------- end of source-sdk-2013 code ---------
+
+void utils_3d::DebugTestProperties_TriMesh(const TriMesh& tri_mesh)
+{
+    // Are used vertex indices in bounds?
+    for(const TriMesh::Edge& edge : tri_mesh.edges)
+        if (edge.verts[0] >= tri_mesh.vertices.size() ||
+            edge.verts[1] >= tri_mesh.vertices.size())
+            Error{} << "TriMesh: Edge's vert idx is out of bounds!";
+    for(const TriMesh::Tri& tri : tri_mesh.tris)
+        if (tri.verts[0] >= tri_mesh.vertices.size() ||
+            tri.verts[1] >= tri_mesh.vertices.size() ||
+            tri.verts[2] >= tri_mesh.vertices.size())
+            Error{} << "TriMesh: Triangle's vert idx is out of bounds!";
+
+    // Are there duplicate vertices?
+    for(size_t i = 0; i < tri_mesh.vertices.size(); i++)
+        for(size_t j = i+1; j < tri_mesh.vertices.size(); j++)
+            if (tri_mesh.vertices[i] == tri_mesh.vertices[j])
+                Error{} << "TriMesh: Contains duplicate vertices!";
+
+    // Are there duplicate edges?
+    for(size_t i = 0; i < tri_mesh.edges.size(); i++) {
+        for(size_t j = i+1; j < tri_mesh.edges.size(); j++) {
+            auto& edge1 = tri_mesh.edges[i].verts;
+            auto& edge2 = tri_mesh.edges[j].verts;
+            bool same_edge = (edge1[0] == edge2[0] && edge1[1] == edge2[1]) ||
+                             (edge1[0] == edge2[1] && edge1[1] == edge2[0]);
+            if (same_edge) Error{} << "TriMesh: Contains duplicate edges!";
+        }
+    }
+
+    // Are there duplicate triangles?
+    for(size_t i = 0; i < tri_mesh.tris.size(); i++) {
+        for(size_t j = i+1; j < tri_mesh.tris.size(); j++) {
+            auto& t1 = tri_mesh.tris[i].verts;
+            auto& t2 = tri_mesh.tris[j].verts;
+            // Assuming both triangles have CW vertex winding order
+            bool same_tri = (t1[0]==t2[0] && t1[1]==t2[1] && t1[2]==t2[2]) ||
+                            (t1[0]==t2[1] && t1[1]==t2[2] && t1[2]==t2[0]) ||
+                            (t1[0]==t2[2] && t1[1]==t2[0] && t1[2]==t2[1]);
+            if (same_tri) Error{} << "TriMesh: Contains duplicate triangles!";
+        }
+    }
+
+    // Are there redundant vertices that aren't referenced by any triangle?
+    for (size_t i = 0; i < tri_mesh.vertices.size(); i++) {
+        bool referenced = false;
+        for(const TriMesh::Tri& tri : tri_mesh.tris) {
+            if (tri.verts[0] == i || tri.verts[1] == i || tri.verts[2] == i) {
+                referenced = true;
+                break;
+            }
+        }
+        if (!referenced)
+            Error{} << "TriMesh: Contains vertex not referenced by any triangle!";
+    }
+}
