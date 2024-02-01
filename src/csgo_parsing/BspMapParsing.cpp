@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Utility/Debug.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
@@ -1370,6 +1372,8 @@ utils::RetCode csgo_parsing::ParseBspMapFile(
     std::shared_ptr<BspMap>* dest_parsed_bsp_map,
     const std::string& abs_bsp_file_path)
 {
+    ZoneScoped;
+
     AssetFileReader reader;
     if (!reader.OpenFileFromAbsolutePath(abs_bsp_file_path)) {
         if (dest_parsed_bsp_map)

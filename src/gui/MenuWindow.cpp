@@ -336,8 +336,7 @@ void MenuWindow::Draw()
 
     if (ImGui::CollapsingHeader("Performance Stats"))
     {
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-            1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        DrawPerformanceStats();
     }
 
     if (ImGui::CollapsingHeader("Video Settings"))
@@ -663,6 +662,24 @@ void MenuWindow::DrawMapSelection()
     if (is_map_load_box_open && !s_prev_is_map_load_box_open)
         _gui_state.map_select.IN_box_opened = true; // -> user just opened box
     s_prev_is_map_load_box_open = is_map_load_box_open; // save for next frame
+}
+
+void MenuWindow::DrawPerformanceStats()
+{
+    //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+    //    1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+    ImGui::Text("Average FPS: %.1f", 1000.0f / _gui_state.perf.OUT_frame_time_mean_ms);
+
+    ImGui::Text("%s", _gui_state.perf.OUT_magnum_profiler_stats.cbegin());
+
+    ImGui::Separator();
+
+    ImGui::Text("Game client sim tick time:  %.1f us",
+                _gui_state.perf.OUT_last_sim_client_calc_time_us);
+    ImGui::Text("Game server sim tick time: %.1f us",
+                _gui_state.perf.OUT_last_sim_server_calc_time_us);
+
 }
 
 void MenuWindow::DrawVideoSettings()

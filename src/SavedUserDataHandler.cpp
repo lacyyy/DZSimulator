@@ -8,6 +8,8 @@
 #include <shellapi.h> // For WINAPI's ShellExecuteW()
 #endif
 
+#include <Tracy.hpp>
+
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Optional.h>
@@ -375,6 +377,7 @@ static json ConvertUserSettingsToUserDataJson(const gui::GuiState& gui_state) {
 
 void SavedUserDataHandler::SaveUserSettingsToFile(const gui::GuiState& gui_state)
 {
+    ZoneScoped;
 #ifdef DZSIM_WEB_PORT
     return;
 #else

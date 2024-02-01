@@ -8,6 +8,8 @@
 #include <span>
 #include <vector>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Functions.h>
@@ -113,6 +115,8 @@ bool BVH::WasConstructedSuccessfully()
 
 void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
 {
+    ZoneScoped;
+
     // @Optimization To improve BVH traversal time, build the BVH in a compact
     //               and cache-friendly representation. E.g.: Nodes and leafs
     //               can be stored in a single array, with *depth-first order*.
@@ -505,6 +509,8 @@ BVH::NodeSplitDetails BVH::DetermineBeneficialNodeSplit(const Node& node_to_spli
 void BVH::DoSweptTraceAgainstLeaf(SweptTrace* trace, const Leaf& leaf,
     CollidableWorld& c_world) const
 {
+    ZoneScoped;
+
     switch (leaf.type) {
     case Leaf::Type::Brush:
         // @Optimization Is the AABB check before tracing against *every* brush bad?

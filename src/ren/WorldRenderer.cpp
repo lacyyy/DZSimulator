@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include <Tracy.hpp>
+
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
@@ -31,6 +33,8 @@ WorldRenderer::WorldRenderer(const Utility::Resource& resources,
 
 void WorldRenderer::InitWithOpenGLContext()
 {
+    ZoneScoped;
+
     _glid_shader_instanced     = GlidabilityShader3D{  true, _resources };
     _glid_shader_non_instanced = GlidabilityShader3D{ false, _resources };
     _flat_shader = Shaders::FlatGL3D{ };
@@ -44,6 +48,8 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     float hori_player_speed,
     const std::vector<Vector3>& bump_mine_positions)
 {
+    ZoneScoped;
+
     Deg hori_light_angle{ _gui_state.vis.IN_hori_light_angle };
     Vector3 light_dir(
         Math::cos(hori_light_angle),

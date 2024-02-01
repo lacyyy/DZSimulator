@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include <Tracy.hpp>
+
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Functions.h>
 #include <Magnum/Math/Vector3.h>
@@ -23,6 +25,8 @@ CollidableWorld::CollidableWorld(std::shared_ptr<const BspMap> bsp_map)
 
 void CollidableWorld::DoSweptTrace(SweptTrace* trace)
 {
+    ZoneScoped;
+
     if (pImpl->bvh == Corrade::Containers::NullOpt) { // If BVH isn't created
         assert(false && "ERROR: Tried to run CollidableWorld::DoSweptTrace() "
             "before BVH was created!");

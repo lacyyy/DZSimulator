@@ -1,8 +1,10 @@
+#include <Tracy.hpp>
+
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/PluginManager/Manager.h>
-#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
+#include <Magnum/DebugTools/FrameProfiler.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/GL/Version.h>
@@ -114,6 +116,8 @@ class DZSimApplication: public Platform::Application {
         size_t _num_received_gsi_states = 0;
 
         GitHubChecker _update_checker;
+
+        DebugTools::FrameProfilerGL _magnum_profiler; // Simple profiler class provided by Magnum
 
         // Map data
         std::shared_ptr<csgo_parsing::BspMap>  _bsp_map;
@@ -256,6 +260,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _world_renderer { _resources, _gui_state }
     , _user_input_mode { UserInputMode::MENU }
 {
+    tracy::SetThreadName("Main Thread");
+    ZoneScopedN("DZSimApplication Ctor");
+
     // Save immediately to file for the sole purpose of ensuring the
     // settings file and its directory exist.
     SavedUserDataHandler::SaveUserSettingsToFile(_gui_state);
@@ -365,10 +372,13 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     const Magnum::Int MSAA_SAMPLE_COUNT = 2;
     GLConfiguration glConf;
     glConf.setSampleCount(MSAA_SAMPLE_COUNT);
-    if (!tryCreate(app_conf, glConf)) {
-        Warning{} << "[ERROR] Context creation failed with MSAA sample count of"
-            << MSAA_SAMPLE_COUNT << "-> context without MSAA will be created.";
-        create(app_conf, glConf.setSampleCount(0)); // 0 = no multisampling
+    {
+        ZoneScopedN("tryCreate");
+        if (!tryCreate(app_conf, glConf)) {
+            Warning{} << "[ERROR] Context creation failed with MSAA sample count of"
+                      << MSAA_SAMPLE_COUNT << "-> context without MSAA will be created.";
+            create(app_conf, glConf.setSampleCount(0)); // 0 = no multisampling
+        }
     }
 
 #ifndef DZSIM_WEB_PORT
@@ -456,6 +466,14 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _wide_line_renderer.InitWithOpenGLContext();
     _world_renderer    .InitWithOpenGLContext();
 
+    const UnsignedInt MAGNUM_PROFILER_MAX_FRAME_COUNT = 100;
+    _magnum_profiler.setup(
+            DebugTools::FrameProfilerGL::Value::FrameTime |
+            DebugTools::FrameProfilerGL::Value::CpuDuration |
+            DebugTools::FrameProfilerGL::Value::GpuDuration |
+            DebugTools::FrameProfilerGL::Value::VertexFetchRatio |
+            DebugTools::FrameProfilerGL::Value::PrimitiveClipRatio, MAGNUM_PROFILER_MAX_FRAME_COUNT);
+
     // Enable transparency
     GL::Renderer::enable(GL::Renderer::Feature::Blending);
 
@@ -513,6 +531,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 
 DZSimApplication::~DZSimApplication()
 {
+    ZoneScoped;
     // This destructor is always the last thing that gets called upon
     // program termination.
 
@@ -622,6 +641,7 @@ bool DZSimApplication::RefreshAvailableDisplays()
 #ifndef DZSIM_WEB_PORT
 void DZSimApplication::LoadWindowIcon(Utility::Resource& res)
 {
+    ZoneScoped;
     PluginManager::Manager<Trade::AbstractImporter> manager;
     Containers::Pointer<Trade::AbstractImporter> importer =
         manager.loadAndInstantiate("PngImporter");
@@ -648,6 +668,8 @@ void DZSimApplication::LoadWindowIcon(Utility::Resource& res)
 
 void DZSimApplication::DoCsgoPathSearch(bool show_popup_on_fail)
 {
+    ZoneScoped;
+
 #ifdef DZSIM_WEB_PORT
     return;
 #else
@@ -725,6 +747,8 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     bool load_from_embedded_files)
 
 {
+    ZoneScoped;
+
     if (coll::Debugger::IS_ENABLED)
         coll::Debugger::Reset();
 
@@ -925,7 +949,10 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
     redraw();
 }
 
-void DZSimApplication::DoUpdate() {
+void DZSimApplication::DoUpdate()
+{
+    ZoneScoped;
+
     // All mouse and key events have been processed right before calling
     // tickEvent() -> Save the time point when the game input was sampled
     auto current_time = sim::Clock::now();
@@ -1460,6 +1487,8 @@ void DZSimApplication::DoUpdate() {
     // We keep the remaining game input values.
     _currentGameInput.inputCommands.clear();
 
+    auto client_simulation_start_time = sim::Clock::now();
+
     // Get new world states from server, if available
     std::queue<sim::WorldState> newServerWorldStates =
         _gameServer.DequeueLatestWorldStates();
@@ -1483,6 +1512,8 @@ void DZSimApplication::DoUpdate() {
         _currentClientWorldState = _currentServerWorldState;
     }
     else {
+        ZoneScopedN("sim::Client Prediction");
+
         // Predict world states based on latest server world state and the
         // latest client input until we get a world state that's in the future
         double serverTickRate = _gameServer.GetTickRate();
@@ -1525,6 +1556,9 @@ void DZSimApplication::DoUpdate() {
             _currentClientWorldState = sim::WorldState::Interpolate(_currentClientWorldState, predictedWorldState, phase);
         }
     }
+    auto client_simulation_end_time = sim::Clock::now();
+    _gui_state.perf.OUT_last_sim_client_calc_time_us = std::chrono::duration_cast<std::chrono::microseconds>(
+            client_simulation_end_time - client_simulation_start_time).count();
 
     // Override with CS:GO camera position if we're connected to CSGO's console
     if (_csgo_rcon.IsConnected() &&
@@ -1545,7 +1579,8 @@ void DZSimApplication::DoUpdate() {
             + Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
 
-    sim::Server::PerformanceStats serverPerf = _gameServer.GetPerformanceStats();
+    sim::Server::PerformanceStats server_perf = _gameServer.GetPerformanceStats();
+    _gui_state.perf.OUT_last_sim_server_calc_time_us = 1e3 * server_perf.tick_duration_ms;
     /*std::stringstream stream;
     stream << std::fixed << std::setprecision(1) <<
         serverPerf.tick_start_deviation_rel * 100.0f;
@@ -1634,6 +1669,8 @@ void DZSimApplication::drawEvent() {
     // -> We need to update everytime we draw.
     DoUpdate();
 #endif
+
+    _magnum_profiler.beginFrame();
 
     GL::defaultFramebuffer.clear(
         GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
@@ -1725,7 +1762,14 @@ void DZSimApplication::drawEvent() {
     GL::Renderer::disable(GL::Renderer::Feature::ScissorTest);
     GL::Renderer::disable(GL::Renderer::Feature::Blending);
 
+    _magnum_profiler.endFrame();
+    if (_magnum_profiler.isMeasurementAvailable(DebugTools::FrameProfilerGL::Value::FrameTime))
+        _gui_state.perf.OUT_frame_time_mean_ms = 1e-6 * _magnum_profiler.frameTimeMean();
+    _gui_state.perf.OUT_magnum_profiler_stats = _magnum_profiler.statistics();
+
     swapBuffers();
+
+    FrameMark; // Profiling
 }
 
 MAGNUM_APPLICATION_MAIN(DZSimApplication)

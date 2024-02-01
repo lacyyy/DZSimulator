@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Utility/Path.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
@@ -36,7 +38,9 @@ Gui::Gui(Application& app, Utility::Resource& res, GuiState& state)
 
 void Gui::Init(
     const Corrade::Containers::ArrayView<const char>& font_data_disp,
-    const Corrade::Containers::ArrayView<const char>& font_data_mono) {
+    const Corrade::Containers::ArrayView<const char>& font_data_mono)
+{
+    ZoneScoped;
 
     _imgui_disp_font_data = font_data_disp;
     _imgui_mono_font_data = font_data_mono;

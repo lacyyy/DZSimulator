@@ -6,6 +6,8 @@
 #include <string_view>
 #include <unordered_set>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Functions.h>
@@ -34,6 +36,8 @@ uint64_t CollidableWorld::GetSweptTraceCost_Displacement(uint32_t dispcoll_idx)
 void CollidableWorld::DoSweptTrace_Displacement(SweptTrace* trace,
     uint32_t dispcoll_idx)
 {
+    ZoneScoped;
+
     assert(pImpl->hull_disp_coll_trees != Corrade::Containers::NullOpt);
     std::vector<CDispCollTree>& hull_disp_coll_trees = *pImpl->hull_disp_coll_trees;
 

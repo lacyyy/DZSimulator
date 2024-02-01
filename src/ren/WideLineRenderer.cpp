@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cmath>
 
+#include <Tracy.hpp>
+
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/GL/Renderer.h>
@@ -77,6 +79,8 @@ static bool ClipLineToCameraPlane(Vector3& start, Vector3& end, const Vector4& c
 
 void WideLineRenderer::InitWithOpenGLContext()
 {
+    ZoneScoped;
+
     // Delayed member construction here (not in constructor) because they
     // require a GL context
     _shader_cap_style_butt = Shaders::LineGL3D{

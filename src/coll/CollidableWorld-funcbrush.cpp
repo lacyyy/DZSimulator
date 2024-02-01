@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <Tracy.hpp>
+
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
 #include <Magnum/Math/Matrix4.h>
@@ -34,6 +36,8 @@ uint64_t CollidableWorld::GetSweptTraceCost_FuncBrush(uint32_t func_brush_idx)
 void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
     uint32_t func_brush_idx)
 {
+    ZoneScoped;
+
     // NOTE: Collision with func_brush entities was not thoroughly tested and
     //       the Source engine might be using an entirely different collision
     //       algorithm for func_brush specifically. (?)

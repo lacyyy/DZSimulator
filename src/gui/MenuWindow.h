@@ -24,6 +24,8 @@ namespace gui {
 
         void DrawMapSelection();
 
+        void DrawPerformanceStats();
+
         void DrawVideoSettings();
         std::string GetDisplayName(int idx, int w, int h);
 

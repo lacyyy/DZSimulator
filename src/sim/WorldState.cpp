@@ -3,6 +3,8 @@
 #include <chrono>
 #include <iterator>
 
+#include <Tracy.hpp>
+
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Functions.h>
@@ -43,7 +45,10 @@ void WorldState::DoTimeStep(double stepSize_sec, const std::vector<PlayerInputSt
 
 void WorldState::DoTimeStep(double stepSize_sec,
         std::vector<PlayerInputState>::const_iterator playerInputBeginIt,
-        std::vector<PlayerInputState>::const_iterator playerInputEndIt) {
+        std::vector<PlayerInputState>::const_iterator playerInputEndIt)
+{
+    ZoneScoped;
+
     double& timeDelta = stepSize_sec; // in seconds
 
     // Caution: This time advancement does not account for simulation time scale!

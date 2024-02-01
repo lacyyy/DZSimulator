@@ -2,10 +2,6 @@
 
 `@OPTIMIZATION` tag is used in source code to mark relevant code.
 
-We should probably utilize Tracy instead of profiling with VS: https://github.com/wolfpld/tracy
-
-Or try out Magnum's built-in profiler: https://doc.magnum.graphics/magnum/classMagnum_1_1DebugTools_1_1FrameProfiler.html
-
 ### LOADING TIME REDUCTION:
 
 - Compile with Clang or GCC instead of MSVC, any speed improvements?

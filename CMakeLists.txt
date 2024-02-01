@@ -84,6 +84,7 @@ endif()
 
 
 # Set features/build-time options before doing add_subdirectory() calls
+set(MAGNUM_WITH_DEBUGTOOLS       ON CACHE BOOL "" FORCE)
 set(MAGNUM_WITH_IMGUI            ON CACHE BOOL "" FORCE)
 set(MAGNUM_WITH_STBIMAGEIMPORTER ON CACHE BOOL "" FORCE)
 set(MAGNUM_WITH_STBTRUETYPEFONT  ON CACHE BOOL "" FORCE)
@@ -181,6 +182,7 @@ find_package(Corrade REQUIRED
     Utility
     Main)
 find_package(Magnum REQUIRED
+    DebugTools
     GL
     Primitives
     Shaders
@@ -223,6 +225,7 @@ target_link_libraries(DZSimulator PRIVATE
     Corrade::Main
     Corrade::Utility
     fsal
+    Magnum::DebugTools
     Magnum::GL
     Magnum::Magnum
     Magnum::Primitives

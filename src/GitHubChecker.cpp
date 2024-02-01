@@ -14,6 +14,8 @@
 #include <shellapi.h>
 #endif
 
+#include <Tracy.hpp>
+
 #include <Corrade/Utility/Debug.h>
 #include <Magnum/Magnum.h>
 #include <json.hpp>
@@ -325,6 +327,7 @@ GitHubChecker::~GitHubChecker()
 
 void GitHubChecker::StartAsyncUpdateAndMotdCheck()
 {
+    ZoneScoped;
 #ifdef DZSIM_WEB_PORT
     return;
 #else
@@ -340,6 +343,8 @@ void GitHubChecker::StartAsyncUpdateAndMotdCheck()
     // Start async check
     g_is_async_check_finished = false;
     g_check_thread = std::thread([] {
+        tracy::SetThreadName("GitHubChecker Thread");
+
         // GitHub's API doesn't accept HTTP connections, only HTTPS
         httplib::Client cli("https://api.github.com");
         

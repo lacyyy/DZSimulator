@@ -1,5 +1,7 @@
 #include "coll/CollidableWorld-brush.h"
 
+#include <Tracy.hpp>
+
 #include <Magnum/Magnum.h>
 
 #include "coll/CollidableWorld.h"
@@ -23,6 +25,8 @@ uint64_t CollidableWorld::GetSweptTraceCost_Brush(uint32_t brush_idx)
 
 void CollidableWorld::DoSweptTrace_Brush(SweptTrace* trace, uint32_t brush_idx)
 {
+    ZoneScoped;
+
     const Brush& brush = pImpl->origin_bsp_map->brushes[brush_idx];
     static auto test_f_1 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::SOLID);
     static auto test_f_2 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::PLAYERCLIP);

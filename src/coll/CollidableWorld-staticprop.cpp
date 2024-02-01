@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
@@ -111,6 +113,8 @@ coll::Create_CollisionCache_StaticProp(
 void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
     uint32_t sprop_idx)
 {
+    ZoneScoped;
+
     const BspMap::StaticProp& sprop = pImpl->origin_bsp_map->static_props[sprop_idx];
     if (!sprop.IsSolidWithVPhysics())
         return; // Skip this static prop

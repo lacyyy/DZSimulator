@@ -14,6 +14,8 @@
 #include <string>
 #include <utility>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/Pair.h>
@@ -491,6 +493,8 @@ const std::vector<std::string>& AssetFinder::GetMapFileList()
 utils::RetCode AssetFinder::RefreshVpkArchiveIndex(
     const std::vector<std::string>& file_ext_filter)
 {
+    ZoneScoped;
+
     fsal::FileSystem fs;
     fs.UnmountAllArchives(); // Delete the previous VPK archive index
 

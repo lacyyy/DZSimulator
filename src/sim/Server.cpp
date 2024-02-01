@@ -13,6 +13,9 @@
 #include <windows.h> // For setting thread priority
 #endif
 
+#include <Tracy.hpp>
+const char* const TRACYNAME_SimServerTick = "sim::Server Tick";
+
 #include <Magnum/Magnum.h>
 #include <Corrade/Utility/Debug.h>
 
@@ -71,6 +74,8 @@ Server::~Server()
 
 void Server::Start()
 {
+    ZoneScoped;
+
     if (!_sh_stopped) {
         throw std::invalid_argument("Server::Start() may not be called when the game server is running!");
     }
@@ -79,6 +84,7 @@ void Server::Start()
 
     _sh_stopped = false;
     _cl_thread = std::thread([this]() {
+        tracy::SetThreadName("sim::Server Thread");
 
 #ifndef DZSIM_WEB_PORT
         if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL)) {
@@ -97,6 +103,8 @@ void Server::Start()
 
 void Server::Stop()
 {
+    ZoneScoped;
+
     if (_sh_stopped) {
         throw std::invalid_argument("Server::Stop() may not be called when the game server is not running!");
     }
@@ -180,6 +188,8 @@ Clock::time_point Server::sv_server_loop(const Clock::time_point& simulationStar
     Clock::duration prev_maxSleepDeviation = 0s; // Biggest sleep deviation of the last couple server frames
 
     while (!_sh_stopped) {
+        FrameMarkStart(TRACYNAME_SimServerTick);
+
         // Start next tick/server frame computation
         auto tick_start = Clock::now();
 
@@ -221,7 +231,9 @@ Clock::time_point Server::sv_server_loop(const Clock::time_point& simulationStar
             std::lock_guard<std::mutex> guard(_sh_outputWorldStateQueue_mutex);
             _sh_outputWorldStateQueue.push(_sv_currentWorldState);
         } // Release _sh_outputWorldStateQueue mutex
-        
+
+        FrameMarkEnd(TRACYNAME_SimServerTick);
+
         auto tick_duration = Clock::now() - tick_start;
 
         // TODO if tick_duration_ns > m_targetTickLength_ns -> give user warning!
@@ -291,10 +303,10 @@ Clock::time_point Server::sv_server_loop(const Clock::time_point& simulationStar
 
 
         PerformanceStats perfStat;
-        perfStat.tick_duration_ms          = microseconds_count(tick_duration) / 1000.0f;
-        perfStat.tick_duration_deviation_ms = microseconds_count(tickDurationStandardDeviation) / 1000.0f;
+        perfStat.tick_duration_ms           = nanoseconds_count(tick_duration) / 1'000'000.0f;
+        perfStat.tick_duration_deviation_ms = nanoseconds_count(tickDurationStandardDeviation) / 1'000'000.0f;
         perfStat.tick_start_deviation_rel   = frameStartDeviation_rel;
-        perfStat.max_sleep_deviation_ms     = microseconds_count(maxSleepDeviation) / 1000.0f;
+        perfStat.max_sleep_deviation_ms     = nanoseconds_count(maxSleepDeviation) / 1'000'000.0f;
         _sh_performanceStats = perfStat; // Atomically overwrite member
 
         // Sleep until the next tick start with a more precise busy-sleep method

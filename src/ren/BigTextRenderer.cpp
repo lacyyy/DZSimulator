@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <Tracy.hpp>
+
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Complex.h>
@@ -24,6 +26,8 @@ BigTextRenderer::BigTextRenderer(Application& app,
 void BigTextRenderer::InitWithOpenGLContext(
     const Containers::ArrayView<const char>& raw_font_data)
 {
+    ZoneScoped;
+
     // Delayed member construction here (not in constructor) because they
     // require a GL context
     _vertices = GL::Buffer{ GL::Buffer::TargetHint::Array        };
