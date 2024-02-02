@@ -1,6 +1,7 @@
 #include "coll/Debugger.h"
 
 #include <cmath>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -89,7 +90,8 @@ struct Debugger::TraceHistoryEntry
     std::vector<BroadPhaseLeafHit> broad_phase_leaf_hits; // In chronological order
 };
 
-static std::vector<Debugger::TraceHistoryEntry> trace_history;
+const size_t MAX_TRACE_HISTORY_LEN = 50; // Must be 1 or greater
+static std::deque<Debugger::TraceHistoryEntry> trace_history;
 
 // -----------------------------------------------------------------------------
 
@@ -390,7 +392,8 @@ void Debugger::DebugFinish_Trace(const SweptTrace::Results& trace_results)
     // Delete unfinished_trace object
     unfinished_trace.reset();
 
-    trace_history.clear(); // Only allow one entry for now
+    if (trace_history.size() >= MAX_TRACE_HISTORY_LEN)
+        trace_history.pop_front();
     trace_history.push_back(std::move(new_entry));
 
     // Reset draw state
@@ -579,7 +582,7 @@ void Debugger::DrawImGuiElements(gui::GuiState& gui_state)
         return;
     }
 
-    const TraceHistoryEntry& entry = trace_history[0];
+    const TraceHistoryEntry& entry = trace_history.back(); // Newest entry
     const SweptTrace::Info&    tr_info    = entry.trace_info;
     const SweptTrace::Results& tr_results = entry.trace_results;
 

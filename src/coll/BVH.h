@@ -139,6 +139,8 @@ private:
 private:
     // Debugger needs to debug, let it access private members.
     friend class Debugger;
+    // Benchmarks needs to benchmark, let them access private members.
+    friend class Benchmark;
 };
     
 } // namespace coll

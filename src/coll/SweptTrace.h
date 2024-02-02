@@ -89,6 +89,11 @@ struct SweptTrace
     {
     }
 
+    // Init a trace from another trace's info
+    SweptTrace(const Info& other_info) : info{ other_info }, results{}
+    {
+    }
+
     // =========================================================================
 
     // Returns true if this trace hits the given AABB when doing a full sweep,

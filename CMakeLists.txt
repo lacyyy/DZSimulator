@@ -316,6 +316,7 @@ target_sources(DZSimulator PRIVATE
     "src/utils_3d.cpp"
     "src/WorldCreator.cpp"
 
+    "src/coll/Benchmark.cpp"
     "src/coll/BVH.cpp"
     "src/coll/CollidableWorld.cpp"
     "src/coll/CollidableWorld-brush.cpp"

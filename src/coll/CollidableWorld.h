@@ -60,12 +60,11 @@ private:
     struct Impl;
     std::unique_ptr<Impl> pImpl;
 
-    // WorldCreator initializes this class, let it access private members.
-    friend class WorldCreator;
-    // BVH is heavily tied to this class, let it access private members.
-    friend class BVH;
-    // Debugger needs to debug, let it access private members.
-    friend class Debugger;
+    // Let some classes access private members:
+    friend class WorldCreator; // WorldCreator initializes this class
+    friend class BVH;          // BVH is heavily tied to this class
+    friend class Debugger;     // Debugger needs to debug
+    friend class Benchmark;    // Benchmarks need to benchmark
 };
 
 } // namespace coll

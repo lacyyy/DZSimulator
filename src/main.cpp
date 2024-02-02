@@ -25,6 +25,7 @@
 #endif
 
 #include "build_info.h"
+#include "coll/Benchmark.h"
 #include "coll/CollidableWorld.h"
 #include "coll/SweptTrace.h"
 #include "csgo_integration/Gsi.h"
@@ -902,6 +903,16 @@ void DZSimApplication::ConfigureGameKeyBindings() {
     // ----
 
     _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
+        // Start benchmark or ...
+#if COLL_BENCHMARK_ENABLED
+        _gameServer.Stop(); // Stops and joins the server thread
+        coll::Benchmark::StaticPropHullTracing();
+        //coll::Benchmark::StaticPropBevelPlaneGen();
+        _gameServer.Start();
+        return;
+#endif
+
+        // ... do a test trace
         ShootTestTraceOutFromCamera();
     });
 
