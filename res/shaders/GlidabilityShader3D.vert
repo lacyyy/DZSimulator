@@ -152,11 +152,15 @@ void main() {
 
 #ifdef INSTANCED_TRANSFORMATION
     // Apply model transformation to position
+    // @Optimization Perform 3x3 mult and then translation here instead?
+    // @Optimization Perform scaling, quaternion rotation and then translation
+    //               here instead?
     vec4 csgo_vert_position = instanced_model_transformation * position;
 
     // Transform normal using the instance's model transformation. We assume
     // that the model transformation has a uniform scaling (X,Y and Z scalings
     // are identical). This method is incorrect for non-uniform transformations.
+    // @Optimization Perform 3x3 mult or quaternion rotation here instead?
     vec3 csgo_vert_normal =
         normalize((instanced_model_transformation * vec4(normal, 0.0)).xyz);
 #else

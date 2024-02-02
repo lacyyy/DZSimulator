@@ -59,6 +59,7 @@ void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
     Vector3 translated_trace_start = trace->info.startpos - func_brush.origin;
 
     // Order of axis rotations is important! First roll, then pitch, then yaw rotation!
+    // @Optimization Use 3x3 rotation matrix, not 4x4, or quaternions
     Matrix4 rot_transformation =
         Matrix4::rotationZ(Deg{ func_brush.angles[1] }) * // (yaw)   rotation around z axis
         Matrix4::rotationY(Deg{ func_brush.angles[0] }) * // (pitch) rotation around y axis
@@ -233,6 +234,7 @@ bool coll::CalcAabb_FuncBrush(size_t func_brush_idx, const BspMap& bsp_map,
         return false; // failure, non-existing AABB
 
     // Brush model of func_brush gets rotated and translated
+    // @Optimization Use 3x3 rot matrix + translation or quaternion + translation?
     Matrix4 func_brush_transf = utils_3d::CalcModelTransformationMatrix(
         func_brush.origin,
         func_brush.angles

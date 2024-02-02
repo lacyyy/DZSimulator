@@ -456,6 +456,9 @@ WorldCreator::InitFromBspMap(
     }
 
     struct InstanceData {
+        // @Optimization Instead, represent transformation using
+        //               scaling + quaternion + translation or
+        //               3x3 rotationscaling matrix + translation?
         Matrix4 model_transformation; // model scale, rotation, translation
         //Color3 color; // other attributes are possible
     };
@@ -534,6 +537,7 @@ WorldCreator::InitFromBspMap(
 
     Debug{} << "Calculating func_brush rotation transformations";
     // Calculate rotation transformation for every SOLID func_brush entity, whose angles are not { 0, 0, 0 }
+    // @Optimization Use 3x3 rotation matrices here, not 4x4, or quaternions
     std::map<const BspMap::Ent_func_brush*, Matrix4> func_brush_rot_transformations;
     for (size_t i = 0; i < bsp_map->entities_func_brush.size(); i++) {
         auto& func_brush = bsp_map->entities_func_brush[i];

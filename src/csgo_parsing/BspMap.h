@@ -76,6 +76,7 @@ public:
         uint32_t     map_revision = 0;
     };
 
+    // @Cleanup This plane structure should be moved to a 'common' header file
     struct Plane {
         Magnum::Vector3 normal;
         float dist; // distance from origin

@@ -9,6 +9,7 @@
     - Take a look at [Kaitai Struct](https://kaitai.io)
     - Load struct fields directly into memory IF it's safe to assume that PCs today all have twos-complement and little-endian architectures
         - Are there guarantees for this on WASM/Emscripten?
+        - Related: https://en.cppreference.com/w/cpp/types/is_trivially_copyable
     - Load packed PHY files in order of their position in the BSP file without reopening it each time?
     - Don't parse/load lumps we don't need (leafface lump? face lump?)
 
@@ -17,9 +18,11 @@
 - Reducing vertex data on the GPU might increase FPS significantly
     - Change GPU vertex data layout to minimize memory footprint?
 	- https://x.com/SebAaltonen/status/1731317041032770018?s=20
+- Reduce triangle count: Combine triangles/quads that are connected and have the same normals, if possible
 - Move trajectory calculations from the vertex shader to the fragment shader?
 - Some form of occlusion culling?
     - Only worth it for big complex static props?
+    - https://github.com/nvpro-samples/gl_occlusion_culling
 - World-Player collision detection
     - Measure impact of __forceinline in displacement collision code
 - During gameplay, displacement collision cache creation might infrequently cause stutters. Measure!
@@ -73,5 +76,7 @@
 
 ### COMPILE TIME REDUCTION:
 
+- Try out unity build?
 - Use a tool that analyzes a project's `#include`s
 - nlohmann's single-header JSON library might contribute a lot to build time
+- https://vitaut.net/posts/2024/faster-cpp-compile-times/
