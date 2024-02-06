@@ -36,7 +36,7 @@ public:
 
     // ----------------------------------------------------------------
 
-    Clock::time_point time; // When this input was created
+    sim::Clock::time_point time; // When this input was created
 
     std::vector<Command> inputCommands;
     unsigned int weaponSlot = 0; // = WEAPON_BUMPMINE; // TODO default init this

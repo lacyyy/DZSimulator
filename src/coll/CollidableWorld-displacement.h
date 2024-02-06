@@ -141,6 +141,7 @@ public:
 
     // Hull Sweeps. DOES utilize collision caches and might create one.
     // Does nothing and returns false if displacement has NO_HULL_COLL flag set.
+    // CAUTION: Not thread-safe yet! (Due to unprotected g_DispCollPlaneIndexHash)
     bool AABBTree_SweepAABB(SweptTrace* trace);
 
     // Hull Intersection. DOES NOT utilize collision caches.

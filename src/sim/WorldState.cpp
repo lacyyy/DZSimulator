@@ -1,8 +1,5 @@
 #include "sim/WorldState.h"
 
-#include <chrono>
-#include <iterator>
-
 #include <Tracy.hpp>
 
 #include <Magnum/Magnum.h>
@@ -26,9 +23,6 @@ WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& s
     
     WorldState interpState = stateA;
 
-    interpState.time += std::chrono::duration_cast<std::chrono::nanoseconds>(phase * (stateB.time - stateA.time));
-    interpState.latest_player_input_time = {}; // irrelevant, interpolated world states aren't used for server world state prediction
-
     interpState.player.position += phase * (stateB.player.position - stateA.player.position);
 
     // TODO Interpolate Bumpmines (do we need unique IDs for them?)
@@ -38,21 +32,12 @@ WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& s
     return interpState;
 }
 
-void WorldState::DoTimeStep(double stepSize_sec, const std::vector<PlayerInputState>& playerInput)
-{
-    DoTimeStep(stepSize_sec, playerInput.begin(), playerInput.end());
-}
-
-void WorldState::DoTimeStep(double stepSize_sec,
-        std::vector<PlayerInputState>::const_iterator playerInputBeginIt,
-        std::vector<PlayerInputState>::const_iterator playerInputEndIt)
+void WorldState::DoTimeStep(double step_size_sec,
+                            std::span<const PlayerInputState> player_input)
 {
     ZoneScoped;
 
-    double& timeDelta = stepSize_sec; // in seconds
-
-    // Caution: This time advancement does not account for simulation time scale!
-    this->time += std::chrono::nanoseconds{ (long long)(1e9 * timeDelta) };
+    double& timeDelta = step_size_sec; // in seconds
 
     // Abort if no map is loaded
     if (!g_coll_world)
@@ -62,8 +47,8 @@ void WorldState::DoTimeStep(double stepSize_sec,
     bool tryAttack = false;
 
     // Parse player input, chronologically
-    for (auto pisIt = playerInputBeginIt; pisIt != playerInputEndIt; ++pisIt) {
-        for (auto cmd : pisIt->inputCommands) {
+    for (const PlayerInputState& pis : player_input) {
+        for (auto cmd : pis.inputCommands) {
             // Get counter reference for this input cmd
             unsigned int& inputCmdActiveCount = this->player.inputCmdActiveCount(cmd);
 
@@ -100,11 +85,13 @@ void WorldState::DoTimeStep(double stepSize_sec,
     }
 
     // FIXME we want the angles when the bumpmine was thrown, exactly! Confirm that's in CSGO the same way.
-    if (playerInputBeginIt != playerInputEndIt) { // If playerInput container isn't empty
+    if (!player_input.empty()) {
         // The latest input decides the new viewing angle
-        auto latestPis = std::prev(playerInputEndIt);
-        this->latest_player_input_time = latestPis->time; // Save time of latest input that affected this world state
-        this->player.angles = { latestPis->viewingAnglePitch, latestPis->viewingAngleYaw, 0.0f };
+        this->player.angles = {
+            player_input.back().viewingAnglePitch,
+            player_input.back().viewingAngleYaw,
+            0.0f
+        };
     }
 
     // W,A,S,D inputs only take effect if their state was 'pressed' at the start of the tick (i.e. at the end of this tick's input queue)

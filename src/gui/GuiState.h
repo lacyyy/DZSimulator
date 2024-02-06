@@ -151,10 +151,8 @@ public:
         float OUT_frame_time_mean_ms;
         Corrade::Containers::String OUT_magnum_profiler_stats;
 
-        // sim::Server's last simulation calc time (Changes every server tick)
-        float OUT_last_sim_server_calc_time_us;
-        // Main thread's last simulation calc time (Changes every client update)
-        float OUT_last_sim_client_calc_time_us;
+        // Last frame's game simulation calc time (Changes every frame)
+        float OUT_last_sim_calc_time_us;
     } perf;
 
     struct CollisionDebugging { // Only available in Debug builds

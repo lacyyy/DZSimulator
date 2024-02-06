@@ -675,10 +675,8 @@ void MenuWindow::DrawPerformanceStats()
 
     ImGui::Separator();
 
-    ImGui::Text("Game client sim tick time:  %.1f us",
-                _gui_state.perf.OUT_last_sim_client_calc_time_us);
-    ImGui::Text("Game server sim tick time: %.1f us",
-                _gui_state.perf.OUT_last_sim_server_calc_time_us);
+    ImGui::Text("Game sim calculation time:  %.1f us",
+                _gui_state.perf.OUT_last_sim_calc_time_us);
 
 }
 

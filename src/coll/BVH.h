@@ -26,6 +26,7 @@ public:
     bool WasConstructedSuccessfully();
 
     // Does nothing if WasConstructedSuccessfully() returns false.
+    // CAUTION: Not thread-safe yet!
     void DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world);
 
     // Returns false if WasConstructedSuccessfully() returns false.

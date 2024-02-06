@@ -42,7 +42,8 @@
 #include "ren/WorldRenderer.h"
 #include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
-#include "sim/Server.h"
+#include "sim/CsgoGame.h"
+#include "sim/WorldState.h"
 #include "WorldCreator.h"
 
 // Allow window on a resolution of 800x600
@@ -59,12 +60,6 @@
 
 #define RCON_HOST "127.0.0.1"
 #define RCON_PORT 34755
-
-// FIXME CRASH
-// Interpolation is currently off because the trace system isn't multithread-safe yet.
-// If on, the client and server would do traces simultaneously and possibly crash.
-// Take a look at g_DispCollPlaneIndexHash.
-#define CLIENT_INTERPOLATION false
 
 using namespace Magnum;
 using namespace Math::Literals;
@@ -87,25 +82,18 @@ class DZSimApplication: public Platform::Application {
         gui::GuiState _gui_state;
         gui::Gui _gui;
 
-        sim::Server _gameServer;
         InputHandler _inputs;
         
         ren::BigTextRenderer _big_text_renderer;
         ren::WideLineRenderer _wide_line_renderer;
 
-        // The latest world state calculated from the server
-        // -> changes every server tick
-        sim::WorldState _currentServerWorldState;
-        // The latest client world state, interpolated and predicted by the
-        // client based on the latest server world state and latest client input
-        // -> changes every client frame
-        sim::WorldState _currentClientWorldState;
+        sim::CsgoGame _csgo_game_sim;
 
-        // Game inputs of current client frame to be sent to the server
+        // The current worldstate rendered to the screen
+        sim::WorldState _drawn_worldstate;
+
+        // Game inputs of current frame
         sim::PlayerInputState _currentGameInput;
-        // All game inputs since the latest server world state, in chronological
-        // order, remembered for client-side prediction
-        std::vector<sim::PlayerInputState> _prevGameInputs;
 
         csgo_integration::RemoteConsole _csgo_rcon; // Needs to be declared before _csgo_handler
         csgo_integration::Handler _csgo_handler;
@@ -255,7 +243,6 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _resources{ RESOURCE_GROUP_NAME }
     , _gui_state{ SavedUserDataHandler::LoadUserSettingsFromFile() }
     , _gui{ *this , _resources, _gui_state }
-    , _gameServer{ CSGO_TICKRATE }
     , _big_text_renderer { *this,  _font_plugin_mgr }
     , _csgo_handler { _resources, _csgo_rcon, _gui_state }
     , _world_renderer { _resources, _gui_state }
@@ -523,9 +510,6 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _update_checker.StartAsyncUpdateAndMotdCheck();
 #endif
 
-    _gameServer.ChangeSimulationTimeScale(1.0);// 0.015625);
-    _gameServer.Start();
-
     // Load embedded map on startup (if it exists)
     //LoadBspMap("embedded_maps/XXX.bsp", true);
 }
@@ -542,9 +526,6 @@ DZSimApplication::~DZSimApplication()
 
     // Do some other potentially blocking work
     SavedUserDataHandler::SaveUserSettingsToFile(_gui_state);
-
-    // Join all remaining threads in a blocking way
-    _gameServer.Stop(); // Blocking, thread is joined
 }
 
 #ifndef DZSIM_WEB_PORT
@@ -746,9 +727,11 @@ void DZSimApplication::UpdateGuiCsgoMapPaths() {
 // Returns success
 bool DZSimApplication::LoadBspMap(std::string file_path,
     bool load_from_embedded_files)
-
 {
     ZoneScoped;
+
+    // CAUTION: Once multiple threads access map data, make sure we join them
+    //          all before we modify the map data here!
 
     if (coll::Debugger::IS_ENABLED)
         coll::Debugger::Reset();
@@ -756,7 +739,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     // Deallocate previous map data to minimize peak RAM usage during parsing
     // RAM USAGE NOT REALLY TESTED YET!
     _ren_world .reset();
-    g_coll_world.reset(); // FIXME CRASH I think there's a race condition with the server thread
+    g_coll_world.reset();
     _bsp_map   .reset();
 
     // Embedded map files must not rely on assets from the game directory.
@@ -813,25 +796,23 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     auto initialized_worlds =
         WorldCreator::InitFromBspMap(_bsp_map, &world_init_errors);
     _ren_world  = initialized_worlds.first;
-    g_coll_world = initialized_worlds.second; // FIXME CRASH I think there's a race condition with the server thread
+    g_coll_world = initialized_worlds.second;
 
     if (!world_init_errors.empty()) {
         Debug{} << world_init_errors.c_str();
         _gui_state.popup.QueueMsgWarn(world_init_errors);
     }
 
+    sim::WorldState initial_worldstate;
     if (_bsp_map->player_spawns.size() > 0) {
         csgo_parsing::BspMap::PlayerSpawn& playerSpawn = _bsp_map->player_spawns[0];
         _cam_pos = playerSpawn.origin; // wrong cam pos
         _cam_ang = playerSpawn.angles;
-        _currentClientWorldState.player.position = playerSpawn.origin;
-        _currentClientWorldState.player.angles = playerSpawn.angles;
+        initial_worldstate.player.position = playerSpawn.origin;
+        initial_worldstate.player.angles   = playerSpawn.angles;
     }
-    _currentClientWorldState.time = sim::Clock::now();
-    _currentClientWorldState.latest_player_input_time =
-        _currentClientWorldState.time;
-    _gameServer.OverrideWorldState(_currentClientWorldState);
-    _currentServerWorldState = _currentClientWorldState;
+    _csgo_game_sim.Start(1.0f / CSGO_TICKRATE, 1.0f, initial_worldstate);
+    _drawn_worldstate = std::move(initial_worldstate);
 
     Debug{} << "DONE loading bsp map";
     return true;
@@ -905,10 +886,8 @@ void DZSimApplication::ConfigureGameKeyBindings() {
     _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
         // Start benchmark or ...
 #if COLL_BENCHMARK_ENABLED
-        _gameServer.Stop(); // Stops and joins the server thread
         coll::Benchmark::StaticPropHullTracing();
         //coll::Benchmark::StaticPropBevelPlaneGen();
-        _gameServer.Start();
         return;
 #endif
 
@@ -935,7 +914,7 @@ void DZSimApplication::ShootTestTraceOutFromCamera()
         hull_mins,
         hull_maxs
     );
-    g_coll_world->DoSweptTrace(&tr); // FIXME CRASH I think there's a race condition with the server thread
+    g_coll_world->DoSweptTrace(&tr);
 }
 
 void DZSimApplication::viewportEvent(ViewportEvent& event)
@@ -1370,7 +1349,6 @@ void DZSimApplication::DoUpdate()
         abs_path_to_load.swap(_gui_state.map_select.IN_new_abs_map_path_load);
 
         // Load new map
-        // The whole client server reset logic is very hacky and needs to be tidied up
         if (LoadBspMap(abs_path_to_load)) {
             // ... Successfully loaded
         }
@@ -1484,92 +1462,26 @@ void DZSimApplication::DoUpdate()
         //}
     }
 
-    // Update viewing angles of game input for server
+    // Update viewing angles of game input for game simulation
     _currentGameInput.viewingAnglePitch = _cam_ang.x();
     _currentGameInput.viewingAngleYaw = _cam_ang.y();
 
-    // Send game input to server
-    _gameServer.SendNewPlayerInput(_currentGameInput);
+    if (_csgo_game_sim.HasBeenStarted()) {
+        auto game_sim_start_time = std::chrono::high_resolution_clock::now();
 
-    // Remember current client frame's game input for client-side prediction
-    _prevGameInputs.push_back(_currentGameInput);
+        // Send game input to simulation and receive the current worldstate to draw
+        _drawn_worldstate = _csgo_game_sim.ProcessNewPlayerInput(_currentGameInput);
 
-    // Clear client game commands for next frame's commands.
+        auto game_sim_end_time = std::chrono::high_resolution_clock::now();
+
+        // Maybe add # of simulated ticks to perf stats?
+        _gui_state.perf.OUT_last_sim_calc_time_us = std::chrono::duration_cast<std::chrono::microseconds>(
+            game_sim_end_time - game_sim_start_time).count();
+    }
+
+    // Clear game commands for next frame's commands.
     // We keep the remaining game input values.
     _currentGameInput.inputCommands.clear();
-
-    auto client_simulation_start_time = sim::Clock::now();
-
-    // Get new world states from server, if available
-    std::queue<sim::WorldState> newServerWorldStates =
-        _gameServer.DequeueLatestWorldStates();
-    while (!newServerWorldStates.empty()) {
-        _currentServerWorldState = newServerWorldStates.front();
-        newServerWorldStates.pop();
-    }
-
-    // Delete all game inputs from _prevGameInputs that affected the latest
-    // server world state, i.e. that have already been processed by the server
-    auto firstUnprocessedInputIt = std::find_if(
-        _prevGameInputs.begin(),
-        _prevGameInputs.end(),
-        [this](const sim::PlayerInputState& pis) {
-            return pis.time >
-                this->_currentServerWorldState.latest_player_input_time;
-        });
-    _prevGameInputs.erase(_prevGameInputs.begin(), firstUnprocessedInputIt);
-
-    if (!CLIENT_INTERPOLATION) {
-        _currentClientWorldState = _currentServerWorldState;
-    }
-    else {
-        ZoneScopedN("sim::Client Prediction");
-
-        // Predict world states based on latest server world state and the
-        // latest client input until we get a world state that's in the future
-        double serverTickRate = _gameServer.GetTickRate();
-        double serverSimTimeScale = _gameServer.GetSimulationTimeScale();
-        double simStepSize = 1.0 / serverTickRate; // In seconds
-        sim::Clock::duration serverFrameLength = std::chrono::microseconds{ (long long)(1000'000 / (serverTickRate * serverSimTimeScale)) };
-
-        sim::WorldState predictedWorldState = _currentServerWorldState;
-        auto playerInputBeginIt = _prevGameInputs.begin(); // Start of player input range used for next prediction
-        sim::Clock::time_point currentTime = sim::Clock::now();
-        //size_t _predictCnt = 0;
-        while (predictedWorldState.time <= currentTime) { // Predict until we get a state in the future
-            //++_predictCnt;
-            sim::Clock::time_point nextStateTime = predictedWorldState.time + serverFrameLength;
-
-            // Determine end of player input range of this server frame
-            auto playerInputEndIt = std::find_if(playerInputBeginIt, _prevGameInputs.end(),
-                [&nextStateTime](const sim::PlayerInputState& pis) {
-                    return pis.time > nextStateTime;
-                });
-
-            predictedWorldState.DoTimeStep(simStepSize, playerInputBeginIt, playerInputEndIt);
-            predictedWorldState.time = nextStateTime; // Adjust world state time to account for simulation time scale
-
-            playerInputBeginIt = playerInputEndIt; // Next prediction uses player input following the current player input range
-        }
-
-        //ACQUIRE_COUT(Debug{} << "pred=" << _predictCnt;)
-
-        // Interpolate between the current client state and the predicted future server state
-        auto interpRange = predictedWorldState.time - _currentClientWorldState.time;
-        auto interpStep = currentTime - _currentClientWorldState.time;
-        float interpRange_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(interpRange).count();
-        float interpStep_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(interpStep).count();
-        if (interpRange_ns == 0.0f) {
-            _currentClientWorldState = predictedWorldState;
-        }
-        else {
-            float phase = interpStep_ns / interpRange_ns;
-            _currentClientWorldState = sim::WorldState::Interpolate(_currentClientWorldState, predictedWorldState, phase);
-        }
-    }
-    auto client_simulation_end_time = sim::Clock::now();
-    _gui_state.perf.OUT_last_sim_client_calc_time_us = std::chrono::duration_cast<std::chrono::microseconds>(
-            client_simulation_end_time - client_simulation_start_time).count();
 
     // Override with CS:GO camera position if we're connected to CSGO's console
     if (_csgo_rcon.IsConnected() &&
@@ -1585,24 +1497,10 @@ void DZSimApplication::DoUpdate()
             _cam_pos = latest_new_gsi_cam_pos.value() + Vector3(0, 0,
                 CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
-    else { // Take position from our server's game state
-        _cam_pos = _currentClientWorldState.player.position
+    else { // Take position from our game simulation
+        _cam_pos = _drawn_worldstate.player.position
             + Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
-
-    sim::Server::PerformanceStats server_perf = _gameServer.GetPerformanceStats();
-    _gui_state.perf.OUT_last_sim_server_calc_time_us = 1e3 * server_perf.tick_duration_ms;
-    /*std::stringstream stream;
-    stream << std::fixed << std::setprecision(1) <<
-        serverPerf.tick_start_deviation_rel * 100.0f;
-    ACQUIRE_COUT( Debug{} << "tickStartDev:\t" << stream.str().c_str() << "%"
-        << "tick:\t" << serverPerf.tickCnt
-        << "sv:\t" << serverPerf.tick_duration_ms
-        << "ms +-\t" << serverPerf.tick_duration_deviation_ms << "ms"
-        << "MaxSleepDev:\t" << serverPerf.max_sleep_deviation_ms << "ms";)*/
-
-    /*if (!latestWorldStates.empty())
-        ACQUIRE_COUT(Debug{} << m_currentWorldState.player.position.z();)*/
 
     // When in "sparing low latency draw mode", force a frame redraw if the last
     // redraw was too long ago

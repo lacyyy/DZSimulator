@@ -35,6 +35,7 @@ public:
 
     // Perform a swept trace against the entire world.
     // Does nothing if sweep distance is zero or nearly zero.
+    // CAUTION: Not thread-safe yet!
     void DoSweptTrace(SweptTrace* trace);
 
     // Only displacements that don't have the NO_HULL_COLL flag are considered.

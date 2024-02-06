@@ -24,6 +24,8 @@ public:
     static constexpr bool IS_ENABLED = true;
 #endif
 
+    // CAUTION: coll::Debugger is not thread-safe yet!
+
     // You must call this once map data became invalid/non-existent
     static void Reset();
 

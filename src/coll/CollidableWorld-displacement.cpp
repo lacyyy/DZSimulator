@@ -59,6 +59,7 @@ void CollidableWorld::DoSweptTrace_Displacement(SweptTrace* trace,
         // Displacements with NO_HULL_COLL flag are not considered by
         // AABBTree_SweepAABB.
         // Displacement collision cache might be created.
+        // CAUTION: Not thread-safe yet!
         hull_dispcoll.AABBTree_SweepAABB(trace); // Returns true on hit
     }
 }
