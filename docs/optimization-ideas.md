@@ -66,6 +66,7 @@
 - Use [Bloaty](https://github.com/google/bloaty)
 - Use [SizeBench](https://github.com/microsoft/SizeBench) for windows EXEs
 - Use [weave](https://github.com/evmar/weave) for WASM files
+- Downgrade SDL 2 to an older version?
 - Replace embedded font files with smaller / less comprehensive ones
 - Compress embedded map, font and other files with ZIP compression before embedding
     - Is decoding them again detrimental for startup time?
