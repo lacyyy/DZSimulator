@@ -34,7 +34,7 @@ public:
 
 private:
     // WorldCreator initializes this class, let it access private members.
-    friend class WorldCreator;
+    friend class ::WorldCreator;
 };
 
 } // namespace ren

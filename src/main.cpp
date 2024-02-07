@@ -470,12 +470,16 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _world_renderer    .InitWithOpenGLContext();
 
     const UnsignedInt MAGNUM_PROFILER_MAX_FRAME_COUNT = 100;
-    _magnum_profiler.setup(
-            DebugTools::FrameProfilerGL::Value::FrameTime |
-            DebugTools::FrameProfilerGL::Value::CpuDuration |
-            DebugTools::FrameProfilerGL::Value::GpuDuration |
-            DebugTools::FrameProfilerGL::Value::VertexFetchRatio |
-            DebugTools::FrameProfilerGL::Value::PrimitiveClipRatio, MAGNUM_PROFILER_MAX_FRAME_COUNT);
+    DebugTools::FrameProfilerGL::Values prof_vals =
+        DebugTools::FrameProfilerGL::Value::FrameTime |
+        DebugTools::FrameProfilerGL::Value::CpuDuration |
+        DebugTools::FrameProfilerGL::Value::GpuDuration;
+#if !defined(NDEBUG) && !defined(DZSIM_WEB_PORT)
+    // Debug only, since only available with OpenGL 4.6
+    prof_vals |= DebugTools::FrameProfilerGL::Value::VertexFetchRatio |
+                 DebugTools::FrameProfilerGL::Value::PrimitiveClipRatio;
+#endif
+    _magnum_profiler.setup(prof_vals, MAGNUM_PROFILER_MAX_FRAME_COUNT);
 
     // Enable transparency
     GL::Renderer::enable(GL::Renderer::Feature::Blending);

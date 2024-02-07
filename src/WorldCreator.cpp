@@ -433,7 +433,10 @@ WorldCreator::InitFromBspMap(
                         const Vector3& v3 = section_vertices[triangle.verts[2]];
                         Vector3 plane_normal = CalcNormalCwFront(v1, v2, v3);
                         float   plane_dist = Math::dot(plane_normal, v1);
-                        planes_of_section.emplace_back(plane_normal, plane_dist);
+                        planes_of_section.push_back({
+                            .normal = plane_normal,
+                            .dist   = plane_dist
+                        });
                     }
                 }
                 // Construct CollisionModel object
