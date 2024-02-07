@@ -1,4 +1,5 @@
-cmake_minimum_required (VERSION 3.1 FATAL_ERROR)
+# DZSIM_MOD: Increased minimum version from 3.1 to 3.5
+cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
 #project (fsal)
 
 # DZSIM_MOD: Commented out these 2 options
