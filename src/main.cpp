@@ -345,6 +345,21 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     // NOTE: In Magnum's current implementation (commit v2020.06-1597-g9c4f2ceea),
     //       Sdl2Application::dpiScaling(config) determines DPI scaling only from
     //       display index 0 ! Other displays might have different DPI scaling!
+
+    // 2024-02-07 UPDATE: Magnum was upgraded to latest, excerpt from changelog:
+    // "Platform::EmscriptenApplication, Platform::GlfwApplication and
+    // Platform::Sdl2Application now explicitly query DPI scaling values each
+    // time they're accessed, either directly or via the viewport event, instead
+    // of always returning the initially queried / calculated value. This makes
+    // the behavior consistent with framebuffer and window sizes that are also
+    // queried every time, and fixes a case where changing global UI scaling
+    // would trigger a viewport event but the event would still have the
+    // previous UI scale. However note that this does not yet properly handle
+    // DPI change events themselves, which happen for example when moving windows
+    // across displays with different DPI."
+    // 2024-02-07 Note: The Magnum upgrade was performed without touching any
+    //                  of this DPI code.
+
     Vector2 dpi_scaling = dpiScaling(app_conf);
 #ifdef DZSIM_WEB_PORT
     // FIXME: This definitely needs testing, no idea how this behaves.
@@ -1566,9 +1581,9 @@ Vector3 DZSimApplication::GetCameraForwardVector()
     auto pitch_sincos = Math::sincos(Deg{ _cam_ang[0] });
     auto yaw_sincos   = Math::sincos(Deg{ _cam_ang[1] });
     return {
-        yaw_sincos.second * pitch_sincos.second,
-        yaw_sincos.first * pitch_sincos.second,
-        -pitch_sincos.first
+        yaw_sincos.second() * pitch_sincos.second(),
+        yaw_sincos.first() * pitch_sincos.second(),
+        -pitch_sincos.first()
     };
 }
 

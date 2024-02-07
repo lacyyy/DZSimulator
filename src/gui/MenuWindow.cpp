@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include <Corrade/Containers/Pair.h>
+#include <Corrade/Containers/StringView.h>
 #include <Corrade/Utility/Path.h>
 
 #include "build_info.h"
@@ -12,6 +13,7 @@
 #include "SavedUserDataHandler.h"
 
 using namespace gui;
+using namespace Corrade;
 
 MenuWindow::MenuWindow(Gui& gui) : _gui(gui), _gui_state(gui.state)
 {
@@ -646,8 +648,9 @@ void MenuWindow::DrawMapSelection()
         if (ImGui::Selectable("< SELECT MAP FILE FROM DISK >", false)) {
             std::string fd_path = _gui.OpenBspFileDialog();
             if (!fd_path.empty()) {
-                std::string file_name = Corrade::Utility::Path::split(fd_path).second();
-                if (!file_name.empty()) {
+                Containers::StringView file_name =
+                    Corrade::Utility::Path::split(fd_path).second();
+                if (!file_name.isEmpty()) {
                     _gui_state.map_select.IN_new_abs_map_path_load = fd_path;
                     s_map_load_box_preview = "<...>/" + file_name;
                 }

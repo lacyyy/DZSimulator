@@ -37,5 +37,6 @@
 - Different browsers must be tested
 - Check out [Emscripten speed and memory profiling](https://emscripten.org/docs/porting/Debugging.html#profiling)
 - Test if hardware acceleration is disabled in browser and tell user about it
+- Magnum has the flags EmscriptenApplication::GLConfiguration::Flag::PowerPreferenceLowPower and Flag::PowerPreferenceHighPerformance
 - Is [this](https://developer.chrome.com/articles/file-system-access/) a way to read from a user's CSGO installation? Can this grant access to a directory or just single files?
 - When registering a domain for a DZSim website, make sure to register with protection against WHOIS to not get doxxed

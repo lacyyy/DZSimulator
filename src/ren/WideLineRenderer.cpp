@@ -363,7 +363,7 @@ void WideLineRenderer::DrawDirectionIndicator(
     Color4 circle_col = { 1.0f * color.rgb(), color.a() };
     for (float angle = 0.0f; angle < 360.0f; angle += ANGLE_DELTA) {
         auto sin_cos = Math::sincos(Deg{ angle });
-        Vector3 v = sin_cos.second * perp_vec_1 + sin_cos.first * perp_vec_2;
+        Vector3 v = sin_cos.second() * perp_vec_1 + sin_cos.first() * perp_vec_2;
 
         DrawLine(
             circle_col,

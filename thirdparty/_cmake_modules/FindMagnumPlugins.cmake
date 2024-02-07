@@ -16,11 +16,13 @@
 #  AstcImporter                 - ASTC importer
 #  BasisImageConverter          - Basis image converter
 #  BasisImporter                - Basis importer
+#  BcDecImageConverter          - BCn image decoder using bcdec
 #  DdsImporter                  - DDS importer
 #  DevIlImageImporter           - Image importer using DevIL
 #  DrFlacAudioImporter          - FLAC audio importer using dr_flac
 #  DrMp3AudioImporter           - MP3 audio importer using dr_mp3
 #  DrWavAudioImporter           - WAV audio importer using dr_wav
+#  EtcDecImageConverter         - ETC/EAC image decoder using etcdec
 #  Faad2AudioImporter           - AAC audio importer using FAAD2
 #  FreeTypeFont                 - FreeType font
 #  GlslangShaderConverter       - Glslang shader converter
@@ -92,7 +94,7 @@
 #   This file is part of Magnum.
 #
 #   Copyright © 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019,
-#               2020, 2021, 2022 Vladimír Vondruš <mosra@centrum.cz>
+#               2020, 2021, 2022, 2023 Vladimír Vondruš <mosra@centrum.cz>
 #   Copyright © 2019 Jonathan Hale <squareys@googlemail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -162,11 +164,12 @@ mark_as_advanced(MAGNUMPLUGINS_INCLUDE_DIR)
 # components from other repositories)
 set(_MAGNUMPLUGINS_LIBRARY_COMPONENTS OpenDdl)
 set(_MAGNUMPLUGINS_PLUGIN_COMPONENTS
-    AssimpImporter AstcImporter BasisImageConverter BasisImporter DdsImporter
-    DevIlImageImporter DrFlacAudioImporter DrMp3AudioImporter
-    DrWavAudioImporter Faad2AudioImporter FreeTypeFont GlslangShaderConverter
-    GltfImporter GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter
-    JpegImporter KtxImageConverter KtxImporter MeshOptimizerSceneConverter
+    AssimpImporter AstcImporter BasisImageConverter BasisImporter
+    BcDecImageConverter DdsImporter DevIlImageImporter DrFlacAudioImporter
+    DrMp3AudioImporter DrWavAudioImporter EtcDecImageConverter
+    Faad2AudioImporter FreeTypeFont GlslangShaderConverter GltfImporter
+    GltfSceneConverter HarfBuzzFont IcoImporter JpegImageConverter JpegImporter
+    KtxImageConverter KtxImporter MeshOptimizerSceneConverter
     MiniExrImageConverter OpenExrImageConverter OpenExrImporter
     OpenGexImporter PngImageConverter PngImporter PrimitiveImporter
     SpirvToolsShaderConverter SpngImporter StanfordImporter
@@ -336,14 +339,33 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             if(basisu_FOUND AND NOT BASIS_UNIVERSAL_DIR)
                 set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES basisu_encoder)
+            else()
+                # Our own build may depend on Zstd, as we replace the bundled
+                # files with an external library. Include it if present,
+                # otherwise assume it's compiled without.
+                find_package(Zstd)
+                if(Zstd_FOUND)
+                    set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                        INTERFACE_LINK_LIBRARIES Zstd::Zstd)
+                endif()
             endif()
         elseif(_component STREQUAL BasisImporter)
             find_package(basisu CONFIG QUIET)
             if(basisu_FOUND AND NOT BASIS_UNIVERSAL_DIR)
                 set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
                     INTERFACE_LINK_LIBRARIES basisu_transcoder)
+            else()
+                # Our own build may depend on Zstd, as we replace the bundled
+                # files with an external library. Include it if present,
+                # otherwise assume it's compiled without.
+                find_package(Zstd)
+                if(Zstd_FOUND)
+                    set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                        INTERFACE_LINK_LIBRARIES Zstd::Zstd)
+                endif()
             endif()
 
+        # BcDecImageConverter has no dependencies
         # CgltfImporter has no dependencies
         # DdsImporter has no dependencies
 
@@ -356,6 +378,7 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # DrFlacAudioImporter has no dependencies
         # DrMp3AudioImporter has no dependencies
         # DrWavAudioImporter has no dependencies
+        # EtcDecImageConverter has no dependencies
 
         # Faad2AudioImporter plugin dependencies
         elseif(_component STREQUAL Faad2AudioImporter)
@@ -441,7 +464,17 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
             # config if appropriate
             find_package(OpenEXR REQUIRED MODULE)
             set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
-                INTERFACE_LINK_LIBRARIES OpenEXR::IlmImf)
+                INTERFACE_LINK_LIBRARIES OpenEXR::OpenEXR)
+            # OpenEXR uses exceptions, which need an explicit flag on
+            # Emscripten. This is most likely not propagated through its CMake
+            # config file, so doing that explicitly here.
+            if(CORRADE_TARGET_EMSCRIPTEN)
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    message(FATAL_ERROR "CMake 3.13+ is required in order to specify Emscripten linker options")
+                endif()
+                set_property(TARGET MagnumPlugins::${_component} APPEND PROPERTY
+                    INTERFACE_LINK_OPTIONS "SHELL:-s DISABLE_EXCEPTION_CATCHING=0")
+            endif()
 
         # No special setup for the OpenDdl library
         # OpenGexImporter has no dependencies
@@ -482,10 +515,32 @@ foreach(_component ${MagnumPlugins_FIND_COMPONENTS})
         # StanfordSceneConverter has no dependencies
         # StbDxtImageConverter has no dependencies
         # StbImageConverter has no dependencies
-        # StbImageImporter has no dependencies
+
+        # StbImageImporter plugin dependencies
+        elseif(_component STREQUAL StbImageImporter)
+            # To solve a LTO-specific linker error. See StbImageImporter's
+            # CMakeLists.txt for details.
+            if(CORRADE_TARGET_EMSCRIPTEN AND NOT EMSCRIPTEN_VERSION VERSION_LESS 3.1.42 AND EMSCRIPTEN_VERSION VERSION_LESS 3.1.46)
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    message(FATAL_ERROR "CMake 3.13+ is required in order to specify Emscripten linker options")
+                endif()
+                target_link_options(MagnumPlugins::${_component} INTERFACE $<$<CONFIG:Release>:-Wl,-u,scalbnf>)
+            endif()
+
         # StbResizeImageConverter has no dependencies
         # StbTrueTypeFont has no dependencies
-        # StbVorbisAudioImporter has no dependencies
+
+        # StbVorbisAudioImporter plugin dependencies
+        elseif(_component STREQUAL StbVorbisAudioImporter)
+            # To solve a LTO-specific linker error. See StbVorbisAudioImporter's
+            # CMakeLists.txt for details.
+            if(CORRADE_TARGET_EMSCRIPTEN AND NOT EMSCRIPTEN_VERSION VERSION_LESS 3.1.42 AND EMSCRIPTEN_VERSION VERSION_LESS 3.1.46)
+                if(CMAKE_VERSION VERSION_LESS 3.13)
+                    message(FATAL_ERROR "CMake 3.13+ is required in order to specify Emscripten linker options")
+                endif()
+                target_link_options(MagnumPlugins::${_component} INTERFACE $<$<CONFIG:Release>:-Wl,-u,scalbnf>)
+            endif()
+
         # StlImporter has no dependencies
         # UfbxImporter has no dependencies
         # TinyGltfImporter has no dependencies

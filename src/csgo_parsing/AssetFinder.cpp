@@ -355,9 +355,9 @@ utils::RetCode GetSteamLibraryFolderPaths(
 // relative to the starting directory. Given path must be UTF-8 and directory
 // separators must be forward slashes. Returned file paths are UTF-8 and can
 // contain Unicode characters.
-std::vector<std::string> ListFilePathsRecursively(const std::string& dir_path)
+std::vector<Containers::String> ListFilePathsRecursively(const std::string& dir_path)
 {
-    std::vector<std::string> file_paths;
+    std::vector<Containers::String> file_paths;
 
     // Utility::Path::list() expects given path param to be in UTF-8.
     // Corrade prints an error message if Utility::Path::list() fails.
@@ -369,10 +369,10 @@ std::vector<std::string> ListFilePathsRecursively(const std::string& dir_path)
         return file_paths;
 
     // Unnecessary string copies here, this is not performance critical though.
-    for (auto& dir_entry : *dir_contents) {
+    for (Containers::String& dir_entry : *dir_contents) {
         Containers::String full_path = CorrPath::join(dir_path, dir_entry);
         if (CorrPath::isDirectory(full_path)) {
-            std::vector<std::string> sub_file_paths =
+            std::vector<Containers::String> sub_file_paths =
                 ListFilePathsRecursively(full_path);
             for (auto& sub_file_path : sub_file_paths) {
                 file_paths.emplace_back(
@@ -467,17 +467,18 @@ void AssetFinder::RefreshMapFileList()
     Debug{} << "[AssetFinder] Refreshing map file list...";
 
     Containers::String maps_dir = CorrPath::join(GetCsgoPath(), "maps/");
-    std::vector<std::string> rel_file_list = ListFilePathsRecursively(maps_dir);
+    std::vector<Containers::String> rel_file_list =
+        ListFilePathsRecursively(maps_dir);
 
     // Filter out '.bsp' files
-    for (std::string& rel_file_path : rel_file_list) {
-        std::string file_name = CorrPath::split(rel_file_path).second();
-        if (file_name.length() >= 4) { // Get file name's last 4 characters
-            std::string suffix = file_name.substr(file_name.length() - 4, 4);
-            if (suffix[0] != '.') continue;
-            if (suffix[1] != 'b' && suffix[1] != 'B') continue;
-            if (suffix[2] != 's' && suffix[2] != 'S') continue;
-            if (suffix[3] != 'p' && suffix[3] != 'P') continue;
+    for (Containers::String& rel_file_path : rel_file_list) {
+        Containers::StringView file_name = CorrPath::split(rel_file_path).second();
+        size_t len = file_name.size();
+        if (len >= 4) { // Check file name's last 4 characters
+            if (file_name[len-4] != '.') continue;
+            if (file_name[len-3] != 'b' && file_name[len-3] != 'B') continue;
+            if (file_name[len-2] != 's' && file_name[len-2] != 'S') continue;
+            if (file_name[len-1] != 'p' && file_name[len-1] != 'P') continue;
             s_map_files.emplace_back(std::move(rel_file_path));
         }
     }

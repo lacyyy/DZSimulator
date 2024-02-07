@@ -1,8 +1,6 @@
 #ifndef REN_BIGTEXTRENDERER_H_
 #define REN_BIGTEXTRENDERER_H_
 
-#include <memory>
-
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Magnum/Math/Color.h>
@@ -51,8 +49,7 @@ namespace ren {
         Magnum::Shaders::DistanceFieldVectorGL2D _shader{ Magnum::NoCreate };
 
         Corrade::Containers::Pointer<Magnum::Text::AbstractFont> _font;
-        // TODO use Corrade::Containers::Pointer instead of std::unique_ptr here ??
-        std::unique_ptr<Magnum::Text::DistanceFieldGlyphCache> _cache;
+        Magnum::Text::DistanceFieldGlyphCache _cache{ Magnum::NoCreate };
 
         Magnum::GL::Buffer _vertices{ Magnum::NoCreate };
         Magnum::GL::Buffer _indices{ Magnum::NoCreate };

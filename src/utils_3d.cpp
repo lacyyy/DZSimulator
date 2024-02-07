@@ -100,12 +100,12 @@ void utils_3d::AngleVectors(const Vector3& angles,
     auto   yaw_sincos = Math::sincos(Deg{ angles[1] });
     auto  roll_sincos = Math::sincos(Deg{ angles[2] });
 
-    float sy = yaw_sincos.first;
-    float cy = yaw_sincos.second;
-    float sr = roll_sincos.first;
-    float cr = roll_sincos.second;
-    float sp = pitch_sincos.first;
-    float cp = pitch_sincos.second;
+    float sy = yaw_sincos.first();
+    float cy = yaw_sincos.second();
+    float sr = roll_sincos.first();
+    float cr = roll_sincos.second();
+    float sp = pitch_sincos.first();
+    float cp = pitch_sincos.second();
 
     if (forward)
     {

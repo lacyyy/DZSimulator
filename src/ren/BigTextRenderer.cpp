@@ -48,9 +48,8 @@ void BigTextRenderer::InitWithOpenGLContext(
     // Distance field computation radius. This influences outline thickness!
     const UnsignedInt dist_field_radius = 16;
 
-    _cache = std::make_unique<Text::DistanceFieldGlyphCache>(
-        original_cache_tex_size, cache_tex_size, dist_field_radius
-    );
+    _cache = Text::DistanceFieldGlyphCache(original_cache_tex_size,
+                                           cache_tex_size, dist_field_radius);
 
     // Load a TrueTypeFont plugin and open the font
     _font = _font_plugin_mgr.loadAndInstantiate("TrueTypeFont");
@@ -67,11 +66,11 @@ void BigTextRenderer::InitWithOpenGLContext(
         //"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         //"0123456789 :-+,.!°%&/()=?`*'#~;_<>|"
     ;
-    _font->fillGlyphCache(*_cache, drawable_chars); 
+    _font->fillGlyphCache(_cache, drawable_chars);
 
     std::tie(_disclaimer_text_mesh, std::ignore) = Text::Renderer2D::render(
         *_font,
-        *_cache,
+        _cache,
         100.0f,
         DISCLAIMER_MSG,
         _vertices,
@@ -83,7 +82,7 @@ void BigTextRenderer::InitWithOpenGLContext(
     // @Optimization Can we move the cache into the renderer constructor?
     size_t number_text_glyph_cnt = std::strlen(NUMBER_TEXT_GLYPHS);
     _number_text.reset(
-        new Text::Renderer2D(*_font, *_cache, 50.0f, Text::Alignment::MiddleCenter));
+        new Text::Renderer2D(*_font, _cache, 50.0f, Text::Alignment::MiddleCenter));
     _number_text->reserve(number_text_glyph_cnt, GL::BufferUsage::DynamicDraw,
         GL::BufferUsage::StaticDraw);
     _transformation_projection_number_text =
@@ -128,7 +127,7 @@ void BigTextRenderer::DrawDisclaimer(float gui_scaling)
 
     const Color4 disclaimer_col = 0xff0000_rgbf;
     _shader
-        .bindVectorTexture(_cache->texture())
+        .bindVectorTexture(_cache.texture())
         .setTransformationProjectionMatrix(disclaimer_text_matrix)
         .setColor(disclaimer_col)
         .setOutlineColor(disclaimer_col)
@@ -160,7 +159,7 @@ void BigTextRenderer::DrawNumber(
     float smoothness = 0.15f / scaling; // Bigger text needs less smoothing
 
     _shader
-        .bindVectorTexture(_cache->texture())
+        .bindVectorTexture(_cache.texture())
         .setTransformationProjectionMatrix(_transformation_projection_number_text)
         .setColor(col)
         .setOutlineColor(col)
