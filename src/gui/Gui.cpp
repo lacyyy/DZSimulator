@@ -293,9 +293,8 @@ void Gui::Draw()
 void Gui::HelpMarker(const char* desc)
 {
     ImGui::TextDisabled("(?)");
-    if (ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered() && ImGui::BeginTooltip())
     {
-        ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
         ImGui::TextUnformatted(desc);
         ImGui::PopTextWrapPos();
@@ -397,7 +396,7 @@ void Gui::DrawLegalNoticesWindow()
         ImVec2(
             license_text_screen_fill_x * ImGui::GetMainViewport()->WorkSize.x,
             license_text_screen_fill_y * ImGui::GetMainViewport()->WorkSize.y),
-        true,
+        ImGuiChildFlags_Border,
         child_window_flags);
 
     ImGui::PushFont(_font_mono); // Select monospace font for legal text
