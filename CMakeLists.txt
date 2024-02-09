@@ -44,7 +44,7 @@ if(DZSIM_WEB_PORT) # Web build requirements
     if(NOT EXISTS ${CORRADE_RC_EXECUTABLE}) # If file at path does not exist
         message(FATAL_ERROR "Failed to find native `corrade-rc` executable.
             This is needed when compiling for the web. Simply build once using
-            the Windows Release configuration (win-x64-release-static), then try
+            the Windows Release configuration (win-x64-release), then try
             building the web version again.")
     endif()
 endif()

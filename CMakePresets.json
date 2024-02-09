@@ -1,5 +1,28 @@
 {
     "version": 2,
+    "buildPresets": [
+        {
+            "name": "win-x64-debug",
+            "configurePreset": "win-x64-debug",
+            "configuration": "Debug",
+            "displayName": " Windows x64 Debug",
+            "description": "Target Windows x64 in Debug mode"
+        },
+        {
+            "name": "win-x64-release",
+            "configurePreset": "win-x64-release",
+            "configuration": "Release",
+            "displayName": " Windows x64 Release",
+            "description": "Target Windows x64 in Release mode (static build) and disable application console window."
+        },
+        {
+            "name": "win-x64-release-w-profiling",
+            "configurePreset": "win-x64-release-w-profiling",
+            "configuration": "RelWithDebInfo",
+            "displayName": " Windows x64 Release +Profiling +Console +DebugInfo",
+            "description": "Target Windows x64 in Release mode (static build), enable console, debug info and profiling with Tracy. DO NOT PROFILE WITH A DEBUGGER ATTACHED, IT IMPACTS TIMINGS!"
+        }
+    ],
     "configurePresets": [
         {
             "name": "win-x64-debug",
@@ -27,10 +50,10 @@
             }
         },
         {
-            "name": "win-x64-release-static",
-            "displayName": " Windows x64 Release",
-            "description": "Target Windows x64 in Release mode, compile Magnum statically and disable application console window.",
+            "name": "win-x64-release",
             "inherits": "win-x64-debug",
+            "displayName": " Windows x64 Release",
+            "description": "Target Windows x64 in Release mode (static build) and disable application console window.",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "MAGNUM_BUILD_STATIC": {
@@ -52,10 +75,10 @@
             }
         },
         {
-            "name": "win-x64-release-static-w-profiling",
+            "name": "win-x64-release-w-profiling",
+            "inherits": "win-x64-release",
             "displayName": " Windows x64 Release +Profiling +Console +DebugInfo",
-            "description": "Target Windows x64 in Release mode, compile Magnum statically, enable console, debug info and profiling with Tracy. DO NOT PROFILE WITH A DEBUGGER ATTACHED, IT IMPACTS TIMINGS!",
-            "inherits": "win-x64-release-static",
+            "description": "Target Windows x64 in Release mode (static build), enable console, debug info and profiling with Tracy. DO NOT PROFILE WITH A DEBUGGER ATTACHED, IT IMPACTS TIMINGS!",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "DZSIM_DISABLE_CONSOLE_WINDOW": {
@@ -77,7 +100,7 @@
             "cacheVariables": {
                 "EMSCRIPTEN_PREFIX": "/YOUR/EMSCRIPTEN/INSTALLATION/emsdk/upstream/emscripten",
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/thirdparty/toolchains/generic/Emscripten-wasm.cmake",
-                "CORRADE_RC_EXECUTABLE": "${sourceDir}/out/build/win-x64-release-static/Release/bin/corrade-rc.exe",
+                "CORRADE_RC_EXECUTABLE": "${sourceDir}/out/build/win-x64-release/Release/bin/corrade-rc.exe",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "CMAKE_BUILD_TYPE": "Release",
                 "MAGNUM_TARGET_GLES2": {

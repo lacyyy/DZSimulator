@@ -103,7 +103,7 @@ NOTE: Build instructions of option 2 and 3 sometimes didn't work, perhaps instal
 1. In that command prompt, change directory to the DZSimulator repo folder (where `docs/`, `res/`, `src/` and `thirdparty/` reside)
 1. Run `code .` to open VSCode in that directory
 1. In VSCode, select a configure preset (e.g. "Windows x64 Debug" or "Windows x64 Release")
-1. In VSCode, build the default build preset and wait for compilation to finish
+1. In VSCode, select the build preset with the same name, build it and wait for compilation to finish
 1. In VSCode, select launch target "DZSimulator.exe" and launch it
 
 ### OPTION 3: **Building from the command line** ([CMake](https://cmake.org/) >= 3.20 is required)
@@ -117,21 +117,15 @@ NOTE: Build instructions of option 2 and 3 sometimes didn't work, perhaps instal
     ```
 1. Generate project files (Choose command with your desired preset):
     ```
-    cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-debug
-    cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-release-static
-    cmake -G "Visual Studio 17 2022" -A x64 --preset win-x64-release-static-w-profiling
+    cmake --preset=win-x64-debug
+    cmake --preset=win-x64-release
+    cmake --preset=win-x64-release-w-profiling
     ```
-1. Build (Choose command with your desired preset):
+1. Build (Choose command with the same preset as in the last step):
     ```
-    cmake --build out/build/win-x64-debug --parallel --config Debug
-    cmake --build out/build/win-x64-release-static --parallel --config Release
-    cmake --build out/build/win-x64-release-static-w-profiling --parallel --config RelWithDebInfo
-    ```
-1. Run the binary (Choose command with your desired preset):
-    ```
-    out\build\win-x64-debug\Debug\bin\DZSimulator.exe
-    out\build\win-x64-release-static\Release\bin\DZSimulator.exe
-    out\build\win-x64-release-static-w-profiling\RelWithDebInfo\bin\DZSimulator.exe
+    cmake --build --preset=win-x64-debug
+    cmake --build --preset=win-x64-release
+    cmake --build --preset=win-x64-release-w-profiling
     ```
 
 ## <ins>Appendix: Building for the web (Emscripten/WASM):</ins>
