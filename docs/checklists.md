@@ -6,6 +6,7 @@
 1. Make sure your working tree is clean, i.e. `git status` shows no untracked files or unstaged changes
     - You can use `git stash` to temporarily remove working directory changes that shouldn't be included in the next release
     - After publishing the next release, you can then restore the changes with `git stash pop`
+1. Ensure that DZSimulator uses the latest OpenSSL version
 1. Increase project version in top-level CMakeLists.txt
 1. Write changelogs for GitHub and ingame display
 1. In Visual Studio, right-click top-level CMakeLists.txt > Configure DZSimulatorProject
