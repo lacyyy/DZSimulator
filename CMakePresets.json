@@ -16,6 +16,13 @@
             "description": "Target Windows x64 in Release mode (static build) and disable application console window."
         },
         {
+            "name": "win-x64-release-minsize",
+            "configurePreset": "win-x64-release-minsize",
+            "configuration": "MinSizeRel",
+            "displayName": " Windows x64 Release MinSize",
+            "description": "Target Windows x64 in Release mode (static build), optimized for size and disable application console window."
+        },
+        {
             "name": "win-x64-release-w-profiling",
             "configurePreset": "win-x64-release-w-profiling",
             "configuration": "RelWithDebInfo",
@@ -36,7 +43,8 @@
             },
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/out/openssl/${presetName}/conan_toolchain.cmake"
             },
             "vendor": {
                 "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -72,6 +80,15 @@
                     "type": "BOOL",
                     "value": "ON"
                 }
+            }
+        },
+        {
+            "name": "win-x64-release-minsize",
+            "inherits": "win-x64-release",
+            "displayName": " Windows x64 Release MinSize",
+            "description": "Target Windows x64 in Release mode (static build), optimized for size and disable application console window.",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "MinSizeRel"
             }
         },
         {

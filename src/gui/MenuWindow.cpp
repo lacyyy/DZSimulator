@@ -445,18 +445,6 @@ void MenuWindow::Draw()
             ImGui::TreePop();
         }
 
-#ifndef DZSIM_WEB_PORT
-        if (ImGui::TreeNode("Acknowledgements"))
-        {
-            ImGui::Text("");
-            ImGui::Text("This product includes software developed by the "
-                "OpenSSL Project\n"
-                "for use in the OpenSSL Toolkit(http://www.openssl.org/)");
-
-            ImGui::TreePop();
-        }
-#endif
-
         ImGui::Text("");
 
         if (ImGui::Button("Show third party legal notices"))

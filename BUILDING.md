@@ -83,6 +83,22 @@ If for some reason, you need to build this repo and it has empty submodule folde
 
 NOTE: Build instructions of option 2 and 3 sometimes didn't work, perhaps installing Visual Studio with choosing the "Desktop development with C++" workload is always required...
 
+### PREREQUISITE: **Installing OpenSSL**
+
+No matter which of the options you choose later, you need to install OpenSSL first. This needs to be done only the first time and after that only when DZSimulator switches to newer OpenSSL versions. 
+
+1. Install [Conan](https://conan.io/downloads)
+1. Determine how OpenSSL is built by running `conan profile detect --force`
+    - (I'm unsure about this: It should probably be ensured that this detected profile is set to the MSVC compiler that's also used for DZSim compilation, targeting x86_64. To change a profile's settings, see [this](https://docs.conan.io/2/reference/config_files/settings.html#reference-config-files-settings-yml).)
+1. For every build type you want to build DZSimulator in, you need to install OpenSSL separately for that build type by running the respective command:
+
+    ```
+    conan install conanfile_ossl.py -b=missing --output-folder=out/openssl/win-x64-debug/ -s build_type=Debug
+    conan install conanfile_ossl.py -b=missing --output-folder=out/openssl/win-x64-release/ -s build_type=Release
+    conan install conanfile_ossl.py -b=missing --output-folder=out/openssl/win-x64-release-minsize/ -s build_type=MinSizeRel
+    conan install conanfile_ossl.py -b=missing --output-folder=out/openssl/win-x64-release-w-profiling/ -s build_type=RelWithDebInfo
+    ```
+
 ### OPTION 1 (RECOMMENDED): **Building with Visual Studio**
 
 - Visual Studio 2022 or newer is recommended, Visual Studio 2019 might work too with CMake folder projects
@@ -119,12 +135,14 @@ NOTE: Build instructions of option 2 and 3 sometimes didn't work, perhaps instal
     ```
     cmake --preset=win-x64-debug
     cmake --preset=win-x64-release
+    cmake --preset=win-x64-release-minsize
     cmake --preset=win-x64-release-w-profiling
     ```
 1. Build (Choose command with the same preset as in the last step):
     ```
     cmake --build --preset=win-x64-debug
     cmake --build --preset=win-x64-release
+    cmake --build --preset=win-x64-release-minsize
     cmake --build --preset=win-x64-release-w-profiling
     ```
 

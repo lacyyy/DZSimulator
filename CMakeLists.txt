@@ -21,31 +21,39 @@ set(DZSIM_JSON_DIR               thirdparty/json)
 set(DZSIM_MAGNUM_DIR             thirdparty/magnum)
 set(DZSIM_MAGNUM_PLUGINS_DIR     thirdparty/magnum-plugins)
 set(DZSIM_MAGNUM_INTEGRATION_DIR thirdparty/magnum-integration)
-set(DZSIM_OPENSSL_DIR            thirdparty/openssl-1.1.1s-bin/win-x64-static)
 set(DZSIM_PFD_DIR                thirdparty/portable-file-dialogs)
 set(DZSIM_SDL_DIR                thirdparty/SDL)
 set(DZSIM_TRACY_DIR              thirdparty/tracy)
 
+# Some of these error messages must occur before the project() command to aid
+# the user with a helpful message before other unhelpful error messages pop up.
 if(DZSIM_WEB_PORT) # Web build requirements
     # Require Emscripten to be installed and pointed to in CMakeUserPresets.json
     if(NOT EXISTS ${EMSCRIPTEN_PREFIX}) # If directory at path does not exist
-        # This error message must occur before the project() command to aid the
-        # user with a helpful message before other unhelpful error messages pop up.
-        message(FATAL_ERROR "Failed to find Emscripten installation:
-            Did you install it, with the correct version and point to its
-            location in CMakeUserPresets.json through the 'EMSCRIPTEN_PREFIX'
-            variable of the Emscripten preset?
-            See BUILDING.md for more details about building for the web.")
+        message(FATAL_ERROR "Failed to find Emscripten installation.\n"
+            "Did you install it, with the correct version and point to its "
+            "location in CMakeUserPresets.json through the 'EMSCRIPTEN_PREFIX' "
+            "variable of the Emscripten preset?\n"
+            "See BUILDING.md for more details about building for the web.")
     else()
         set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${EMSCRIPTEN_PREFIX}/system")
     endif()
 
     # Require 'corrade-rc' executable to exist (from a previous native build)
     if(NOT EXISTS ${CORRADE_RC_EXECUTABLE}) # If file at path does not exist
-        message(FATAL_ERROR "Failed to find native `corrade-rc` executable.
-            This is needed when compiling for the web. Simply build once using
-            the Windows Release configuration (win-x64-release), then try
-            building the web version again.")
+        message(FATAL_ERROR "Failed to find native `corrade-rc` executable.\n"
+            "This is needed when compiling for the web. Simply build once using "
+            "the Windows Release configuration (win-x64-release), then try "
+            "building the web version again.")
+    endif()
+else() # Native build requirements
+    # Require OpenSSL to be installed and the toolchain file pointing to its
+    # installation location to exist.
+    if(NOT EXISTS ${CMAKE_TOOLCHAIN_FILE}) # If file at path does not exist
+        message(FATAL_ERROR "Failed to find conan_toolchain.cmake file that "
+            "points to OpenSSL's installation. Did you forget to install "
+            "OpenSSL for this specific build type, using Conan? See "
+            "BUILDING.md for more details about building DZSimulator.")
     endif()
 endif()
 
@@ -201,7 +209,6 @@ else()
 
     # Find OpenSSL
     set(OPENSSL_USE_STATIC_LIBS TRUE)
-    set(OPENSSL_ROOT_DIR "${PROJECT_SOURCE_DIR}/${DZSIM_OPENSSL_DIR}")
     find_package(OpenSSL REQUIRED)
 endif()
 
@@ -243,11 +250,7 @@ if(DZSIM_WEB_PORT)
 else()
     target_link_libraries(DZSimulator PRIVATE
         Magnum::Sdl2Application
-        OpenSSL::SSL
-        OpenSSL::Crypto
-        ## OpenSSL::applink might be needed to compile OpenSSL into projects
-        ## under MSVC (see its CMake documentation for details)
-        #OpenSSL::applink 
+        openssl::openssl
     )
 
     # The cpp-httplib library requires CPPHTTPLIB_OPENSSL_SUPPORT to be defined
