@@ -47,6 +47,7 @@
 
 ## KNOWN ISSUES, PRIORITIZED:
 
+- [ ] Walking parallel to static props while touching them can get the player stuck
 - [ ] `maps/workshop/2362387875/aim_rogue_inferno.bsp` fails to load
 - [ ] In the "Only up" CSGO map, there's a solid wooden plank (a func_brush) right at the beginning. Why does DZSimulator not show it? Whatever solid object is there, make DZSim show it!
 - [ ] In "CSGO Infinity" map (1v1_galaxy.bsp), the floor is missing

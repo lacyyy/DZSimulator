@@ -42,7 +42,19 @@ void CollidableWorld::DoSweptTrace(SweptTrace* trace)
         // source-sdk-2013's movement code.
         // TODO Test if movement is processed correctly with this abort. If it
         //      is, remove this assert.
-        assert(false);
+        //assert(false);
+
+        // 2024-02-13 Note: Ignoring zero-distance swept traces doesn't seem
+        // to cause any issues in player movement (Note: Only walking and
+        // jumping is implemented so far, no crouching).
+        // But: Some source-sdk-2013 code (e.g. CGameMovement::CanUnDuckJump()
+        // and CGameMovement::TryPlayerMove()) makes it obvious that zero-
+        // distance swept traces are used in the Source engine to test whether
+        // the player hull intersects with any map geometry. Therefor, we
+        // should do these tests here for the "uswept box" case and set
+        // startsolid to true when intersecting. Can this be achieved by simply
+        // calling the DoSweptTrace() routine in these "uswept box" cases?
+        // Commented out the assert because it will be replaced.
 
         coll::Debugger::DebugFinish_Trace(trace->results);
         return;
