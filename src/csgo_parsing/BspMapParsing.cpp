@@ -133,8 +133,8 @@ bool ParseEntity_func_brush(std::multimap<std::string, std::string>& key_values,
     }
 
     kv = key_values.find("Solidity");
-    if (kv == key_values.end()) return false; // func_brush must have 'Solidity' KeyValue
-    fb.solidity = utils::ParseIntFromString(kv->second, 1); // default value: 1 = Never Solid
+    if (kv != key_values.end()) fb.solidity = utils::ParseIntFromString(kv->second, 1); // default value: 1 = Never Solid
+    else                        fb.solidity = 0; // Solidity toggled with visibility
 
     kv = key_values.find("StartDisabled");
     if (kv != key_values.end()) fb.start_disabled = utils::ParseIntFromString(kv->second, 0) == 1;
