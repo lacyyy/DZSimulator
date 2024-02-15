@@ -35,9 +35,9 @@ namespace csgo_parsing::utils {
         };
     };
 
-    // Convert A-Z characters to lower case
+    // Convert A-Z characters to lower case and remove duplicate slashes
     // Note: CSGO looks up game files irrespective of upper/lower case
-    std::string CvtGameFilePathToLowerCase(const std::string& p);
+    std::string NormalizeGameFilePath(const std::string& p);
 
     // Does not return empty substrings
     std::vector<std::string> SplitString(const std::string& s, char delimiter = ' ');

@@ -41,7 +41,6 @@
     - vertical separators for discrete sections
 - [ ] Improve glidability surface coloring algorithm
 - [ ] Refactor main.cpp into multiple smaller files! (Optimize header sizes too?)
-- [ ] In dz_csgo_world_v2: Check if chainlink fence MDL file paths are invalid. They start with "models//csgoworld/<...>". Double "/" are probably tolerated by CSGO but not DZSim. Normalization needed?
 - [ ] Add hotkeys for frequent UI actions (e.g. toggling overlay mode, visualization mode, connecting to csgo, show displacement edges)
 - [ ] Automate Git submodule installation (With a script? With CMake? With [CPM](https://github.com/cpm-cmake/CPM.cmake)? With [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)?)
 

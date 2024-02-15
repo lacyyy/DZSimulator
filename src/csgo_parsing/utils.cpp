@@ -20,13 +20,17 @@ utils::RetCode::operator bool() const {
 }
 
 
-std::string utils::CvtGameFilePathToLowerCase(const std::string& str)
+std::string utils::NormalizeGameFilePath(const std::string& str)
 {
     std::string out;
+    char last_c = '\0';
     for (char c : str) {
+        if (c == '/' && last_c == '/')
+            continue; // Remove duplicate forward slashes
         if (c >= 'A' && c <= 'Z')
             c += 'a' - 'A';
         out.push_back(c);
+        last_c = c;
     }
     return out;
 }

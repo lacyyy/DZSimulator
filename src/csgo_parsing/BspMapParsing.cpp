@@ -1016,7 +1016,7 @@ utils::RetCode ParseLump_GameLump(AssetFileReader& fr, BspMap& in_out)
 
         // Convert to lower case because CSGO's file lookup is case-insensitive
         std::string mdl_path_lower_case =
-            utils::CvtGameFilePathToLowerCase(dict_entry);
+            utils::NormalizeGameFilePath(dict_entry);
         in_out.static_prop_model_dict.push_back(std::move(mdl_path_lower_case));
     }
 
@@ -1168,7 +1168,7 @@ utils::RetCode ParseLump_Pakfile(AssetFileReader& fr, BspMap& in_out)
 
         BspMap::PakfileEntry entry;
         // Convert to lower case because CSGO's file lookup is case-insensitive
-        entry.file_name = utils::CvtGameFilePathToLowerCase(fname);
+        entry.file_name = utils::NormalizeGameFilePath(fname);
         entry.file_offset = fr.GetPos() + extra_field_len;
         entry.file_len = size_uncompressed;
         entry.crc32 = crc32;
