@@ -48,9 +48,6 @@
 ## KNOWN ISSUES, PRIORITIZED:
 
 - [ ] Walking parallel to static props while touching them can get the player stuck
-- [ ] In the "Only up" CSGO map, there's a solid wooden plank (a func_brush) right at the beginning. Why does DZSimulator not show it? Whatever solid object is there, make DZSim show it!
-- [ ] In "CSGO Infinity" map (1v1_galaxy.bsp), the floor is missing
-- [ ] In "bump_neon" map, the floor is missing
 - [ ] Joining the `GitHubChecker` thread can block for 10-20 seconds, it then prints: `[GitHubChecker] ERROR: GET /gists/78dc2c304cfc9d0db7c1c6e9e2859fab failed with error code: 2`
     - Might be caused by GitHub API outage
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
@@ -61,6 +58,8 @@
 - [ ] dz_arctic has terrible FPS, why?
 - [ ] Investigate "DISP_VPHYSICS found bad displacement collision face" error that makes displacements non-solid, what are the exact criteria for that?
     - Make DZSim visualize those "error displacements" in a special way?
+- [ ] Low priority: In "CSGO Infinity" map (1v1_galaxy.bsp), the floor is missing (This is a func_breakable not being parsed)
+- [ ] Low priority: In "bump_neon" map, the floor is missing (These are multiple func_reflective_glass not being parsed)
 - [ ] Low priority: Handle props with AABB collision correctly (get AABB from MDL? HullMins / Maxs?). On DZ maps, currently only present with curtains on vineyard
 
 ## FEATURE IDEAS, PRIORITIZED PER CATEGORY:

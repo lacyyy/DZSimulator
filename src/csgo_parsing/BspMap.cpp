@@ -632,8 +632,22 @@ bool BspMap::GetBrushAABB(size_t brush_idx,
     Vector3 mins = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
     Vector3 maxs = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
 
+    // NOTE: Rarely in CSGO maps, brushes have invalid brushsides/planes, i.e.
+    //       they result in an AABB where (maxs[i] <= mins[i]) for some i.
+    //       For the most part, we don't care about these rare cases, except for
+    //       one func_brush in CSGO's "Only Up!" map by leander.
+    //       (https://steamcommunity.com/sharedfiles/filedetails/?id=3012684086)
+    bool are_we_in_csgo_only_up_map =
+        map_version == 2915 && sky_name.compare("vertigoblue_hdr") == 0;
+
     const Brush& brush = brushes[brush_idx];
     for (size_t i = 0; i < brush.num_sides; i++) {
+        // HACKHACK A specific brush in the CSGO Only Up map (by leander)
+        //          has 2 invalid planes that cause issues, skip these.
+        if (are_we_in_csgo_only_up_map && brush_idx == 2537)
+            if (i == 26 || i == 30)
+                continue;
+
         const Plane& plane = planes[brushsides[brush.first_side + i].plane_num];
         for (int axis = 0; axis < 3; axis++) {
             if (plane.normal[axis] == -1.0f && -plane.dist > mins[axis]) mins[axis] = -plane.dist;

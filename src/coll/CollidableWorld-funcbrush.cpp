@@ -72,6 +72,14 @@ void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
     if (modelIdx <= 0 || modelIdx >= (int64_t)bsp_map->models.size())
         return; // Invalid model index, abort
 
+    // NOTE: Rarely in CSGO maps, brushes have invalid brushsides/planes, i.e.
+    //       they result in an AABB where (maxs[i] <= mins[i]) for some i.
+    //       For the most part, we don't care about these rare cases, except for
+    //       one func_brush in CSGO's "Only Up!" map by leander.
+    //       (https://steamcommunity.com/sharedfiles/filedetails/?id=3012684086)
+    bool are_we_in_csgo_only_up_map =
+        bsp_map->map_version == 2915 && bsp_map->sky_name.compare("vertigoblue_hdr") == 0;
+
     bool hit = false;
     for (size_t brush_idx : bsp_map->GetModelBrushIndices(modelIdx)) {
         const Brush& brush = bsp_map->brushes[brush_idx];
@@ -101,6 +109,12 @@ void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
 
             if (trace->info.isray && side.bevel)
                 continue;
+
+            // HACKHACK A specific brush in the CSGO Only Up map (by leander)
+            //          has 2 invalid planes that cause issues, skip these.
+            if (are_we_in_csgo_only_up_map && brush_idx == 2537)
+                if (i == 26 || i == 30)
+                    continue;
 
             Plane plane = bsp_map->planes[side.plane_num];
             plane.normal = rot_transformation.transformVector(plane.normal);
