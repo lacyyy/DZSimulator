@@ -282,8 +282,8 @@ void MenuWindow::Draw()
             ImGui::Text("Further color settings:");
             ImGui::ColorEdit3("Solid Displacement Color",
                 (float*)&cols.IN_col_solid_displacements, picker_flags);
-            ImGui::ColorEdit3("Solid Static Prop Color",
-                (float*)&cols.IN_col_solid_sprops, picker_flags);
+            ImGui::ColorEdit3("Solid Prop Color",
+                (float*)&cols.IN_col_solid_xprops, picker_flags);
             ImGui::ColorEdit3("Other Solid Brush Color",
                 (float*)&cols.IN_col_solid_other_brushes, picker_flags);
             ImGui::ColorEdit4("Player Clip Color",

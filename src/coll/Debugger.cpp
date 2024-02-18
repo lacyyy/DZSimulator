@@ -79,12 +79,17 @@ struct Debugger::TraceHistoryEntry
             uint32_t sprop_idx; // idx into BspMap.static_props
         };
 
+        struct TypeSpecificData_DynamicProp {
+            uint32_t dprop_idx; // idx into BspMap.relevant_dynamic_props
+        };
+
         // Data that's specific to the leaf's type
         std::variant<
             TypeSpecificData_Brush,        // Used type if bvh_leaf_type == Brush
             TypeSpecificData_Displacement, // Used type if bvh_leaf_type == Displacement
             TypeSpecificData_FuncBrush,    // Used type if bvh_leaf_type == FuncBrush
-            TypeSpecificData_StaticProp    // Used type if bvh_leaf_type == StaticProp
+            TypeSpecificData_StaticProp,   // Used type if bvh_leaf_type == StaticProp
+            TypeSpecificData_DynamicProp   // Used type if bvh_leaf_type == DynamicProp
         > data;
     };
     std::vector<BroadPhaseLeafHit> broad_phase_leaf_hits; // In chronological order
@@ -182,7 +187,8 @@ void Debugger::DebugStart_BroadPhaseLeafHit(const BVH::Leaf& leaf, int32_t bp_le
         TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_Brush,
         TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_Displacement,
         TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_FuncBrush,
-        TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_StaticProp
+        TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_StaticProp,
+        TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_DynamicProp
     > data; // Data that's specific to the leaf's type
 
     switch (leaf.type) {
@@ -199,6 +205,11 @@ void Debugger::DebugStart_BroadPhaseLeafHit(const BVH::Leaf& leaf, int32_t bp_le
         case BVH::Leaf::Type::StaticProp:
             data = TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_StaticProp{
                 .sprop_idx = leaf.sprop_idx
+            };
+            break;
+        case BVH::Leaf::Type::DynamicProp:
+            data = TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_DynamicProp{
+                .dprop_idx = leaf.dprop_idx
             };
             break;
         case BVH::Leaf::Type::FuncBrush:
@@ -649,6 +660,10 @@ void Debugger::DrawImGuiElements(gui::GuiState& gui_state)
         case BVH::Leaf::StaticProp:
             label += "StaticProp #";
             label += std::to_string(std::get<BroadPhaseLeafHit::TypeSpecificData_StaticProp>(bp_leaf_hit.data).sprop_idx);
+            break;
+        case BVH::Leaf::DynamicProp:
+            label += "DynamicProp #";
+            label += std::to_string(std::get<BroadPhaseLeafHit::TypeSpecificData_DynamicProp>(bp_leaf_hit.data).dprop_idx);
             break;
         }
 

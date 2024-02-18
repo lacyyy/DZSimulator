@@ -203,6 +203,71 @@ bool ParseEntity_trigger_push(std::multimap<std::string, std::string>& key_value
     return true;
 }
 
+bool ParseEntity_prop_dynamic(std::multimap<std::string, std::string>& key_values, BspMap& in_out)
+{
+    // NOTE: We don't collect every prop_dynamic here. Only a few are selected
+    //       based on whether they're relevant (worth visualizing).
+
+    BspMap::Ent_prop_dynamic dp;
+    std::multimap<std::string, std::string>::iterator kv;
+
+    kv = key_values.find("solid");
+    if (kv == key_values.end()) return false; // 'solid' is required
+    int64_t solid = utils::ParseIntFromString(kv->second, 0);
+    if (solid != 6) { // Skip this prop_dynamic if it doesn't have SOLID_VPHYSICS
+        // We skip all non-vphysics dynamic props. They might have these
+        // solid values:
+        // 0 (SOLID_NONE), not solid
+        // 2 (SOLID_BBOX), AABB is solid. Rarely used in maps -> ignore
+        // 4 (SOLID_OBB_YAW), oriented bbox is solid. Rarely used in maps -> ignore
+        return true;
+    }
+
+    kv = key_values.find("spawnflags");
+    int64_t spawnflags;
+    if (kv == key_values.end()) spawnflags = 0;
+    else                        spawnflags = utils::ParseIntFromString(kv->second, 0);
+    // Skip this prop_dynamic if it has the 'Start with collision disabled' flag
+    if (spawnflags & 256) return true;
+
+    if (key_values.find("parentname") != key_values.end()) {
+        // NOTE: Sometimes, a prop_dynamic has its 'parentname' property set.
+        //       This is usually done for non-solid or moving objects.
+        //       Skip them because we only care about solid and static objects.
+        return true;
+    }
+
+    kv = key_values.find("model");
+    if (kv == key_values.end()) return true; // No model, skip this prop_dynamic
+    dp.model = utils::NormalizeGameFilePath(kv->second);
+
+    kv = key_values.find("origin");
+    if (kv == key_values.end()) return false; // 'origin' is required
+    std::vector<float> origin_vals = utils::ParseFloatsFromString(kv->second);
+    if (origin_vals.size() < 3) return false;
+    dp.origin = { origin_vals[0], origin_vals[1], origin_vals[2] };
+
+    kv = key_values.find("angles");
+    if (kv != key_values.end()) {
+        std::vector<float> angle_vals = utils::ParseFloatsFromString(kv->second);
+        if (angle_vals.size() < 3) return false;
+        dp.angles = { angle_vals[0], angle_vals[1], angle_vals[2] };
+    }
+    else {
+        dp.angles = { 0.0f, 0.0f, 0.0f };
+    }
+
+    // NOTE: We don't check the 'modelscale' property because it only affects
+    //       a prop_dynamic's visible model, not its collisions!
+    // NOTE: We don't check the 'StartDisabled' property because it only affects
+    //       a prop_dynamic's visible model, not its collisions!
+    // NOTE: A prop_dynamic does not appear in CSGO if its model doesn't have
+    //       'dynamic' support. We don't check this because we assume that map
+    //       creators have set correct models.
+
+    in_out.relevant_dynamic_props.push_back(std::move(dp));
+    return true;
+}
 
 bool ParseEntity(std::multimap<std::string, std::string>& key_values, BspMap& in_out)
 {
@@ -216,7 +281,9 @@ bool ParseEntity(std::multimap<std::string, std::string>& key_values, BspMap& in
         || (cn == "info_player_terrorist"        && !ParseEntity_info_player_terrorist       (key_values, in_out))
         || (cn == "info_player_counterterrorist" && !ParseEntity_info_player_counterterrorist(key_values, in_out))
         || (cn == "func_brush"                   && !ParseEntity_func_brush                  (key_values, in_out))
-        || (cn == "trigger_push"                 && !ParseEntity_trigger_push                (key_values, in_out)))
+        || (cn == "trigger_push"                 && !ParseEntity_trigger_push                (key_values, in_out))
+        || (cn == "prop_dynamic"                 && !ParseEntity_prop_dynamic                (key_values, in_out))
+        || (cn == "prop_dynamic_override"        && !ParseEntity_prop_dynamic                (key_values, in_out)))
         return false;
 
     return true;

@@ -22,7 +22,7 @@
 - Reduce triangle count: Combine triangles/quads that are connected and have the same normals, if possible
 - Move trajectory calculations from the vertex shader to the fragment shader?
 - Some form of occlusion culling?
-    - Only worth it for big complex static props?
+    - Only worth it for big complex props?
     - https://github.com/nvpro-samples/gl_occlusion_culling
 - World-Player collision detection
     - Measure impact of __forceinline in displacement collision code

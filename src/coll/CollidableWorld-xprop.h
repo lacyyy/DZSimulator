@@ -1,5 +1,5 @@
-#ifndef COLL_COLLIDABLEWORLD_STATICPROP_H_
-#define COLL_COLLIDABLEWORLD_STATICPROP_H_
+#ifndef COLL_COLLIDABLEWORLD_XPROP_H_
+#define COLL_COLLIDABLEWORLD_XPROP_H_
 
 #include <vector>
 
@@ -13,6 +13,10 @@
 
 namespace coll {
 
+// Terminology: 'XProp' refers to an abstraction of static and dynamic props.
+//              (prop_static aka sprop)
+//              (prop_dynamic/prop_dynamic_override aka dprop)
+
 // A collision model consists of a list of sections. A section is a list of
 // triangles that describe a convex shape.
 struct CollisionModel {
@@ -23,8 +27,8 @@ struct CollisionModel {
     // and section_aabbs.
 
     // Triangle mesh of each (convex) section.
-    // 2024-02-01:
-    //   Properties of these TriMesh objects parsed from CSGO's sprop PHYs:
+    // 2024-02-18:
+    //   Properties of these TriMesh objects parsed from CSGO's prop PHYs:
     //     - 'edges' array holds unique edges (GUARANTEED)
     //     - 'tris' array likely holds unique tris (not guaranteed)
     //     - 'vertices' array likely holds unique verts (not guaranteed)
@@ -37,30 +41,31 @@ struct CollisionModel {
     std::vector<std::vector<csgo_parsing::BspMap::Plane>> section_planes;
 
     // AABB of each (convex) section. Note that these are different from AABBs
-    // of sprop sections, since sprop sections have been scaled, rotated and
+    // of xprop sections, since xprop sections have been scaled, rotated and
     // translated.
     struct AABB { Magnum::Vector3 mins, maxs; };
     std::vector<AABB> section_aabbs;
 };
 
 
-// Lookup table used by SPropSectionBevelPlaneGenerator
-class SPropSectionBevelPlaneLut {
+// Lookup table used by XPropSectionBevelPlaneGenerator
+class XPropSectionBevelPlaneLut {
 public:
     // Creates LUT, expensive.
-    SPropSectionBevelPlaneLut(
-        const Magnum::Matrix3&    sprop_rotationscaling,
-        const Magnum::Quaternion& sprop_inv_rotation, // Must be normalized!
-        float                     sprop_inv_scale,
-        const utils_3d::TriMesh& tri_mesh_of_sprop_section,
-        const std::vector<csgo_parsing::BspMap::Plane>& planes_of_sprop_section);
+    XPropSectionBevelPlaneLut(
+        const Magnum::Matrix3&    xprop_rotationscaling,
+        const Magnum::Quaternion& xprop_inv_rotation, // Must be normalized!
+        float                     xprop_inv_scale,
+        const utils_3d::TriMesh& tri_mesh_of_xprop_section,
+        const std::vector<csgo_parsing::BspMap::Plane>& planes_of_xprop_section);
 
     size_t GetMemorySize() const;
 
 private:
     // Essentially, this LUT represents the information of whether a 'bevel
     // plane candidate' (identified by its index OR generation parameters) is
-    // valid or not (i.e. needed for hull traces against this static prop section).
+    // valid or not (i.e. needed for hull traces against this static/dynamic
+    // prop section).
 
     struct CandidateGenParams { // How this bevel plane candidate is generated
         size_t unique_edge_idx; // What edge this bevel plane is generated on
@@ -104,29 +109,29 @@ private:
     using RecIdxType = uint8_t; // 'Recursive indexing' int type
     std::vector<RecIdxType> valid_candidate_index_steps_recidx; // <- LUT representation
 
-    friend class SPropSectionBevelPlaneGenerator;
+    friend class XPropSectionBevelPlaneGenerator;
 };
 
-// Precomputed data per static prop to speed up collision calculations
+// Precomputed data per static/dynamic prop to speed up collision calculations
 // Note: Up to ~10000 static props in a CSGO map have been encountered.
 // Note: Up to 160000 total static prop sections in a CSGO map have been
 //       encountered.
-struct CollisionCache_StaticProp {
+struct CollisionCache_XProp {
     // Transformation data
-    Magnum::Quaternion inv_rotation; // Normalized. Reverses sprop rotation
+    Magnum::Quaternion inv_rotation; // Normalized. Reverses xprop rotation
     float              inv_scale;    // (1 / scale)
 
-    // Exact, non-bloated AABB of each section of this static prop.
+    // Exact, non-bloated AABB of each section of this static/dynamic prop.
     // Note that these are different from a CollisionModel's section AABBs!
     // CollisionModel's section AABBs describe the bounds of the unscaled,
     // unrotated and untranslated collision model sections.
-    // The CollisionCache_StaticProp's section AABBs describe the bounds of the
-    // scaled, rotated and translated static prop sections in the world.
+    // The CollisionCache_XProp's section AABBs describe the bounds of the
+    // scaled, rotated and translated static/dynamic prop sections in the world.
     // @Optimization Alternative section AABB representation 1: Store inv_rotated
-    //               unit_vec_* vectors (See sprop trace code) of sprop.
+    //               unit_vec_* vectors (See xprop trace code) of xprop.
     //               Use those as section AABB plane normals and then store
     //               plane dists (6 floats) for each section. I think switching
-    //               to this makes some sprop trace code faster and some slower.
+    //               to this makes some xprop trace code faster and some slower.
     // @Optimization Alternative section AABB representation 2: To save memory,
     //               store section AABB as 6 vertex indices (uint16) pointing
     //               into the section's triangle mesh. They mark the vertices
@@ -135,33 +140,39 @@ struct CollisionCache_StaticProp {
     struct AABB { Magnum::Vector3 mins, maxs; };
     std::vector<AABB> section_aabbs;
 
-    // Bevel plane LUT of each section of this static prop
+    // Bevel plane LUT of each section of this static/dynamic prop
     // @Optimization Memory: There are possibly a number of duplicate LUTs in here
-    std::vector<SPropSectionBevelPlaneLut> section_bevel_luts;
+    std::vector<XPropSectionBevelPlaneLut> section_bevel_luts;
 };
 
 // Returns an empty Optional if collision cache creation fails.
-Corrade::Containers::Optional<CollisionCache_StaticProp>
+Corrade::Containers::Optional<CollisionCache_XProp>
     Create_CollisionCache_StaticProp(
         const csgo_parsing::BspMap::StaticProp& sprop,
         const CollisionModel& cmodel);
 
+// Returns an empty Optional if collision cache creation fails.
+Corrade::Containers::Optional<CollisionCache_XProp>
+    Create_CollisionCache_DynamicProp(
+        const csgo_parsing::BspMap::Ent_prop_dynamic& dprop,
+        const CollisionModel& cmodel);
+
 
 // Responsible for efficiently generating all bevel planes of a specific section
-// of a specific static prop. Bevel planes are calculated on demand.
-class SPropSectionBevelPlaneGenerator {
+// of a specific static/dynamic prop. Bevel planes are calculated on demand.
+class XPropSectionBevelPlaneGenerator {
 public:
     // Inits this class to generate all bevel planes of a specific section of a
-    // specific static prop.
+    // specific static/dynamic prop.
     // CAUTION: The passed collision model must be the one that was used to
     //          create the passed collision cache!
     // CAUTION: The passed collision model and collision cache must persist in
     //          memory without modifications as long as you use this
-    //          SPropSectionBevelPlaneGenerator instance!
-    SPropSectionBevelPlaneGenerator(
-        const CollisionModel&            sprop_coll_model,
-        const CollisionCache_StaticProp& sprop_coll_cache,
-        size_t idx_of_sprop_section);
+    //          XPropSectionBevelPlaneGenerator instance!
+    XPropSectionBevelPlaneGenerator(
+        const CollisionModel&       xprop_coll_model,
+        const CollisionCache_XProp& xprop_coll_cache,
+        size_t idx_of_xprop_section);
 
     // If successful, sets plane to next bevel plane and returns true.
     // If no more bevel planes can be generated, returns false.
@@ -173,12 +184,12 @@ private:
     size_t cur_lut_pos;
 
     // Stored info for generation
-    const Magnum::Quaternion sprop_inv_rotation; // Normalized
-    const utils_3d::TriMesh& tri_mesh_of_sprop_section;
-    const std::vector<SPropSectionBevelPlaneLut::RecIdxType>&
+    const Magnum::Quaternion xprop_inv_rotation; // Normalized
+    const utils_3d::TriMesh& tri_mesh_of_xprop_section;
+    const std::vector<XPropSectionBevelPlaneLut::RecIdxType>&
                                              valid_candidate_index_steps_recidx;
 };
 
 } // namespace coll
 
-#endif // COLL_COLLIDABLEWORLD_STATICPROP_H_
+#endif // COLL_COLLIDABLEWORLD_XPROP_H_

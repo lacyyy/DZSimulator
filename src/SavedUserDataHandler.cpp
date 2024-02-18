@@ -100,7 +100,7 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
     TryParseColor4f(g.vis.IN_col_grenade_clip,        GetNestedValue(s, "WorldGeometryColors", "grenade-clip"));
     TryParseColor4f(g.vis.IN_col_trigger_push,        GetNestedValue(s, "WorldGeometryColors", "push-trigger"));
     TryParseColor4f(g.vis.IN_col_solid_displacements, GetNestedValue(s, "WorldGeometryColors", "solid-displacement"));
-    TryParseColor4f(g.vis.IN_col_solid_sprops,        GetNestedValue(s, "WorldGeometryColors", "solid-static-prop"));
+    TryParseColor4f(g.vis.IN_col_solid_xprops,        GetNestedValue(s, "WorldGeometryColors", "solid-static-prop")); // Repurposed to xprops
     TryParseColor4f(g.vis.IN_col_solid_other_brushes, GetNestedValue(s, "WorldGeometryColors", "other-solid-brush"));
     TryParseColor4f(g.vis.IN_col_bump_mine,           GetNestedValue(s, "WorldGeometryColors", "bump-mine"));
 
@@ -319,7 +319,7 @@ static json ConvertUserSettingsToUserDataJson(const gui::GuiState& gui_state) {
     settings["WorldGeometryColors"]["grenade-clip"      ] = Color4fToStr(gui_state.vis.IN_col_grenade_clip);
     settings["WorldGeometryColors"]["push-trigger"      ] = Color4fToStr(gui_state.vis.IN_col_trigger_push);
     settings["WorldGeometryColors"]["solid-displacement"] = Color4fToStr(gui_state.vis.IN_col_solid_displacements);
-    settings["WorldGeometryColors"]["solid-static-prop" ] = Color4fToStr(gui_state.vis.IN_col_solid_sprops);
+    settings["WorldGeometryColors"]["solid-static-prop" ] = Color4fToStr(gui_state.vis.IN_col_solid_xprops); // Repurposed to xprops
     settings["WorldGeometryColors"]["other-solid-brush" ] = Color4fToStr(gui_state.vis.IN_col_solid_other_brushes);
     settings["WorldGeometryColors"]["bump-mine"         ] = Color4fToStr(gui_state.vis.IN_col_bump_mine);
 

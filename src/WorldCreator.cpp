@@ -261,41 +261,36 @@ WorldCreator::InitFromBspMap(
             return bsp_map->packed_files[packed_file_idx].file_name < file_name;
         };
 
-    // ---- Load collision models of solid prop_static entities
+    // ---- Load collision models of solid prop_static and prop_dynamic entities
 
-    // key:   ".mdl" file path referenced by at least one solid static prop
+    // Get MDL paths referenced by at least one solid prop (static or dynamic)
+    std::set<std::string> solid_xprop_mdl_paths;
+    for (const BspMap::StaticProp& sprop : bsp_map->static_props)
+        if (sprop.IsSolidWithVPhysics())
+            solid_xprop_mdl_paths.insert(bsp_map->static_prop_model_dict[sprop.model_idx]);
+    for (const BspMap::Ent_prop_dynamic& dprop : bsp_map->relevant_dynamic_props)
+        solid_xprop_mdl_paths.insert(dprop.model);
+
+    // key:   ".mdl" file path referenced by at least one solid prop (static or dynamic)
     // value: Corresponding collision model mesh
-    std::map<std::string, GL::Mesh> sprop_coll_meshes;
+    std::map<std::string, GL::Mesh> xprop_coll_meshes;
 
-    // Collision models used in at least one solid static prop.
+    // Collision models used in at least one solid prop (static or dynamic).
     // Keys are MDL paths, values are collision models.
-    std::map<std::string, CollisionModel> sprop_coll_models;
-
-    // MDL paths that we already attempted to load the collision model of
-    std::set<std::string> checked_mdl_paths;
+    std::map<std::string, CollisionModel> xprop_coll_models;
 
     // When loading regular (non-embedded) maps, a requirement to consider a
-    // static prop as solid is the existence of the MDL file it references. This
-    // is done to faithfully represent how CSGO would load a map.
-    // When loading embedded maps, we don't require an MDL file for solid static
-    // props because these maps are custom-made to only be loaded by DZSimulator
-    // and MDL files themselves are not read and they would unnecessarily
-    // increase embedded file size.
+    // prop as solid is the existence of the MDL file it references.
+    // This is done to faithfully represent how CSGO would load a map.
+    // When loading embedded maps, we don't require an MDL file for solid props
+    // because these maps are custom-made to only be loaded by DZSimulator and
+    // MDL files themselves are not read and they would unnecessarily increase
+    // embedded file size.
     bool require_existing_mdl_file = !bsp_map->is_embedded_map;
 
-    for (const BspMap::StaticProp& sprop : bsp_map->static_props) {
-        // Models can be referenced by solid and non-solid static props at the same time!
-        if (!sprop.IsSolidWithVPhysics())
-            continue;
-
-        ZoneScopedN("sprop phy load");
-
-        // Path to ".mdl" file used by static prop
-        const std::string& mdl_path = bsp_map->static_prop_model_dict[sprop.model_idx];
-
-        if (checked_mdl_paths.contains(mdl_path))
-            continue; // Skip, we already tried to load this MDL's collision
-        checked_mdl_paths.insert(mdl_path); // Remember this MDL's load attempt
+    // Now attempt to load required collision models
+    for (const std::string& mdl_path : solid_xprop_mdl_paths) {
+        ZoneScopedN("xprop phy load");
 
         if (mdl_path.length() < 5) // Ensure valid file path
             continue;
@@ -327,16 +322,13 @@ WorldCreator::InitFromBspMap(
         bool is_mdl_in_game_files = use_game_dir_assets ?
             AssetFinder::ExistsInGameFiles(mdl_path) : false;
 
-        // Sometimes we require every solid prop to have an existing ".mdl" file
+        // Sometimes we require every prop to have an existing ".mdl" file
         if (require_existing_mdl_file
             && !is_mdl_in_game_files && !is_mdl_in_packed_files)
         {
             error_msgs += "Failed to find MDL file '" + mdl_path + "', "
-                "referenced by at least one solid prop_static, e.g. at origin=("
-                + std::to_string((int64_t)sprop.origin.x()) + ","
-                + std::to_string((int64_t)sprop.origin.y()) + ","
-                + std::to_string((int64_t)sprop.origin.z()) + "). "
-                "All prop_static of this type will be missing from the world.\n";
+                "referenced by at least one solid prop. "
+                "All props with this model will be missing from the world.\n";
             continue;
         }
 
@@ -381,7 +373,7 @@ WorldCreator::InitFromBspMap(
             bool is_phy_in_game_files = use_game_dir_assets ?
                 AssetFinder::ExistsInGameFiles(phy_path) : false;
 
-            // Static prop is non-solid if their model's PHY doesn't exist anywhere
+            // Prop is non-solid if their model's PHY doesn't exist anywhere
             if (!is_phy_in_game_files)
                 continue; // Not an error, we just skip this non-solid model
 
@@ -398,13 +390,24 @@ WorldCreator::InitFromBspMap(
             // NOTE: If you change the way PHY models are parsed, please see
             //       whether comments surrounding CollisionModel::section_tri_meshes
             //       need to be updated! E.g. regarding edge duplicate-freeness guarantees.
-            auto ret = ParsePhyModel(
+            // NOTE: Static props' phy model always have a single solid.
+            //       Dynamic props' phy model very rarely have multiple solids.
+            auto ret = ParseSingleSolidPhyModel(
                 &section_tri_meshes, &surface_property, phy_file_reader);
+
+            // Special case: We treat this error as a non-error because maps
+            // rarely have dynamic props with a phy model with multiple solids.
+            // These are mostly hostage/character models or an animated garage
+            // doors. It's not worth supporting these, so skip without error.
+            if (ret.code == csgo_parsing::utils::RetCode::ERROR_PHY_MULTIPLE_SOLIDS) {
+                Debug{} << "Skipped multi-solid collision model:" << phy_path.c_str();
+                continue; // Not an error
+            }
 
             if (ret.successful()) {
                 ZoneScopedN("gen phy mesh + collmodel");
                 GL::Mesh phy_mesh = GenMeshWithVertAttr_Position_Normal(section_tri_meshes);
-                sprop_coll_meshes[mdl_path] = std::move(phy_mesh);
+                xprop_coll_meshes[mdl_path] = std::move(phy_mesh);
 
                 // For each section, get its AABB and create plane of each triangle
                 const size_t NUM_SECTIONS = section_tri_meshes.size();
@@ -440,21 +443,21 @@ WorldCreator::InitFromBspMap(
                     }
                 }
                 // Construct CollisionModel object
-                sprop_coll_models[mdl_path] = CollisionModel {
+                xprop_coll_models[mdl_path] = CollisionModel {
                     .section_tri_meshes = std::move(section_tri_meshes),
                     .section_planes     = std::move(section_planes),
                     .section_aabbs      = std::move(section_aabbs)
                 };
             }
-            else { // If parsing failed, get error msg
+            else { // If parsing failed for other reasons, get error msg
                 phy_file_read_err = ret.desc_msg;
             }
         }
 
         if (!phy_file_read_err.empty()) { // If anything failed
-            error_msgs += "All prop_static using the model '" + mdl_path + "' "
-                "will be missing from the world because loading their "
-                "collision model failed:\n    " + phy_file_read_err + "\n";
+            error_msgs += "All prop_static/prop_dynamic using the model '"
+                + mdl_path + "' will be missing from the world because loading "
+                "their collision model failed:\n    " + phy_file_read_err + "\n";
         }
     }
 
@@ -465,29 +468,37 @@ WorldCreator::InitFromBspMap(
         Matrix4 model_transformation; // model scale, rotation, translation
         //Color3 color; // other attributes are possible
     };
-    // key is MDL name, value is list of its static prop's transformation matrices
-    std::map<std::string, std::vector<InstanceData>> sprop_instance_data;
+    // key is MDL name, value is list of its xprop's transformation matrices
+    std::map<std::string, std::vector<InstanceData>> xprop_instance_data;
+
     for (const BspMap::StaticProp& sprop : bsp_map->static_props) {
-        if (!sprop.IsSolidWithVPhysics())
-            continue;
-
-        // We only care about static props with successfully loaded collision models
         const auto& mdl_path = bsp_map->static_prop_model_dict[sprop.model_idx];
-        if (!sprop_coll_meshes.contains(mdl_path))
-            continue;
-
-        // Compute static prop's transformation matrix
-        InstanceData inst_d = {
-            CalcModelTransformationMatrix(
-                sprop.origin, sprop.angles, sprop.uniform_scale)
-        };
-        sprop_instance_data[mdl_path].push_back(inst_d);
+        if (sprop.IsSolidWithVPhysics()) {
+            // We only care about static props with successfully loaded collision models
+            if (xprop_coll_meshes.contains(mdl_path)) {
+                // Compute static prop's transformation matrix
+                xprop_instance_data[mdl_path].push_back(InstanceData{
+                    CalcModelTransformationMatrix(
+                        sprop.origin, sprop.angles, sprop.uniform_scale)
+                });
+            }
+        }
+    }
+    for (const BspMap::Ent_prop_dynamic& dprop : bsp_map->relevant_dynamic_props) {
+        const auto& mdl_path = dprop.model;
+        // We only care about dynamic props with successfully loaded collision models
+        if (xprop_coll_meshes.contains(mdl_path)) {
+            // Compute dynamic prop's transformation matrix
+            xprop_instance_data[mdl_path].push_back(InstanceData{
+                CalcModelTransformationMatrix(dprop.origin, dprop.angles, 1.0f)
+            });
+        }
     }
 
-    for (auto& kv : sprop_instance_data) {
+    for (auto& kv : xprop_instance_data) {
         const std::string& mdl_path = kv.first;
         std::vector<InstanceData>& instances = kv.second;
-        GL::Mesh& mesh = sprop_coll_meshes[mdl_path];
+        GL::Mesh& mesh = xprop_coll_meshes[mdl_path];
 
         mesh.setInstanceCount(instances.size())
             .addVertexBufferInstanced(
@@ -501,13 +512,13 @@ WorldCreator::InitFromBspMap(
                 //, GlidabilityShader3D::Color3{} // other attributes are possible
         );
 
-        r_world->instanced_static_prop_meshes.emplace_back(std::move(mesh));
+        r_world->instanced_xprop_meshes.emplace_back(std::move(mesh));
     }
-    // Precompute collision caches of each solid static prop.
+    // Precompute collision caches of each solid prop (static or dynamic).
     // MUST HAPPEN AFTER COLL MODEL CREATION!
     Debug{} << "Creating collision caches of static props";
     // Keys are indices into BspMap::static_props, values are the caches.
-    std::map<uint32_t, CollisionCache_StaticProp> coll_caches_sprop;
+    std::map<uint32_t, CollisionCache_XProp> coll_caches_sprop;
     for (size_t sprop_idx = 0; sprop_idx < bsp_map->static_props.size(); sprop_idx++) {
         const BspMap::StaticProp& sprop = bsp_map->static_props[sprop_idx];
         if (!sprop.IsSolidWithVPhysics())
@@ -516,8 +527,8 @@ WorldCreator::InitFromBspMap(
         // Path to ".mdl" file used by static prop
         const std::string& mdl_path = bsp_map->static_prop_model_dict[sprop.model_idx];
 
-        auto coll_model_it = sprop_coll_models.find(mdl_path);
-        if (coll_model_it == sprop_coll_models.end())
+        auto coll_model_it = xprop_coll_models.find(mdl_path);
+        if (coll_model_it == xprop_coll_models.end())
             continue; // No collision model
         const CollisionModel& cmodel = coll_model_it->second;
 
@@ -525,6 +536,22 @@ WorldCreator::InitFromBspMap(
         if (sprop_coll_cache == Corrade::Containers::NullOpt)
             continue; // Cache creation failed
         coll_caches_sprop[sprop_idx] = std::move(*sprop_coll_cache);
+    }
+    Debug{} << "Creating collision caches of dynamic props";
+    // Keys are indices into BspMap::relevant_dynamic_props, values are the caches.
+    std::map<uint32_t, CollisionCache_XProp> coll_caches_dprop;
+    for (size_t dprop_idx = 0; dprop_idx < bsp_map->relevant_dynamic_props.size(); dprop_idx++) {
+        const BspMap::Ent_prop_dynamic& dprop = bsp_map->relevant_dynamic_props[dprop_idx];
+
+        auto coll_model_it = xprop_coll_models.find(dprop.model);
+        if (coll_model_it == xprop_coll_models.end())
+            continue; // No collision model
+        const CollisionModel& cmodel = coll_model_it->second;
+
+        auto dprop_coll_cache = coll::Create_CollisionCache_DynamicProp(dprop, cmodel);
+        if (dprop_coll_cache == Corrade::Containers::NullOpt)
+            continue; // Cache creation failed
+        coll_caches_dprop[dprop_idx] = std::move(*dprop_coll_cache);
     }
 
 
@@ -690,15 +717,17 @@ WorldCreator::InitFromBspMap(
     // Create CollidableWorld object and move all collision structures into it.
     std::shared_ptr<CollidableWorld> c_world = std::make_shared<CollidableWorld>(bsp_map);
     c_world->pImpl->hull_disp_coll_trees = std::move(hull_disp_coll_trees);
-    c_world->pImpl->sprop_coll_models    = std::move(sprop_coll_models);
+    c_world->pImpl->xprop_coll_models    = std::move(xprop_coll_models);
     c_world->pImpl->coll_caches_sprop    = std::move(coll_caches_sprop);
+    c_world->pImpl->coll_caches_dprop    = std::move(coll_caches_dprop);
     // ...
 
     // BVH must be created *after* all other collision structures were created
     // and moved into the CollidableWorld object!
     assert(c_world->pImpl->hull_disp_coll_trees != Corrade::Containers::NullOpt);
-    assert(c_world->pImpl->sprop_coll_models    != Corrade::Containers::NullOpt);
+    assert(c_world->pImpl->xprop_coll_models    != Corrade::Containers::NullOpt);
     assert(c_world->pImpl->coll_caches_sprop    != Corrade::Containers::NullOpt);
+    assert(c_world->pImpl->coll_caches_dprop    != Corrade::Containers::NullOpt);
     // ...
     c_world->pImpl->bvh = BVH(*c_world);
 

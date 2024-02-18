@@ -43,7 +43,7 @@ void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
     //       algorithm for func_brush specifically. (?)
     //       It's possible that further bevel planes need to be created and
     //       tested against when doing hull traces, in the same way we already
-    //       do it for collisions with static props.
+    //       do it for collisions with static/dynamic props.
     //       Maybe like this: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/map.cpp#L463-L611
     //       Maybe useful:    https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/ivp.cpp#L1340
 

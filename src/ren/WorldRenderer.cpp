@@ -138,14 +138,14 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     }
     GL::Renderer::setFrontFace(GL::Renderer::FrontFace::ClockWise);
 
-    // Draw collision models of static props
+    // Draw collision models of props (static or dynamic)
     _glid_shader_instanced
         .SetFinalTransformationMatrix(view_proj_transformation)
         .SetColorOverrideEnabled(glidability_vis_globally_disabled)
-        .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_sprops))
+        .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_xprops))
         .SetDiffuseLightingEnabled(has_world_diffuse_lighting);
-    for (GL::Mesh& instanced_sprop_mesh : ren_world->instanced_static_prop_meshes) {
-        _glid_shader_instanced.draw(instanced_sprop_mesh);
+    for (GL::Mesh& instanced_xprop_mesh : ren_world->instanced_xprop_meshes) {
+        _glid_shader_instanced.draw(instanced_xprop_mesh);
     }
 
     // TRANSPARENT BRUSHES MUST BE THE LAST THINGS BEING DRAWN

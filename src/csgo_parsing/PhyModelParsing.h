@@ -13,6 +13,9 @@
 
 namespace csgo_parsing {
 
+    // Parse the collision model from a PHY file that only has a single solid.
+    // Attempting to parse a PHY file with multiple solids fails with the code
+    // ERROR_PHY_MULTIPLE_SOLIDS.
     // @param dest_sections If parsing is successful, a number of sections are
     //                      put in the std::vector pointed to by dest_sections.
     //                      Each section is a convex shape described by a
@@ -33,9 +36,11 @@ namespace csgo_parsing {
     //                            to read starting from the current position of the
     //                            given reader.
     // @param include_shrink_wrap_shape Optional extra convex section added to the list.
-    // @return Code of returned RetCode is either SUCCESS or ERROR_PHY_PARSING_FAILED.
-    //         ERROR_PHY_PARSING_FAILED has an error description.
-    utils::RetCode ParsePhyModel(
+    // @return Code of returned RetCode is one of:
+    //         - SUCCESS (no description)
+    //         - ERROR_PHY_MULTIPLE_SOLIDS (no description, PHY file had more than 1 solid)
+    //         - ERROR_PHY_PARSING_FAILED (something else failed, has description)
+    utils::RetCode ParseSingleSolidPhyModel(
         std::vector<utils_3d::TriMesh>* dest_sections,
         std::string* dest_surfaceprop,
         AssetFileReader& opened_reader,

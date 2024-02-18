@@ -26,7 +26,7 @@ using namespace utils_3d;
  * -- PHY header
  *     4 - size of this header (must be 16)
  *     4 - unused
- *     4 - solid count (we require exactly 1 solid, cuz we only read phy models of static props so far)
+ *     4 - solid count (we only support phy models with exactly 1 solid so far)
  *     4 - unused
  * 
  * -- surface header
@@ -84,7 +84,7 @@ using namespace utils_3d;
  */
 
 utils::RetCode
-csgo_parsing::ParsePhyModel(
+csgo_parsing::ParseSingleSolidPhyModel(
     std::vector<utils_3d::TriMesh>* dest_sections,
     std::string* dest_surfaceprop,
     AssetFileReader& opened_reader,
@@ -125,7 +125,7 @@ csgo_parsing::ParsePhyModel(
         return { p_err, invalid_file_msg + "header size = " + std::to_string(header_size) };
 
     if (solid_count != 1)
-        return { p_err, invalid_file_msg + "solid count = " + std::to_string(solid_count) };
+        return { utils::RetCode::ERROR_PHY_MULTIPLE_SOLIDS }; // Special error
 
     uint32_t binary_data_size; // size of following data until text section
     if (!opened_reader.ReadUINT32_LE(binary_data_size))

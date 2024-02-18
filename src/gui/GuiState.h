@@ -70,7 +70,7 @@ public:
         float IN_col_grenade_clip       [4] = { 1.000f, 1.000f, 1.000f, 0.500f };
         float IN_col_trigger_push       [4] = { 0.400f, 0.000f, 1.000f, 0.500f };
         float IN_col_solid_displacements[4] = { 0.747f, 0.621f, 0.244f, 1.000f };
-        float IN_col_solid_sprops       [4] = { 0.796f, 0.551f, 0.194f, 1.000f };
+        float IN_col_solid_xprops       [4] = { 0.796f, 0.551f, 0.194f, 1.000f };
         float IN_col_solid_other_brushes[4] = { 1.000f, 0.929f, 0.000f, 1.000f }; // solid, non-sky, non-water, non-ladder
         float IN_col_solid_disp_boundary[4] = { 0.000f, 1.000f, 0.750f, 1.000f };
         float IN_col_bump_mine          [4] = { 1.000f, 0.000f, 1.000f, 1.000f };

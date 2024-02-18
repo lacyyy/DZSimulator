@@ -325,7 +325,7 @@ target_sources(DZSimulator PRIVATE
     "src/coll/CollidableWorld-brush.cpp"
     "src/coll/CollidableWorld-displacement.cpp"
     "src/coll/CollidableWorld-funcbrush.cpp"
-    "src/coll/CollidableWorld-staticprop.cpp"
+    "src/coll/CollidableWorld-xprop.cpp"
     "src/coll/Debugger.cpp"
     "src/coll/SweptTrace.cpp"
 

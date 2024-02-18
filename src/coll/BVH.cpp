@@ -18,7 +18,7 @@
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
 #include "coll/CollidableWorld-funcbrush.h"
-#include "coll/CollidableWorld-staticprop.h"
+#include "coll/CollidableWorld-xprop.h"
 #include "coll/Debugger.h"
 #include "coll/SweptTrace.h"
 #include "csgo_parsing/BrushSeparation.h"
@@ -358,6 +358,8 @@ uint64_t BVH::GetSweptLeafTraceCost(const Leaf& leaf, CollidableWorld& c_world)
         return c_world.GetSweptTraceCost_FuncBrush   (leaf.funcbrush_idx);
     case Leaf::Type::StaticProp:
         return c_world.GetSweptTraceCost_StaticProp  (leaf.sprop_idx);
+    case Leaf::Type::DynamicProp:
+        return c_world.GetSweptTraceCost_DynamicProp (leaf.dprop_idx);
     default: // Unknown type
         assert(false && "Unknown Leaf type. Did you forget to add a switch case?");
         return 1;
@@ -521,6 +523,8 @@ void BVH::DoSweptTraceAgainstLeaf(SweptTrace* trace, const Leaf& leaf,
         c_world.DoSweptTrace_FuncBrush   (trace, leaf.funcbrush_idx); break;
     case Leaf::Type::StaticProp:
         c_world.DoSweptTrace_StaticProp  (trace, leaf.sprop_idx    ); break;
+    case Leaf::Type::DynamicProp:
+        c_world.DoSweptTrace_DynamicProp (trace, leaf.dprop_idx    ); break;
     default: // Unknown type
         assert(false && "Unknown Leaf type. Did you forget to add a switch case?");
         break;
@@ -636,7 +640,7 @@ bool BVH::CreateLeaves(CollidableWorld& c_world)
                         "not created yet.");
         return false; // Leaf creation failed
     }
-    const std::map<uint32_t, CollisionCache_StaticProp>& sprop_coll_caches =
+    const std::map<uint32_t, CollisionCache_XProp>& sprop_coll_caches =
         *c_world.pImpl->coll_caches_sprop;
     Debug{} << PRINT_PREFIX << "Collecting AABBs of static props";
     for (size_t sprop_idx = 0; sprop_idx < bsp_map->static_props.size(); sprop_idx++) {
@@ -648,7 +652,7 @@ bool BVH::CreateLeaves(CollidableWorld& c_world)
         const auto& iter = sprop_coll_caches.find(sprop_idx);
         if (iter == sprop_coll_caches.end())
             continue; // Static prop has no collision cache, skip
-        const CollisionCache_StaticProp& sprop_coll_cache = iter->second;
+        const CollisionCache_XProp& sprop_coll_cache = iter->second;
 
         // Get exact, non-bloated AABB of static prop
         Vector3 aabb_mins = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
@@ -668,6 +672,51 @@ bool BVH::CreateLeaves(CollidableWorld& c_world)
             .maxs = aabb_maxs,
             .type = Leaf::Type::StaticProp,
             .sprop_idx = (uint32_t)sprop_idx,
+        };
+        leaves.push_back(bvh_leaf);
+    }
+
+    // Collect relevant dynamic props
+    // Test if dynamic prop collision caches have been constructed
+    if (c_world.pImpl->coll_caches_dprop == Corrade::Containers::NullOpt) {
+        assert(false && "BVH creation FAILED: Dynamic prop collision caches are"
+                        " not created yet.");
+        return false; // Leaf creation failed
+    }
+    const std::map<uint32_t, CollisionCache_XProp>& dprop_coll_caches =
+        *c_world.pImpl->coll_caches_dprop;
+    Debug{} << PRINT_PREFIX << "Collecting AABBs of dynamic props";
+    for (size_t dprop_idx = 0;
+         dprop_idx < bsp_map->relevant_dynamic_props.size();
+         dprop_idx++)
+    {
+        const BspMap::Ent_prop_dynamic& dprop =
+            bsp_map->relevant_dynamic_props[dprop_idx];
+
+        // Get collision cache of this dynamic prop
+        const auto& iter = dprop_coll_caches.find(dprop_idx);
+        if (iter == dprop_coll_caches.end())
+            continue; // Dynamic prop has no collision cache, skip
+        const CollisionCache_XProp& dprop_coll_cache = iter->second;
+
+        // Get exact, non-bloated AABB of dynamic prop
+        Vector3 aabb_mins = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
+        Vector3 aabb_maxs = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
+        for (const auto& dprop_section_aabb : dprop_coll_cache.section_aabbs) {
+            for (int axis = 0; axis < 3; axis++) {
+                aabb_mins[axis] = Math::min(aabb_mins[axis], dprop_section_aabb.mins[axis]);
+                aabb_maxs[axis] = Math::max(aabb_maxs[axis], dprop_section_aabb.maxs[axis]);
+            }
+        }
+        // Bloat AABB a little to account for collision calculation tolerances
+        aabb_mins -= Vector3{ 1.0f, 1.0f, 1.0f };
+        aabb_maxs += Vector3{ 1.0f, 1.0f, 1.0f };
+
+        Leaf bvh_leaf{
+            .mins = aabb_mins,
+            .maxs = aabb_maxs,
+            .type = Leaf::Type::DynamicProp,
+            .dprop_idx = (uint32_t)dprop_idx,
         };
         leaves.push_back(bvh_leaf);
     }

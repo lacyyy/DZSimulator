@@ -28,8 +28,8 @@ public:
     Magnum::GL::Mesh mesh_displacements          { Magnum::NoCreate };
     Magnum::GL::Mesh mesh_displacement_boundaries{ Magnum::NoCreate };
 
-    // Collision model meshes of solid static props
-    std::vector<Magnum::GL::Mesh> instanced_static_prop_meshes;
+    // Collision model meshes of solid props (static or dynamic)
+    std::vector<Magnum::GL::Mesh> instanced_xprop_meshes;
 
 
 private:

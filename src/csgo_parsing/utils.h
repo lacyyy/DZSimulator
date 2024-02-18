@@ -23,15 +23,16 @@ namespace csgo_parsing::utils {
         // RETURN CODE VALUES
         enum {
             // Some return codes have description strings, some don't
-            SUCCESS = 0,              // possibly w/ desc, Operation succeeded
-            GENERIC_FAILURE,          // no desc, Operation failed
-            STEAM_NOT_INSTALLED,      // no desc, Steam is not installed
-            CSGO_NOT_INSTALLED,       // no desc, CSGO is not installed
-            ERROR_STEAM_REGISTRY,     // w/ desc, Windows registry error
-            ERROR_FILE_OPEN_FAILED,   // w/ desc, File open operation failed
-            ERROR_VPK_PARSING_FAILED, // no desc, Failed to open VPK Archive
-            ERROR_BSP_PARSING_FAILED, // w/ desc, Failed to parse BSP file
-            ERROR_PHY_PARSING_FAILED, // w/ desc, Failed to parse PHY file
+            SUCCESS = 0,               // possibly w/ desc, Operation succeeded
+            GENERIC_FAILURE,           // no desc, Operation failed
+            STEAM_NOT_INSTALLED,       // no desc, Steam is not installed
+            CSGO_NOT_INSTALLED,        // no desc, CSGO is not installed
+            ERROR_STEAM_REGISTRY,      // w/ desc, Windows registry error
+            ERROR_FILE_OPEN_FAILED,    // w/ desc, File open operation failed
+            ERROR_VPK_PARSING_FAILED,  // no desc, Failed to open VPK Archive
+            ERROR_BSP_PARSING_FAILED,  // w/ desc, Failed to parse BSP file
+            ERROR_PHY_PARSING_FAILED,  // w/ desc, Failed to parse PHY file
+            ERROR_PHY_MULTIPLE_SOLIDS, // no desc, PHY had multiple solids
         };
     };
 

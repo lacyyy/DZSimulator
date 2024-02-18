@@ -269,12 +269,12 @@ void Benchmark::StaticPropHullTracing()
 
 static std::vector<Plane> GenAllBevelPlanesOfSPropSection(
     const CollisionModel&            sprop_coll_model,
-    const CollisionCache_StaticProp& sprop_coll_cache,
+    const CollisionCache_XProp& sprop_coll_cache,
     size_t idx_of_sprop_section)
 {
     // This is a benchmarked method, intended to test correctness and measure
     // speed of generating all bevel planes of a static prop's section.
-    SPropSectionBevelPlaneGenerator bevel_gen(sprop_coll_model, sprop_coll_cache,
+    XPropSectionBevelPlaneGenerator bevel_gen(sprop_coll_model, sprop_coll_cache,
                                               idx_of_sprop_section);
     std::vector<Plane> bevel_planes;
 
@@ -317,7 +317,7 @@ void Benchmark::StaticPropBevelPlaneGen()
 
         auto coll_cache_it = g_coll_world->pImpl->coll_caches_sprop->find(leaf.sprop_idx);
         assert(coll_cache_it != g_coll_world->pImpl->coll_caches_sprop->end());
-        const CollisionCache_StaticProp& coll_cache = coll_cache_it->second;
+        const CollisionCache_XProp& coll_cache = coll_cache_it->second;
 
         // For each section
         for (size_t section_idx = 0; section_idx < num_sections; section_idx++) {

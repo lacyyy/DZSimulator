@@ -49,12 +49,14 @@ private:
     uint64_t GetSweptTraceCost_Displacement(uint32_t   dispcoll_idx); // idx into CDispCollTree array
     uint64_t GetSweptTraceCost_FuncBrush   (uint32_t func_brush_idx); // idx into BspMap.entities_func_brush
     uint64_t GetSweptTraceCost_StaticProp  (uint32_t      sprop_idx); // idx into BspMap.static_props
+    uint64_t GetSweptTraceCost_DynamicProp (uint32_t      dprop_idx); // idx into BspMap.relevant_dynamic_props
 
     // Sweep trace against single objects
     void DoSweptTrace_Brush       (SweptTrace* trace, uint32_t      brush_idx); // idx into BspMap.brushes
     void DoSweptTrace_Displacement(SweptTrace* trace, uint32_t   dispcoll_idx); // idx into CDispCollTree array
     void DoSweptTrace_FuncBrush   (SweptTrace* trace, uint32_t func_brush_idx); // idx into BspMap.entities_func_brush
     void DoSweptTrace_StaticProp  (SweptTrace* trace, uint32_t      sprop_idx); // idx into BspMap.static_props
+    void DoSweptTrace_DynamicProp (SweptTrace* trace, uint32_t      dprop_idx); // idx into BspMap.relevant_dynamic_props
 
 private:
     // Use "pImpl" technique to keep this header file as light as possible.
@@ -63,9 +65,9 @@ private:
 
     // Let some classes access private members:
     friend class ::WorldCreator; // WorldCreator initializes this class
-    friend class BVH;          // BVH is heavily tied to this class
-    friend class Debugger;     // Debugger needs to debug
-    friend class Benchmark;    // Benchmarks need to benchmark
+    friend class BVH;            // BVH is heavily tied to this class
+    friend class Debugger;       // Debugger needs to debug
+    friend class Benchmark;      // Benchmarks need to benchmark
 };
 
 } // namespace coll

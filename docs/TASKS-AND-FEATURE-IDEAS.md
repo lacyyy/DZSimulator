@@ -15,7 +15,7 @@
     - Check for responses: "Bad password attempt from net console" or "This server is password protected for console access. Must send PASS command"
 - [ ] Add option "Don't show this message again" to message that pops up when DZSim update is available on GitHub
 
-- [ ] Give user a performance warning when loading dz_arctic or dz_csgoworld_*. (Maybe detect total sprop triangle count?)
+- [ ] Give user a performance warning when loading dz_arctic or dz_csgoworld_*. (Maybe detect total prop triangle count?)
 - [ ] Make DZSimulator launch with a black window, not a white one
 
 - [ ] Test DispInfo parsing with new knowledge, see [here](https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/disp_vbsp.cpp#L325-L328) and [here](https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/public/builddisp.cpp#L762-L768)
@@ -46,7 +46,7 @@
 
 ## KNOWN ISSUES, PRIORITIZED:
 
-- [ ] Walking parallel to static props while touching them can get the player stuck
+- [ ] Walking parallel to props while touching them can get the player stuck
 - [ ] Joining the `GitHubChecker` thread can block for 10-20 seconds, it then prints: `[GitHubChecker] ERROR: GET /gists/78dc2c304cfc9d0db7c1c6e9e2859fab failed with error code: 2`
     - Might be caused by GitHub API outage
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...
@@ -74,7 +74,6 @@
         - Draw rings/zones that the player must move through to perform a trick (e.g. like this https://youtu.be/X_-eoDyhIjM?t=183)
     - Add visualization mode: Surface Inclination ?
     - Parse and visualize entities/values not yet parsed from map file (sorted by priority):
-        - prop_dynamic (e.g. motor boats at Sirocco's and Blacksite's rescue zones), also add collision tests with them
         - Horizontal sun angle for diffuse lighting (On Blacksite it should be ~ 135 degrees)
         - The trigger that insta-kills on County
         - Whatever disables fall dmg in the haystack on vineyard

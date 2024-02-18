@@ -156,6 +156,9 @@ class DZSimApplication: public Platform::Application {
         // from an embedded file (that was compiled into the executable).
         bool LoadBspMap(std::string file_path, bool load_from_embedded_files=false);
 
+        // For debugging purposes. Loads every map found in CSGO's maps folder.
+        void _debug_LoadEveryMap();
+
         void ConfigureGameKeyBindings();
 
         void ShootTestTraceOutFromCamera();
@@ -835,6 +838,21 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
 
     Debug{} << "DONE loading bsp map";
     return true;
+}
+
+void DZSimApplication::_debug_LoadEveryMap() {
+    DoCsgoPathSearch(false);
+    csgo_parsing::AssetFinder::RefreshMapFileList();
+    for (const std::string& map_path : csgo_parsing::AssetFinder::GetMapFileList())
+    {
+        std::string abs_map_path = Corrade::Utility::Path::join(
+            { csgo_parsing::AssetFinder::GetCsgoPath(), "maps/", map_path });
+        bool success = LoadBspMap(abs_map_path, false);
+        if (!success) {
+            Error{} << "_debug_LoadEveryMap() was aborted early due to error.";
+            break;
+        }
+    }
 }
 
 void DZSimApplication::ConfigureGameKeyBindings() {

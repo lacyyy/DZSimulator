@@ -267,10 +267,10 @@ public:
     //   - Assets referenced by the map are not looked up in the game directory
     //     or the game's VPK archives (because embedded maps must be independent
     //     and self-contained)
-    //   - Parsing the collision model of a solid static prop no longer requires
-    //     the '.mdl' file referenced by the static prop to exist (because we
-    //     don't use '.mdl' file content and removing them reduces embedded file
-    //     size)
+    //   - Parsing the collision model of a solid prop (static or dynamic) no
+    //     longer requires the '.mdl' file referenced by the prop to exist
+    //     (because we don't use '.mdl' file content and removing them reduces
+    //     embedded file size)
     const bool is_embedded_map;
 
 
@@ -346,6 +346,12 @@ public:
         bool CorrectlyAccountsForObjectMass() const;
     };
 
+    struct Ent_prop_dynamic {
+        Magnum::Vector3 origin;
+        Magnum::Vector3 angles; // pitch, yaw, roll
+        std::string model; // model name CONVERTED TO LOWER CASE
+    };
+
     // worldspawn entity
     Magnum::Vector3 world_mins = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF }; // ???
     Magnum::Vector3 world_maxs = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF }; // ???
@@ -360,6 +366,7 @@ public:
     std::vector<Ent_func_brush>   entities_func_brush;
     std::vector<Ent_trigger_push> entities_trigger_push;
 
+    std::vector<Ent_prop_dynamic> relevant_dynamic_props; // Subset that's visualized
 
     // --------------------------------------------------------------------------
 

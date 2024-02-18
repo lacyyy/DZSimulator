@@ -51,7 +51,14 @@ private:
 
         // When adding more types, make sure to add cases to switch statements
         // that check these types. COUNT must remain the last enum entry.
-        enum Type { Brush, Displacement, StaticProp, FuncBrush, COUNT } type;
+        enum Type {
+            Brush,
+            Displacement,
+            StaticProp,
+            DynamicProp,
+            FuncBrush,
+            COUNT
+        } type;
 
         // Index of referenced map object
         union {
@@ -59,6 +66,7 @@ private:
             uint32_t disp_coll_idx; // if type == Displacement: idx into CDispCollTree array
             uint32_t funcbrush_idx; // if type == FuncBrush:    idx into BspMap.entities_func_brush
             uint32_t     sprop_idx; // if type == StaticProp:   idx into BspMap.static_props
+            uint32_t     dprop_idx; // if type == DynamicProp:  idx into BspMap.relevant_dynamic_props
         };
     };
 

@@ -9,7 +9,7 @@
 
 #include "coll/BVH.h"
 #include "coll/CollidableWorld.h"
-#include "coll/CollidableWorld-staticprop.h"
+#include "coll/CollidableWorld-xprop.h"
 #include "coll/CollidableWorld-displacement.h"
 #include "csgo_parsing/BspMap.h"
 
@@ -33,14 +33,19 @@ struct CollidableWorld::Impl {
     Optional< std::vector<CDispCollTree> > hull_disp_coll_trees =
                                                { Corrade::Containers::NullOpt };
 
-    // Collision models used in at least one solid static prop.
+    // Collision models used in at least one solid prop (solid or dynamic).
     // Keys are MDL paths, values are collision models.
-    Optional< std::map<std::string, CollisionModel> > sprop_coll_models =
+    Optional< std::map<std::string, CollisionModel> > xprop_coll_models =
                                                { Corrade::Containers::NullOpt };
 
-    // Collision caches of each solid static prop.
+    // Collision caches of each solid *static* prop.
     // Keys are indices into BspMap::static_props, values are the caches.
-    Optional< std::map<uint32_t, CollisionCache_StaticProp> > coll_caches_sprop =
+    Optional< std::map<uint32_t, CollisionCache_XProp> > coll_caches_sprop =
+                                               { Corrade::Containers::NullOpt };
+
+    // Collision caches of each solid *dynamic* prop.
+    // Keys are indices into BspMap::relevant_dynamic_props, values are the caches.
+    Optional< std::map<uint32_t, CollisionCache_XProp> > coll_caches_dprop =
                                                { Corrade::Containers::NullOpt };
 
     // Bounding volume hierarchy (BVH) that accelerates traces.

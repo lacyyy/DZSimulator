@@ -1,4 +1,4 @@
-#include "coll/CollidableWorld-staticprop.h"
+#include "coll/CollidableWorld-xprop.h"
 
 #include <algorithm>
 #include <array>
@@ -65,39 +65,77 @@ static bool PlaneEqual(const Plane& p, const Vector3& normal, float dist,
 }
 // --------- end of source-sdk-2013 code ---------
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 uint64_t CollidableWorld::GetSweptTraceCost_StaticProp(uint32_t sprop_idx)
 {
     // See BVH::GetSweptLeafTraceCost() for details and considerations.
     return 1; // Is sprop trace cost dependent on triangle count?
 }
 
-Containers::Optional<CollisionCache_StaticProp>
-coll::Create_CollisionCache_StaticProp(
-    const BspMap::StaticProp& sprop, const CollisionModel& cmodel)
+uint64_t CollidableWorld::GetSweptTraceCost_DynamicProp(uint32_t dprop_idx)
+{
+    // See BVH::GetSweptLeafTraceCost() for details and considerations.
+    return 1; // Is dprop trace cost dependent on triangle count?
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+Containers::Optional<CollisionCache_XProp>
+Create_CollisionCache_XProp(const CollisionModel& cmodel,
+                            const Vector3& xprop_origin,
+                            const Vector3& xprop_angles,
+                            float          xprop_uniform_scale);
+
+Containers::Optional<CollisionCache_XProp>
+coll::Create_CollisionCache_StaticProp(const BspMap::StaticProp& sprop,
+                                       const CollisionModel& cmodel)
+{
+    return Create_CollisionCache_XProp(
+        cmodel, sprop.origin, sprop.angles, sprop.uniform_scale);
+}
+
+Corrade::Containers::Optional<CollisionCache_XProp>
+coll::Create_CollisionCache_DynamicProp(const BspMap::Ent_prop_dynamic& dprop,
+                                        const CollisionModel& cmodel)
+{
+    return Create_CollisionCache_XProp(cmodel, dprop.origin, dprop.angles, 1.0f);
+}
+
+
+Containers::Optional<CollisionCache_XProp>
+Create_CollisionCache_XProp(const CollisionModel& cmodel,
+                            const Vector3& xprop_origin,
+                            const Vector3& xprop_angles,
+                            float          xprop_uniform_scale)
 {
     ZoneScoped;
     const size_t NUM_SECTIONS = cmodel.section_tri_meshes.size();
 
-    float inv_scale = 1.0f / sprop.uniform_scale;
+    float inv_scale = 1.0f / xprop_uniform_scale;
 
-    Matrix4 sprop_transf = CalcModelTransformationMatrix(
-        sprop.origin, sprop.angles, sprop.uniform_scale);
-    Matrix3 rotationscaling = sprop_transf.rotationScaling();
+    Matrix4 xprop_transf = CalcModelTransformationMatrix(
+        xprop_origin, xprop_angles, xprop_uniform_scale);
+    Matrix3 rotationscaling = xprop_transf.rotationScaling();
 
-    Quaternion rotation = CalcQuaternion(sprop.angles).normalized();
+    Quaternion rotation = CalcQuaternion(xprop_angles).normalized();
     Quaternion inv_rotation = rotation.invertedNormalized();
 
-    std::vector<CollisionCache_StaticProp::AABB> section_aabbs;
+    std::vector<CollisionCache_XProp::AABB> section_aabbs;
     section_aabbs.reserve(NUM_SECTIONS);
 
-    // Get AABBs: Apply sprop transformation to every vertex of each section
+    // Get AABBs: Apply xprop transformation to every vertex of each section
     bool no_vertex_found = true;
     for (size_t section_idx = 0; section_idx < NUM_SECTIONS; section_idx++) {
         Vector3 aabb_mins = { +HUGE_VALF, +HUGE_VALF, +HUGE_VALF };
         Vector3 aabb_maxs = { -HUGE_VALF, -HUGE_VALF, -HUGE_VALF };
         for (const Vector3& vert : cmodel.section_tri_meshes[section_idx].vertices) {
             no_vertex_found = false;
-            Vector3 transformed_v = sprop_transf.transformPoint(vert);
+            Vector3 transformed_v = xprop_transf.transformPoint(vert);
 
             // Add transformed vertex to section's AABB
             for (int axis = 0; axis < 3; axis++) {
@@ -108,12 +146,12 @@ coll::Create_CollisionCache_StaticProp(
         section_aabbs.push_back({ .mins = aabb_mins, .maxs = aabb_maxs });
     }
     if (no_vertex_found) { // Invalid collision model
-        assert(false && "Create_CollisionCache_StaticProp(): Invalid collision model");
+        assert(false && "Create_CollisionCache_XProp(): Invalid collision model");
         return Containers::NullOpt;
     }
 
     // Create bevel plane LUT of each section
-    std::vector<SPropSectionBevelPlaneLut> section_bevel_luts;
+    std::vector<XPropSectionBevelPlaneLut> section_bevel_luts;
     section_bevel_luts.reserve(NUM_SECTIONS);
     for (size_t section_idx = 0; section_idx < NUM_SECTIONS; section_idx++) {
         // Create LUT of section
@@ -123,7 +161,7 @@ coll::Create_CollisionCache_StaticProp(
         );
     }
 
-    return CollisionCache_StaticProp{
+    return CollisionCache_XProp{
         .inv_rotation = inv_rotation,
         .inv_scale    = inv_scale,
         .section_aabbs      = std::move(section_aabbs),
@@ -131,27 +169,30 @@ coll::Create_CollisionCache_StaticProp(
     };
 }
 
-void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
-                                                   uint32_t sprop_idx)
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+void DoSweptTrace_XProp(SweptTrace* trace,
+                        const Vector3&       xprop_origin,
+                        CollisionModel       xprop_collmodel,
+                        CollisionCache_XProp xprop_collcache);
+
+void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace, uint32_t sprop_idx)
 {
-    const BspMap::StaticProp& sprop =
-        pImpl->origin_bsp_map->static_props[sprop_idx];
+    const BspMap::StaticProp& sprop = pImpl->origin_bsp_map->static_props[sprop_idx];
+    const std::string&     mdl_path = pImpl->origin_bsp_map->static_prop_model_dict[sprop.model_idx];
     if (!sprop.IsSolidWithVPhysics()) return; // Skip this static prop
 
-    const std::string& mdl_path =
-        pImpl->origin_bsp_map->static_prop_model_dict[sprop.model_idx];
-
-    // Ensure that required collision models and caches have been created
-    assert(pImpl->sprop_coll_models != Corrade::Containers::NullOpt);
+    // Ensure that the required collision model and cache have been created
+    assert(pImpl->xprop_coll_models != Corrade::Containers::NullOpt);
     assert(pImpl->coll_caches_sprop != Corrade::Containers::NullOpt);
 
     // Get collision model
-    const auto& collmodel_iter = pImpl->sprop_coll_models->find(mdl_path);
-    if (collmodel_iter == pImpl->sprop_coll_models->end())
+    const auto& collmodel_iter = pImpl->xprop_coll_models->find(mdl_path);
+    if (collmodel_iter == pImpl->xprop_coll_models->end())
         return; // This static prop has no collision model, skip
     const CollisionModel& collmodel = collmodel_iter->second;
-
-    const size_t NUM_SECTIONS = collmodel.section_tri_meshes.size();
 
     // Get collision cache
     const auto& collcache_iter = pImpl->coll_caches_sprop->find(sprop_idx);
@@ -159,15 +200,53 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
         assert(false); // Shouldn't happen
         return; // This static prop has no collision cache, skip
     }
-    const CollisionCache_StaticProp& collcache = collcache_iter->second;
+    const CollisionCache_XProp& collcache = collcache_iter->second;
+
+    // Do trace
+    DoSweptTrace_XProp(trace, sprop.origin, collmodel, collcache);
+}
+
+void CollidableWorld::DoSweptTrace_DynamicProp(SweptTrace* trace, uint32_t dprop_idx)
+{
+    const BspMap::Ent_prop_dynamic& dprop =
+        pImpl->origin_bsp_map->relevant_dynamic_props[dprop_idx];
+
+    // Ensure that the required collision model and cache have been created
+    assert(pImpl->xprop_coll_models != Corrade::Containers::NullOpt);
+    assert(pImpl->coll_caches_dprop != Corrade::Containers::NullOpt);
+
+    // Get collision model
+    const auto& collmodel_iter = pImpl->xprop_coll_models->find(dprop.model);
+    if (collmodel_iter == pImpl->xprop_coll_models->end())
+        return; // This dynamic prop has no collision model, skip
+    const CollisionModel& collmodel = collmodel_iter->second;
+
+    // Get collision cache
+    const auto& collcache_iter = pImpl->coll_caches_dprop->find(dprop_idx);
+    if (collcache_iter == pImpl->coll_caches_dprop->end()) {
+        assert(false); // Shouldn't happen
+        return; // This dynamic prop has no collision cache, skip
+    }
+    const CollisionCache_XProp& collcache = collcache_iter->second;
+
+    // Do trace
+    DoSweptTrace_XProp(trace, dprop.origin, collmodel, collcache);
+}
+
+void DoSweptTrace_XProp(SweptTrace* trace,
+                        const Vector3&       xprop_origin,
+                        CollisionModel       xprop_collmodel,
+                        CollisionCache_XProp xprop_collcache)
+{
+    const size_t NUM_SECTIONS = xprop_collmodel.section_tri_meshes.size();
 
     // TODO: Look at https://doc.magnum.graphics/magnum/transformations.html to
     //       possibly improve/optimize the transformations in this method.
 
     // Transform trace's start, dir and extents into the coordinate system of
-    // the unscaled, unrotated and untranslated collision model of the static
-    // prop. Then perform trace calculations there.
-    // Essentially, apply the reverse of the sprop's transformation to the trace.
+    // the unscaled, unrotated and untranslated collision model of the prop
+    // (static or dynamic). Then perform trace calculations there.
+    // Essentially, apply the reverse of the xprop's transformation to the trace.
     // TODO can probably combine all reverse operations in a single matrix4 mult
 
     Vector3 transformed_trace_start = trace->info.startpos;
@@ -181,19 +260,19 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
     Vector3 unit_vec_2 = { 0.0f, 0.0f, 1.0f };
     // @Optimization Can we multiply the trace's extents into the unit vecs?
 
-    // Reverse sprop translation (opposite of CalcModelTransformationMatrix())
-    transformed_trace_start -= sprop.origin;
-    // Reverse sprop rotation (opposite of CalcModelTransformationMatrix())
-    const auto& inv_rot = collcache.inv_rotation;
+    // Reverse xprop translation (opposite of CalcModelTransformationMatrix())
+    transformed_trace_start -= xprop_origin;
+    // Reverse xprop rotation (opposite of CalcModelTransformationMatrix())
+    const auto& inv_rot = xprop_collcache.inv_rotation;
     transformed_trace_start = inv_rot.transformVectorNormalized(transformed_trace_start);
     transformed_trace_dir   = inv_rot.transformVectorNormalized(transformed_trace_dir);
     unit_vec_0              = inv_rot.transformVectorNormalized(unit_vec_0);
     unit_vec_1              = inv_rot.transformVectorNormalized(unit_vec_1);
     unit_vec_2              = inv_rot.transformVectorNormalized(unit_vec_2);
-    // Reverse sprop scaling (opposite of CalcModelTransformationMatrix())
-    transformed_trace_start *= collcache.inv_scale;
-    transformed_trace_dir   *= collcache.inv_scale;
-    transformed_extents     *= collcache.inv_scale;
+    // Reverse xprop scaling (opposite of CalcModelTransformationMatrix())
+    transformed_trace_start *= xprop_collcache.inv_scale;
+    transformed_trace_dir   *= xprop_collcache.inv_scale;
+    transformed_extents     *= xprop_collcache.inv_scale;
 
 
     enum PlaneCategory {
@@ -223,25 +302,26 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
     //               time is past trace's fraction?
     for (size_t section_idx = 0; section_idx < NUM_SECTIONS; section_idx++)
     {
-        const Vector3& sprop_section_mins = collcache.section_aabbs[section_idx].mins;
-        const Vector3& sprop_section_maxs = collcache.section_aabbs[section_idx].maxs;
+        const Vector3& xprop_section_mins = xprop_collcache.section_aabbs[section_idx].mins;
+        const Vector3& xprop_section_maxs = xprop_collcache.section_aabbs[section_idx].maxs;
         // Bloat AABB a little to account for collision calculation tolerances
-        Vector3 bloated_sprop_section_mins = sprop_section_mins - Vector3{ 1.0f, 1.0f, 1.0f };
-        Vector3 bloated_sprop_section_maxs = sprop_section_maxs + Vector3{ 1.0f, 1.0f, 1.0f };
+        Vector3 bloated_xprop_section_mins = xprop_section_mins - Vector3{1.0f, 1.0f, 1.0f };
+        Vector3 bloated_xprop_section_maxs = xprop_section_maxs + Vector3{1.0f, 1.0f, 1.0f };
         // Early-out if trace doesn't hit section's bloated AABB
-        // @Optimization If the sprop only has 1 section, isn't this check
+        // @Optimization If the xprop only has 1 section, isn't this check
         //               redundant, as it's already done by BVH code?
         if (!IsAabbHitByFullSweptTrace(trace->info.startpos,
                                        trace->info.invdelta,
                                        trace->info.extents,
-                                       bloated_sprop_section_mins,
-                                       bloated_sprop_section_maxs))
+                                       bloated_xprop_section_mins,
+                                       bloated_xprop_section_maxs))
             continue;
 
         const std::vector<Plane>& tri_planes_of_section =
-            collmodel.section_planes[section_idx];
+            xprop_collmodel.section_planes[section_idx];
 
-        SPropSectionBevelPlaneGenerator bevel_gen(collmodel, collcache, section_idx);
+        XPropSectionBevelPlaneGenerator bevel_gen(
+            xprop_collmodel, xprop_collcache, section_idx);
 
         // -------- start of source-sdk-2013 code --------
         // (taken and modified from source-sdk-2013/<...>/src/utils/vrad/trace.cpp)
@@ -252,13 +332,13 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
         const float NEVER_UPDATED = -9999;
 
         const Vector3 start = transformed_trace_start;
-        const Vector3 end = transformed_trace_start + transformed_trace_dir;
+        const Vector3 end   = transformed_trace_start + transformed_trace_dir;
 
         //const BrushSide* leadside = nullptr;
         Plane clipplane;
         float enterfrac = NEVER_UPDATED;
         float leavefrac = 1.0f;
-        bool  getout = false;
+        bool  getout   = false;
         bool  startout = false;
 
         float   dist;
@@ -285,10 +365,9 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
                 else if (cur_plane_cat == PlaneCategory::EDGE_BEVELS)
                 {
                     // @Optimization Note: Precomputing and storing all bevel
-                    //                     planes for each static prop would
-                    //                     require up to a couple megabytes for
-                    //                     a CSGO map.
-                    // Note: This bevel plane generation for sprops doesn't lead
+                    //                     planes for each prop would require up
+                    //                     to a couple megabytes for a CSGO map.
+                    // Note: This bevel plane generation for props doesn't lead
                     //       to hull trace results exactly matching those of
                     //       CSGO, but it should be good enough.
                     bool success = bevel_gen.GetNext(&next_plane);
@@ -301,12 +380,12 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
                     // @Optimization Should these planes be checked last?
                     if (plane_idx > 5) break; // Exit this category
                     switch(plane_idx) {
-                        case 0: next_plane = { +unit_vec_0,  (sprop_section_maxs[0] - sprop.origin[0]) * collcache.inv_scale }; break;
-                        case 1: next_plane = { -unit_vec_0, -(sprop_section_mins[0] - sprop.origin[0]) * collcache.inv_scale }; break;
-                        case 2: next_plane = { +unit_vec_1,  (sprop_section_maxs[1] - sprop.origin[1]) * collcache.inv_scale }; break;
-                        case 3: next_plane = { -unit_vec_1, -(sprop_section_mins[1] - sprop.origin[1]) * collcache.inv_scale }; break;
-                        case 4: next_plane = { +unit_vec_2,  (sprop_section_maxs[2] - sprop.origin[2]) * collcache.inv_scale }; break;
-                        case 5: next_plane = { -unit_vec_2, -(sprop_section_mins[2] - sprop.origin[2]) * collcache.inv_scale }; break;
+                        case 0: next_plane = { +unit_vec_0,  (xprop_section_maxs[0] - xprop_origin[0]) * xprop_collcache.inv_scale }; break;
+                        case 1: next_plane = { -unit_vec_0, -(xprop_section_mins[0] - xprop_origin[0]) * xprop_collcache.inv_scale }; break;
+                        case 2: next_plane = { +unit_vec_1,  (xprop_section_maxs[1] - xprop_origin[1]) * xprop_collcache.inv_scale }; break;
+                        case 3: next_plane = { -unit_vec_1, -(xprop_section_mins[1] - xprop_origin[1]) * xprop_collcache.inv_scale }; break;
+                        case 4: next_plane = { +unit_vec_2,  (xprop_section_maxs[2] - xprop_origin[2]) * xprop_collcache.inv_scale }; break;
+                        case 5: next_plane = { -unit_vec_2, -(xprop_section_mins[2] - xprop_origin[2]) * xprop_collcache.inv_scale }; break;
                     }
                 }
                 else if (cur_plane_cat == PlaneCategory::AABB_NON_TRANSFORMED)
@@ -321,8 +400,8 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
                     //               a bit with these removed. Keeping them for
                     //               now. I'm not sure how thorough those earlier
                     //               comparisons with CSGO trace results were.
-                    const Vector3& non_transf_aabb_mins = collmodel.section_aabbs[section_idx].mins;
-                    const Vector3& non_transf_aabb_maxs = collmodel.section_aabbs[section_idx].maxs;
+                    const Vector3& non_transf_aabb_mins = xprop_collmodel.section_aabbs[section_idx].mins;
+                    const Vector3& non_transf_aabb_maxs = xprop_collmodel.section_aabbs[section_idx].maxs;
                     if (plane_idx > 5) break; // Exit this category
                     switch(plane_idx) {
                         case 0: next_plane = { Vector3{ +1.0f,  0.0f,  0.0f },  non_transf_aabb_maxs[0] }; break;
@@ -420,12 +499,12 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
 
                 // Get regular rotation transformation by inverting the inverted
                 // rotation transformation
-                Quaternion sprop_rotation =
-                    collcache.inv_rotation.invertedNormalized();
+                Quaternion xprop_rotation =
+                    xprop_collcache.inv_rotation.invertedNormalized();
 
                 // Transform plane normal back to regular coordinate system
                 trace->results.plane_normal =
-                    sprop_rotation.transformVectorNormalized(clipplane.normal);
+                    xprop_rotation.transformVectorNormalized(clipplane.normal);
             }
         }
         // --------- end of source-sdk-2013 code ---------
@@ -436,25 +515,25 @@ void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-SPropSectionBevelPlaneLut::SPropSectionBevelPlaneLut(
-    const Matrix3&    sprop_rotationscaling,
-    const Quaternion& sprop_inv_rotation,
-    float             sprop_inv_scale,
-    const TriMesh& tri_mesh_of_sprop_section,
-    const std::vector<BspMap::Plane>& planes_of_sprop_section)
+XPropSectionBevelPlaneLut::XPropSectionBevelPlaneLut(
+    const Matrix3&    xprop_rotationscaling,
+    const Quaternion& xprop_inv_rotation,
+    float             xprop_inv_scale,
+    const TriMesh& tri_mesh_of_xprop_section,
+    const std::vector<BspMap::Plane>& planes_of_xprop_section)
 {
-    assert(sprop_inv_rotation.isNormalized());
+    assert(xprop_inv_rotation.isNormalized());
 
     // List of indices of all validate candidates, unordered!
     std::vector<size_t> valid_candidate_indices;
     // Bevel planes of all valid candidates
     std::vector<Plane> valid_bevel_planes;
 
-    // Calculate which edge bevel planes of this section of this static prop
-    // are valid and store that information in a LUT.
+    // Calculate which edge bevel planes of this section of this static/dynamic
+    // prop are valid and store that information in a LUT.
     // NOTE: Tests showed that these bevel planes don't exactly match CSGO's
     //       static prop hull tracing behaviour, so our results of tracing
-    //       against static props may slightly differ from CSGO's.
+    //       against props may slightly differ from CSGO's.
     //       To recreate it somehow, we copied brush bevel plane generation code
     //       from the Source 1 engine, it does its job.
     // Maybe CSGO's true bevel planes of static props are stored in some lump
@@ -465,23 +544,23 @@ SPropSectionBevelPlaneLut::SPropSectionBevelPlaneLut(
     // (Original code found CMapFile::AddBrushBevels() function)
 
     // @Optimization Note: Precomputing and storing all bevel planes for each
-    //                     static prop would require up to a couple megabytes
-    //                     for a CSGO map.
+    //                     prop would require up to a couple megabytes for a
+    //                     CSGO map.
 
     // For every unique edge of the section's triangle mesh
     for (size_t unique_edge_idx = 0;
-         unique_edge_idx < tri_mesh_of_sprop_section.edges.size();
+         unique_edge_idx < tri_mesh_of_xprop_section.edges.size();
          unique_edge_idx++)
     {
-        const TriMesh::Edge& u_edge = tri_mesh_of_sprop_section.edges[unique_edge_idx];
-        Vector3 mesh_edge_v1 = tri_mesh_of_sprop_section.vertices[u_edge.verts[0]];
-        Vector3 mesh_edge_v2 = tri_mesh_of_sprop_section.vertices[u_edge.verts[1]];
+        const TriMesh::Edge& u_edge = tri_mesh_of_xprop_section.edges[unique_edge_idx];
+        Vector3 mesh_edge_v1 = tri_mesh_of_xprop_section.vertices[u_edge.verts[0]];
+        Vector3 mesh_edge_v2 = tri_mesh_of_xprop_section.vertices[u_edge.verts[1]];
         // Transform points without translation!
         // @Optimization Is scaling + quaternion rotation faster than 3x3 mult?
         //               --> First test of this led to output differences
         //                   and small to no speed gains.
-        mesh_edge_v1 = sprop_rotationscaling * mesh_edge_v1;
-        mesh_edge_v2 = sprop_rotationscaling * mesh_edge_v2;
+        mesh_edge_v1 = xprop_rotationscaling * mesh_edge_v1;
+        mesh_edge_v2 = xprop_rotationscaling * mesh_edge_v2;
 
         // Test the non-axial plane edges
         Vector3 vec = mesh_edge_v1 - mesh_edge_v2;
@@ -521,31 +600,31 @@ SPropSectionBevelPlaneLut::SPropSectionBevelPlaneLut(
                 if (PlaneEqual({.normal={  0.0f,  0.0f, -1.0f }, .dist=dist}, normal, dist, 0.01f, 0.01f)) continue;
 
                 // Transform the constructed plane back
-                Vector3 final_normal = sprop_inv_rotation.transformVectorNormalized(normal);
-                float   final_dist = dist * sprop_inv_scale;
+                Vector3 final_normal = xprop_inv_rotation.transformVectorNormalized(normal);
+                float   final_dist = dist * xprop_inv_scale;
 
                 // If all the points on all the sides are behind
                 // this plane, it is a proper edge bevel
                 size_t n;
-                for (n = 0; n < tri_mesh_of_sprop_section.vertices.size(); n++) {
+                for (n = 0; n < tri_mesh_of_xprop_section.vertices.size(); n++) {
                     // @Optimization Is this redundant? Does this filter out planes at all?
-                    float d = Math::dot(tri_mesh_of_sprop_section.vertices[n], final_normal) - final_dist;
+                    float d = Math::dot(tri_mesh_of_xprop_section.vertices[n], final_normal) - final_dist;
                     if (d > 0.1f)
                         break; // Point in front
                 }
-                if (n != tri_mesh_of_sprop_section.vertices.size())
+                if (n != tri_mesh_of_xprop_section.vertices.size())
                     continue; // Wasn't part of the outer hull
 
                 size_t m;
-                for (m = 0; m < planes_of_sprop_section.size(); m++) {
-                    const Plane& other_tri_plane = planes_of_sprop_section[m];
+                for (m = 0; m < planes_of_xprop_section.size(); m++) {
+                    const Plane& other_tri_plane = planes_of_xprop_section[m];
 
                     // If this plane has already been used, skip it
                     // NOTE: Use a larger tolerance for collision planes than for rendering planes
                     if (PlaneEqual(other_tri_plane, final_normal, final_dist, 0.01f, 0.01f))
                         break;
                 }
-                if (m != planes_of_sprop_section.size())
+                if (m != planes_of_xprop_section.size())
                     continue; // Wasn't part of the outer hull
 
                 // Skip if this new plane is identical to a previous bevel plane
@@ -632,32 +711,32 @@ SPropSectionBevelPlaneLut::SPropSectionBevelPlaneLut(
     valid_candidate_index_steps_recidx.shrink_to_fit();
 }
 
-size_t SPropSectionBevelPlaneLut::GetMemorySize() const {
+size_t XPropSectionBevelPlaneLut::GetMemorySize() const {
     return valid_candidate_index_steps_recidx.size() * sizeof(RecIdxType);
 }
 
-SPropSectionBevelPlaneGenerator::SPropSectionBevelPlaneGenerator(
-    const CollisionModel&            sprop_coll_model,
-    const CollisionCache_StaticProp& sprop_coll_cache,
-    size_t idx_of_sprop_section)
+XPropSectionBevelPlaneGenerator::XPropSectionBevelPlaneGenerator(
+    const CollisionModel&       xprop_coll_model,
+    const CollisionCache_XProp& xprop_coll_cache,
+    size_t idx_of_xprop_section)
     : cur_candidate_idx { 0 }
     , cur_lut_pos       { 0 }
-    , sprop_inv_rotation{ sprop_coll_cache.inv_rotation }
-    , tri_mesh_of_sprop_section{
-        sprop_coll_model.section_tri_meshes[idx_of_sprop_section]
+    , xprop_inv_rotation{ xprop_coll_cache.inv_rotation }
+    , tri_mesh_of_xprop_section{
+        xprop_coll_model.section_tri_meshes[idx_of_xprop_section]
     }
     , valid_candidate_index_steps_recidx{
-        sprop_coll_cache.section_bevel_luts[idx_of_sprop_section].valid_candidate_index_steps_recidx
+        xprop_coll_cache.section_bevel_luts[idx_of_xprop_section].valid_candidate_index_steps_recidx
     }
 {
 }
 
-bool SPropSectionBevelPlaneGenerator::GetNext(BspMap::Plane* out)
+bool XPropSectionBevelPlaneGenerator::GetNext(BspMap::Plane* out)
 {
     assert(out != nullptr);
-    using RecIdxType            =  SPropSectionBevelPlaneLut::RecIdxType;
-    using CandidateGenParams    =  SPropSectionBevelPlaneLut::CandidateGenParams;
-    constexpr auto GetGenParams = &SPropSectionBevelPlaneLut::GetGenParams;
+    using RecIdxType            =  XPropSectionBevelPlaneLut::RecIdxType;
+    using CandidateGenParams    =  XPropSectionBevelPlaneLut::CandidateGenParams;
+    constexpr auto GetGenParams = &XPropSectionBevelPlaneLut::GetGenParams;
 
     // Maximum int value of 'recursively indexed' LUT
     constexpr size_t MAX_RECIDX_VALUE = std::numeric_limits<RecIdxType>::max();
@@ -692,9 +771,9 @@ bool SPropSectionBevelPlaneGenerator::GetNext(BspMap::Plane* out)
     //       to calculate the same result, but faster.
 
     const TriMesh::Edge& unique_edge =
-        tri_mesh_of_sprop_section.edges[gen_params.unique_edge_idx];
-    Vector3 mesh_edge_v1 = tri_mesh_of_sprop_section.vertices[unique_edge.verts[0]];
-    Vector3 mesh_edge_v2 = tri_mesh_of_sprop_section.vertices[unique_edge.verts[1]];
+        tri_mesh_of_xprop_section.edges[gen_params.unique_edge_idx];
+    Vector3 mesh_edge_v1 = tri_mesh_of_xprop_section.vertices[unique_edge.verts[0]];
+    Vector3 mesh_edge_v2 = tri_mesh_of_xprop_section.vertices[unique_edge.verts[1]];
     Vector3 vec = mesh_edge_v1 - mesh_edge_v2;
 
     // Construct the axial normal
@@ -703,7 +782,7 @@ bool SPropSectionBevelPlaneGenerator::GetNext(BspMap::Plane* out)
 
     // Transform(Rotate) axial normal back into coordinate system of unscaled,
     // unrotated and untranslated collision model
-    vec2 = sprop_inv_rotation.transformVectorNormalized(vec2);
+    vec2 = xprop_inv_rotation.transformVectorNormalized(vec2);
 
     // Construct bevel plane on the edge and orthogonal to the axial normal
     Vector3 final_normal = GetNormalized(Math::cross(vec, vec2));
