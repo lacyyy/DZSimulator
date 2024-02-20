@@ -276,7 +276,7 @@ void DoSweptTrace_XProp(SweptTrace* trace,
 
 
     enum PlaneCategory {
-        MODEL_TRIANGlES,     // Planes of every triangle
+        MODEL_TRIANGLES,     // Planes of every triangle
         EDGE_BEVELS,         // Bevel planes of some triangle edges
         AABB_TRANSFORMED,    // AABB planes of the transformed section
         AABB_NON_TRANSFORMED // AABB planes of the non-transformed section
@@ -284,12 +284,12 @@ void DoSweptTrace_XProp(SweptTrace* trace,
 
     // What plane categories are processed for ray traces, and in what order
     static constexpr std::array<PlaneCategory, 1> RAY_TRACE_CAT_LIST = {
-        MODEL_TRIANGlES
+        MODEL_TRIANGLES
     };
     // What plane categories are processed for hull traces, and in what order
     static constexpr std::array<PlaneCategory, 4> HULL_TRACE_CAT_LIST = {
         // @Optimization Changing this order might improve performance
-        AABB_NON_TRANSFORMED, AABB_TRANSFORMED, EDGE_BEVELS, MODEL_TRIANGlES
+        AABB_NON_TRANSFORMED, AABB_TRANSFORMED, EDGE_BEVELS, MODEL_TRIANGLES
     };
 
     std::span<const PlaneCategory> plane_categories = trace->info.isray ?
@@ -354,7 +354,7 @@ void DoSweptTrace_XProp(SweptTrace* trace,
             for (size_t plane_idx = 0; true; plane_idx++)
             {
                 // ====== Get next plane to process in current category  ======
-                if (cur_plane_cat == PlaneCategory::MODEL_TRIANGlES)
+                if (cur_plane_cat == PlaneCategory::MODEL_TRIANGLES)
                 {
                     // Get a triangle's plane
                     if (plane_idx < tri_planes_of_section.size())

@@ -10,6 +10,7 @@
     - Load struct fields directly into memory IF it's safe to assume that PCs today all have twos-complement and little-endian architectures
         - Are there guarantees for this on WASM/Emscripten?
         - Related: https://en.cppreference.com/w/cpp/types/is_trivially_copyable
+        - Also, check FP-representation? https://en.cppreference.com/w/cpp/types/numeric_limits/is_iec559
         - See [Valve dev talk](https://www.youtube.com/watch?v=Nsf2_Au6KxU) about relative pointers and streaming static physics data directly into memory
     - Load packed PHY files in order of their position in the BSP file without reopening it each time?
     - Don't parse/load lumps we don't need (leafface lump? face lump?)
