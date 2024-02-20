@@ -27,6 +27,31 @@ using namespace csgo_parsing;
 using namespace utils_3d;
 
 
+//
+// IMPORTANT NOTICE:
+//
+// source-sdk-2013 implements '==' and '!=' vector comparisons using _exact_
+// comparisons, where 2 vectors must not differ from each other to compare equal.
+//
+// In contrast, Magnum::Math (used by DZSimulator) implements them using _fuzzy_
+// comparisons, where 2 vectors can differ slightly and still compare equal.
+//
+// -> Consequently: DZSim code that replicates source-sdk-2013 code must perform
+//                  these vector comparisons using the SourceSdkVectorEqual()
+//                  function and NOT using the Vector's '==' and '!=' operators!
+//
+
+// Compares vectors like source-sdk-2013 does. See note above.
+// Returns true if the 2 vectors are exactly equal, false otherwise.
+static bool SourceSdkVectorEqual(const Vector3& vec1, const Vector3& vec2) {
+    // -------- start of source-sdk-2013 code --------
+    // (taken and modified from source-sdk-2013/<...>/src/public/mathlib/vector.h)
+    // More specifically, code is from Vector::operator==()
+    return vec1.x() == vec2.x() && vec1.y() == vec2.y() && vec1.z() == vec2.z();
+    // --------- end of source-sdk-2013 code ---------
+}
+
+
 uint64_t CollidableWorld::GetSweptTraceCost_Displacement(uint32_t dispcoll_idx)
 {
     // See BVH::GetSweptLeafTraceCost() for details and considerations.
@@ -619,8 +644,8 @@ struct DispCollPlaneIndex_t
 
     // Compare
     bool operator==(const DispCollPlaneIndex_t& other) const {
-        return (this->vecPlane ==  other.vecPlane ||
-                this->vecPlane == -other.vecPlane);
+        return (SourceSdkVectorEqual(this->vecPlane,  other.vecPlane) ||
+                SourceSdkVectorEqual(this->vecPlane, -other.vecPlane));
     }
 };
 
@@ -1388,7 +1413,7 @@ int CDispCollTree::AddPlane(const Vector3& vecNormal)
 
     if (!bDidInsert) {
         const DispCollPlaneIndex_t& existingEntry = *insert_result.first;
-        if (existingEntry.vecPlane == vecNormal)
+        if (SourceSdkVectorEqual(existingEntry.vecPlane, vecNormal))
             return existingEntry.index;
         else
             return (existingEntry.index | 0x8000);

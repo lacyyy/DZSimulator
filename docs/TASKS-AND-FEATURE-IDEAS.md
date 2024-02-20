@@ -46,7 +46,6 @@
 
 ## KNOWN ISSUES, PRIORITIZED:
 
-- [ ] Walking parallel to props while touching them can get the player stuck
 - [ ] Joining the `GitHubChecker` thread can block for 10-20 seconds, it then prints: `[GitHubChecker] ERROR: GET /gists/78dc2c304cfc9d0db7c1c6e9e2859fab failed with error code: 2`
     - Might be caused by GitHub API outage
 - [ ] CSGO prefers game files in VPK archives over packed files inside the map BSP ? DZSim currently prefers packed files...

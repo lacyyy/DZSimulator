@@ -16,6 +16,31 @@ using namespace Magnum;
 using namespace utils_3d;
 using namespace coll;
 
+//
+// IMPORTANT NOTICE:
+//
+// source-sdk-2013 implements '==' and '!=' vector comparisons using _exact_
+// comparisons, where 2 vectors must not differ from each other to compare equal.
+//
+// In contrast, Magnum::Math (used by DZSimulator) implements them using _fuzzy_
+// comparisons, where 2 vectors can differ slightly and still compare equal.
+//
+// -> Consequently: DZSim code that replicates source-sdk-2013 code must perform
+//                  these vector comparisons using the SourceSdkVectorEqual()
+//                  function and NOT using the Vector's '==' and '!=' operators!
+//
+
+// Compares vectors like source-sdk-2013 does. See note above.
+// Returns true if the 2 vectors are exactly equal, false otherwise.
+static bool SourceSdkVectorEqual(const Vector3& vec1, const Vector3& vec2) {
+    // -------- start of source-sdk-2013 code --------
+    // (taken and modified from source-sdk-2013/<...>/src/public/mathlib/vector.h)
+    // More specifically, code is from Vector::operator==()
+    return vec1.x() == vec2.x() && vec1.y() == vec2.y() && vec1.z() == vec2.z();
+    // --------- end of source-sdk-2013 code ---------
+}
+
+
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/public/const.h)
 
@@ -172,6 +197,9 @@ const bool g_bMovementOptimizations = true;
 // Purpose: Constructs GameMovement interface
 CsgoMovement::CsgoMovement()
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     //m_nOldWaterLevel = WL_NotInWater;
     //m_flWaterEntryTime = 0;
     //m_nOnLadder = 0;
@@ -183,18 +211,25 @@ CsgoMovement::CsgoMovement()
 
 Vector3 CsgoMovement::GetPlayerMins(bool ducked) const
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
     if (ducked) return { -0.5f * CSGO_PLAYER_WIDTH, -0.5f * CSGO_PLAYER_WIDTH, 0.0f };
     else        return { -0.5f * CSGO_PLAYER_WIDTH, -0.5f * CSGO_PLAYER_WIDTH, 0.0f };
 }
 
 Vector3 CsgoMovement::GetPlayerMaxs(bool ducked) const
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
     if (ducked) return { +0.5f * CSGO_PLAYER_WIDTH, +0.5f * CSGO_PLAYER_WIDTH, CSGO_PLAYER_HEIGHT_CROUCHED };
     else        return { +0.5f * CSGO_PLAYER_WIDTH, +0.5f * CSGO_PLAYER_WIDTH, CSGO_PLAYER_HEIGHT_STANDING };
 }
 
 void CsgoMovement::CategorizeGroundSurface(int16_t surface/*const SweptTrace& pm*/)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     // Observations from "cl_pdump 1" command:
     // NOTE: m_surfaceFriction is 1.0 on normal surfaces
     // NOTE: m_surfaceFriction is 0.25 temporarily when jumping???
@@ -225,6 +260,9 @@ void CsgoMovement::CategorizeGroundSurface(int16_t surface/*const SweptTrace& pm
 
 void CsgoMovement::CheckParameters()
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     //Vector3 v_angle;
 
     if (m_MoveType != MOVETYPE_NOCLIP)
@@ -274,6 +312,9 @@ void CsgoMovement::CheckParameters()
 
 void CsgoMovement::ReduceTimers(float time_delta)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     float frame_msec = 1000.0f * time_delta;
 
     if (m_flDucktime > 0)
@@ -307,6 +348,9 @@ void CsgoMovement::FinishMove(void)
 
 void CsgoMovement::StartGravity(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     float ent_gravity = 1.0;
 
     // Add gravity so they'll be in the correct position during movement
@@ -327,6 +371,9 @@ void CsgoMovement::StartGravity(float frametime)
 void CsgoMovement::StepMove(float frametime,
     const Vector3& vecDestination, const SweptTrace& trace)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     Vector3 vecEndPos;
     vecEndPos = vecDestination;
 
@@ -421,6 +468,9 @@ void CsgoMovement::StepMove(float frametime,
 
 void CsgoMovement::Friction(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     float speed, newspeed, control;
     float friction;
     float drop;
@@ -470,6 +520,9 @@ void CsgoMovement::Friction(float frametime)
 
 void CsgoMovement::FinishGravity(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     float ent_gravity = 1.0f;
 
     //if (m_flWaterJumpTime)
@@ -484,6 +537,9 @@ void CsgoMovement::FinishGravity(float frametime)
 void CsgoMovement::AirAccelerate(float frametime,
     const Vector3& wishdir, float wishspeed, float accel)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     int i;
     float addspeed, accelspeed, currentspeed;
     float wishspd;
@@ -527,6 +583,9 @@ void CsgoMovement::AirAccelerate(float frametime,
 
 void CsgoMovement::AirMove(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     int     i;
     Vector3 wishvel;
     float   fmove, smove;
@@ -592,6 +651,9 @@ bool CsgoMovement::CanAccelerate()
 
 void CsgoMovement::Accelerate(Vector3& wishdir, float wishspeed, float accel, float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     float addspeed, accelspeed, currentspeed;
 
     // This gets overridden because some games (CSPort) want to allow dead (observer) players
@@ -624,6 +686,9 @@ void CsgoMovement::Accelerate(Vector3& wishdir, float wishspeed, float accel, fl
 // Purpose: Try to keep a walking player on the ground when running down slopes etc
 void CsgoMovement::StayOnGround()
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     Vector3 start = m_vecAbsOrigin;
     Vector3 end = m_vecAbsOrigin;
     start.z() += 2;
@@ -657,6 +722,9 @@ void CsgoMovement::StayOnGround()
 
 void CsgoMovement::WalkMove(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     Vector3 wishvel;
     float spd;
     float fmove, smove;
@@ -778,6 +846,9 @@ void CsgoMovement::WalkMove(float frametime)
 
 void CsgoMovement::FullWalkMove(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     if (true /*!CheckWater()*/)
     {
         StartGravity(frametime);
@@ -894,6 +965,9 @@ void CsgoMovement::FullWalkMove(float frametime)
 
 bool CsgoMovement::CheckJumpButton(float frametime)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     //if (player->pl.deadflag)
     //{
     //    mv->m_nOldButtons |= IN_JUMP; // don't jump again until released
@@ -1000,6 +1074,9 @@ bool CsgoMovement::CheckJumpButton(float frametime)
 int CsgoMovement::TryPlayerMove(float frametime,
     const Vector3* pFirstDest, const SweptTrace* pFirstTrace)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     int     bumpcount, numbumps;
     Vector3 dir;
     float   d;
@@ -1037,7 +1114,7 @@ int CsgoMovement::TryPlayerMove(float frametime,
         // See if we can make it from origin to end point.
         SweptTrace tr = (g_bMovementOptimizations &&
             // If their velocity Z is 0, then we can avoid an extra trace here during WalkMove.
-            pFirstDest && pFirstTrace && end == *pFirstDest) ?
+            pFirstDest && pFirstTrace && SourceSdkVectorEqual(end, *pFirstDest)) ?
                 *pFirstTrace // Copy identical previous trace
                 :
                 TracePlayerBBox(m_vecAbsOrigin, end);
@@ -1228,6 +1305,9 @@ int CsgoMovement::TryPlayerMove(float frametime,
 
 void CsgoMovement::CheckVelocity(void)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     // bound velocity
     Vector3 org = m_vecAbsOrigin;
     for (int i = 0; i < 3; i++)
@@ -1265,6 +1345,9 @@ void CsgoMovement::CheckVelocity(void)
 
 int CsgoMovement::ClipVelocity(const Vector3& in, const Vector3& normal, Vector3& out, float overbounce)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     float backoff;
     float change;
     float angle;
@@ -1302,6 +1385,9 @@ int CsgoMovement::ClipVelocity(const Vector3& in, const Vector3& normal, Vector3
 
 void CsgoMovement::SetGroundEntity(bool has_ground, int16_t surface)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     bool newGround = has_ground;
     bool oldGround = m_hGroundEntity;
 
@@ -1350,6 +1436,9 @@ void CsgoMovement::SetGroundEntity(bool has_ground, int16_t surface)
 // 2nd return value: Ground surface. -1 if no ground to stand on was found.
 std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3& start, const Vector3& end)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     Vector3 mins, maxs;
     Vector3 minsSrc = GetPlayerMins();
     Vector3 maxsSrc = GetPlayerMaxs();
@@ -1408,6 +1497,9 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
 
 void CsgoMovement::CategorizePosition(void)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     // Reset this each time we-recategorize, otherwise we have bogus friction when we jump into water and plunge downward really quickly
     m_surfaceFriction = 1.0f;
 
@@ -1496,6 +1588,9 @@ void CsgoMovement::CategorizePosition(void)
 //          damage, and play the appropriate impact sound.
 void CsgoMovement::CheckFalling(void)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     // this function really deals with landing, not falling, so early out otherwise
     if (!m_hGroundEntity || m_flFallVelocity <= 0.0f)
         return;
@@ -1552,6 +1647,9 @@ void CsgoMovement::CheckFalling(void)
 
 void CsgoMovement::PlayerMove(float time_delta)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     CheckParameters();
 
     // clear output applied velocity
@@ -1661,6 +1759,9 @@ void CsgoMovement::PlayerMove(float time_delta)
 // Purpose: Traces player movement + position
 SweptTrace CsgoMovement::TracePlayerBBox(const Vector3& start, const Vector3& end)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     // This function's original usage: Do trace with
     //   fMask == MASK_PLAYERSOLID and
     //   collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT
@@ -1672,6 +1773,9 @@ SweptTrace CsgoMovement::TracePlayerBBox(const Vector3& start, const Vector3& en
 
 SweptTrace CsgoMovement::TryTouchGround(const Vector3& start, const Vector3& end, const Vector3& mins, const Vector3& maxs)
 {
+    // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
+    //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
+
     // This function's original usage: Do trace with
     //   fMask == MASK_PLAYERSOLID and
     //   collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT
