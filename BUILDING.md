@@ -50,12 +50,12 @@ If for some reason, you need to build this repo and it has empty submodule folde
     git submodule add https://github.com/libsdl-org/SDL.git thirdparty/SDL/
     git submodule add https://github.com/wolfpld/tracy.git thirdparty/tracy/
     git -C thirdparty/asio/ checkout asio-1-23-0
-    git -C thirdparty/corrade/ checkout 62d566efca9a661234d9c6a2c5885ac14727783f
+    git -C thirdparty/corrade/ checkout 295bbba1f49887da060465f88b8501965f6acd7d
     git -C thirdparty/imgui/ checkout v1.90.1
-    git -C thirdparty/magnum/ checkout 6394c85c06a5eb67713763c7e471e0fef3160c41
-    git -C thirdparty/magnum-integration/ checkout 05cbe5f85593b7d4252048df98f0bc3bb48b540d
-    git -C thirdparty/magnum-plugins/ checkout cef3912083b9e1adb6379429d0940be1c51fc111
-    git -C thirdparty/toolchains/ checkout 2149f703ac890afade1ca9fd042ba82478f41d1c
+    git -C thirdparty/magnum/ checkout 75c25da6e5c065e785f411bd47feb007458ccae0
+    git -C thirdparty/magnum-integration/ checkout f01593fc94556bff23a848ac71187c56e034b6d9
+    git -C thirdparty/magnum-plugins/ checkout 9cc918fbda8b2a8b788ce04f848d22ef2fe6dd39
+    git -C thirdparty/toolchains/ checkout e5fbff253fecd322fc3e59e14b1a8859d56b17ac
     git -C thirdparty/SDL/ checkout release-2.0.22
     git -C thirdparty/tracy/ checkout v0.10
     ```
@@ -64,12 +64,12 @@ If for some reason, you need to build this repo and it has empty submodule folde
     ```
     53dea9830964eee8b5c2a7ee0a65d6e268dc78a1 thirdparty/SDL (release-2.0.22)
     4915cfd8a1653c157a1480162ae5601318553eb8 thirdparty/asio (asio-1-23-0)
-    62d566efca9a661234d9c6a2c5885ac14727783f thirdparty/corrade (v2020.06-1585-g62d566ef)
+    295bbba1f49887da060465f88b8501965f6acd7d thirdparty/corrade (v2020.06-1620-g295bbba1)
     d6cb3c923d28dcebb2d8d9605ccc7229ccef19eb thirdparty/imgui (v1.62-3271-gd6cb3c92)
-    6394c85c06a5eb67713763c7e471e0fef3160c41 thirdparty/magnum (v2020.06-2765-g6394c85c0)
-    05cbe5f85593b7d4252048df98f0bc3bb48b540d thirdparty/magnum-integration (v2020.06-207-g05cbe5f)
-    cef3912083b9e1adb6379429d0940be1c51fc111 thirdparty/magnum-plugins (v2020.06-1381-gcef39120)
-    2149f703ac890afade1ca9fd042ba82478f41d1c thirdparty/toolchains (heads/master)
+    75c25da6e5c065e785f411bd47feb007458ccae0 thirdparty/magnum (v2020.06-2830-g75c25da6e)
+    f01593fc94556bff23a848ac71187c56e034b6d9 thirdparty/magnum-integration (v2020.06-216-gf01593f)
+    9cc918fbda8b2a8b788ce04f848d22ef2fe6dd39 thirdparty/magnum-plugins (v2020.06-1398-g9cc918fb)
+    e5fbff253fecd322fc3e59e14b1a8859d56b17ac thirdparty/toolchains (heads/master)
     37aff70dfa50cf6307b3fee6074d627dc2929143 thirdparty/tracy (v0.10)
     ```
 

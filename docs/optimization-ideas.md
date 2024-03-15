@@ -5,6 +5,7 @@
 ### LOADING TIME REDUCTION:
 
 - Compile with Clang or GCC instead of MSVC, any speed improvements?
+- Somehow load pregenerated glyph cache from file?
 - PARSING CSGO MAPS:
     - Take a look at [Kaitai Struct](https://kaitai.io)
     - Load struct fields directly into memory IF it's safe to assume that PCs today all have twos-complement and little-endian architectures
