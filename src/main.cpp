@@ -27,7 +27,7 @@
 #include "build_info.h"
 #include "coll/Benchmark.h"
 #include "coll/CollidableWorld.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_integration/Gsi.h"
 #include "csgo_integration/Handler.h"
 #include "csgo_integration/RemoteConsole.h"
@@ -945,13 +945,13 @@ void DZSimApplication::ShootTestTraceOutFromCamera()
     Vector3 hull_mins = { -16.0f, -16.0f,  0.0f };
     Vector3 hull_maxs = { +16.0f, +16.0f, 72.0f };
     Vector3 start = _cam_pos - 0.5f * (hull_maxs + hull_mins) + Vector3{ 0.0f, 0.0f, 15.0f };
-    coll::SweptTrace tr(
+    coll::Trace tr(
         start,
         start + delta,
         hull_mins,
         hull_maxs
     );
-    g_coll_world->DoSweptTrace(&tr);
+    g_coll_world->DoTrace(&tr);
 }
 
 void DZSimApplication::viewportEvent(ViewportEvent& event)

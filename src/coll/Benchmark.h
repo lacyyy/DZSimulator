@@ -12,7 +12,7 @@
 #include <Corrade/Containers/String.h>
 #include <Magnum/Math/Vector3.h>
 
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "coll/BVH.h"
 
 namespace coll {
@@ -57,13 +57,13 @@ public:
     static Magnum::Vector3 GenRandomDir(Generator& gen);
 
     template<class Generator>
-    static std::optional<SweptTrace> GenRealisticTrace(Generator& gen,
+    static std::optional<Trace> GenRealisticTrace(Generator& gen,
                                                        const BVH::Leaf& leaf);
 
     static bool CompareTraceResults(
-        const SweptTrace::Info& trace_info,
-        const SweptTrace::Results& ground_truth,
-        const SweptTrace::Results& untested_results);
+        const Trace::Info& trace_info,
+        const Trace::Results& ground_truth,
+        const Trace::Results& untested_results);
 };
 
 } // namespace coll

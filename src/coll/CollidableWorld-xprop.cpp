@@ -20,7 +20,7 @@
 
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BspMap.h"
 #include "utils_3d.h"
 
@@ -69,15 +69,15 @@ static bool PlaneEqual(const Plane& p, const Vector3& normal, float dist,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-uint64_t CollidableWorld::GetSweptTraceCost_StaticProp(uint32_t sprop_idx)
+uint64_t CollidableWorld::GetTraceCost_StaticProp(uint32_t sprop_idx)
 {
-    // See BVH::GetSweptLeafTraceCost() for details and considerations.
+    // See BVH::GetLeafTraceCost() for details and considerations.
     return 1; // Is sprop trace cost dependent on triangle count?
 }
 
-uint64_t CollidableWorld::GetSweptTraceCost_DynamicProp(uint32_t dprop_idx)
+uint64_t CollidableWorld::GetTraceCost_DynamicProp(uint32_t dprop_idx)
 {
-    // See BVH::GetSweptLeafTraceCost() for details and considerations.
+    // See BVH::GetLeafTraceCost() for details and considerations.
     return 1; // Is dprop trace cost dependent on triangle count?
 }
 
@@ -173,70 +173,97 @@ Create_CollisionCache_XProp(const CollisionModel& cmodel,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-void DoSweptTrace_XProp(SweptTrace* trace,
-                        const Vector3&       xprop_origin,
-                        CollisionModel       xprop_collmodel,
-                        CollisionCache_XProp xprop_collcache);
+void DoTrace_XProp(Trace* trace,
+                   const Vector3&       xprop_origin,
+                   CollisionModel       xprop_collmodel,
+                   CollisionCache_XProp xprop_collcache);
 
-void CollidableWorld::DoSweptTrace_StaticProp(SweptTrace* trace, uint32_t sprop_idx)
+void coll::DoTrace_StaticProp(Trace* trace, uint32_t sprop_idx, CollidableWorld& c_world)
 {
-    const BspMap::StaticProp& sprop = pImpl->origin_bsp_map->static_props[sprop_idx];
-    const std::string&     mdl_path = pImpl->origin_bsp_map->static_prop_model_dict[sprop.model_idx];
+    const BspMap::StaticProp& sprop = c_world.pImpl->origin_bsp_map->static_props[sprop_idx];
+    const std::string&     mdl_path = c_world.pImpl->origin_bsp_map->static_prop_model_dict[sprop.model_idx];
     if (!sprop.IsSolidWithVPhysics()) return; // Skip this static prop
 
     // Ensure that the required collision model and cache have been created
-    assert(pImpl->xprop_coll_models != Corrade::Containers::NullOpt);
-    assert(pImpl->coll_caches_sprop != Corrade::Containers::NullOpt);
+    assert(c_world.pImpl->xprop_coll_models != Corrade::Containers::NullOpt);
+    assert(c_world.pImpl->coll_caches_sprop != Corrade::Containers::NullOpt);
 
     // Get collision model
-    const auto& collmodel_iter = pImpl->xprop_coll_models->find(mdl_path);
-    if (collmodel_iter == pImpl->xprop_coll_models->end())
+    const auto& collmodel_iter = c_world.pImpl->xprop_coll_models->find(mdl_path);
+    if (collmodel_iter == c_world.pImpl->xprop_coll_models->end())
         return; // This static prop has no collision model, skip
     const CollisionModel& collmodel = collmodel_iter->second;
 
     // Get collision cache
-    const auto& collcache_iter = pImpl->coll_caches_sprop->find(sprop_idx);
-    if (collcache_iter == pImpl->coll_caches_sprop->end()) {
+    const auto& collcache_iter = c_world.pImpl->coll_caches_sprop->find(sprop_idx);
+    if (collcache_iter == c_world.pImpl->coll_caches_sprop->end()) {
         assert(false); // Shouldn't happen
         return; // This static prop has no collision cache, skip
     }
     const CollisionCache_XProp& collcache = collcache_iter->second;
 
     // Do trace
-    DoSweptTrace_XProp(trace, sprop.origin, collmodel, collcache);
+    DoTrace_XProp(trace, sprop.origin, collmodel, collcache);
 }
 
-void CollidableWorld::DoSweptTrace_DynamicProp(SweptTrace* trace, uint32_t dprop_idx)
+void coll::DoTrace_DynamicProp(Trace* trace, uint32_t dprop_idx, CollidableWorld& c_world)
 {
     const BspMap::Ent_prop_dynamic& dprop =
-        pImpl->origin_bsp_map->relevant_dynamic_props[dprop_idx];
+        c_world.pImpl->origin_bsp_map->relevant_dynamic_props[dprop_idx];
 
     // Ensure that the required collision model and cache have been created
-    assert(pImpl->xprop_coll_models != Corrade::Containers::NullOpt);
-    assert(pImpl->coll_caches_dprop != Corrade::Containers::NullOpt);
+    assert(c_world.pImpl->xprop_coll_models != Corrade::Containers::NullOpt);
+    assert(c_world.pImpl->coll_caches_dprop != Corrade::Containers::NullOpt);
 
     // Get collision model
-    const auto& collmodel_iter = pImpl->xprop_coll_models->find(dprop.model);
-    if (collmodel_iter == pImpl->xprop_coll_models->end())
+    const auto& collmodel_iter = c_world.pImpl->xprop_coll_models->find(dprop.model);
+    if (collmodel_iter == c_world.pImpl->xprop_coll_models->end())
         return; // This dynamic prop has no collision model, skip
     const CollisionModel& collmodel = collmodel_iter->second;
 
     // Get collision cache
-    const auto& collcache_iter = pImpl->coll_caches_dprop->find(dprop_idx);
-    if (collcache_iter == pImpl->coll_caches_dprop->end()) {
+    const auto& collcache_iter = c_world.pImpl->coll_caches_dprop->find(dprop_idx);
+    if (collcache_iter == c_world.pImpl->coll_caches_dprop->end()) {
         assert(false); // Shouldn't happen
         return; // This dynamic prop has no collision cache, skip
     }
     const CollisionCache_XProp& collcache = collcache_iter->second;
 
     // Do trace
-    DoSweptTrace_XProp(trace, dprop.origin, collmodel, collcache);
+    DoTrace_XProp(trace, dprop.origin, collmodel, collcache);
 }
 
-void DoSweptTrace_XProp(SweptTrace* trace,
-                        const Vector3&       xprop_origin,
-                        CollisionModel       xprop_collmodel,
-                        CollisionCache_XProp xprop_collcache)
+// NOTE: DoTrace_XProp() checks whether the trace is swept or not and handles it
+//       accordingly.
+
+void CollidableWorld::DoSweptTrace_StaticProp(Trace* trace, uint32_t sprop_idx)
+{
+    assert(trace->info.isswept);
+    DoTrace_StaticProp(trace, sprop_idx, *this);
+}
+
+void CollidableWorld::DoUnsweptTrace_StaticProp(Trace* trace, uint32_t sprop_idx)
+{
+    assert(trace->info.isswept == false);
+    DoTrace_StaticProp(trace, sprop_idx, *this);
+}
+
+void CollidableWorld::DoSweptTrace_DynamicProp(Trace* trace, uint32_t dprop_idx)
+{
+    assert(trace->info.isswept);
+    DoTrace_DynamicProp(trace, dprop_idx, *this);
+}
+
+void CollidableWorld::DoUnsweptTrace_DynamicProp(Trace *trace, uint32_t dprop_idx)
+{
+    assert(trace->info.isswept == false);
+    DoTrace_DynamicProp(trace, dprop_idx, *this);
+}
+
+void DoTrace_XProp(Trace* trace,
+                   const Vector3&       xprop_origin,
+                   CollisionModel       xprop_collmodel,
+                   CollisionCache_XProp xprop_collcache)
 {
     const size_t NUM_SECTIONS = xprop_collmodel.section_tri_meshes.size();
 
@@ -310,11 +337,8 @@ void DoSweptTrace_XProp(SweptTrace* trace,
         // Early-out if trace doesn't hit section's bloated AABB
         // @Optimization If the xprop only has 1 section, isn't this check
         //               redundant, as it's already done by BVH code?
-        if (!IsAabbHitByFullSweptTrace(trace->info.startpos,
-                                       trace->info.invdelta,
-                                       trace->info.extents,
-                                       bloated_xprop_section_mins,
-                                       bloated_xprop_section_maxs))
+        if (!trace->HitsAabb(bloated_xprop_section_mins,
+                             bloated_xprop_section_maxs))
             continue;
 
         const std::vector<Plane>& tri_planes_of_section =
@@ -439,39 +463,50 @@ void DoSweptTrace_XProp(SweptTrace* trace,
                     dist = next_plane.dist - Math::dot(offset, next_plane.normal);
                 }
 
-                d1 = Math::dot(start, next_plane.normal) - dist;
-                d2 = Math::dot(  end, next_plane.normal) - dist;
+                if (trace->info.isswept) {
+                    d1 = Math::dot(start, next_plane.normal) - dist;
+                    d2 = Math::dot(  end, next_plane.normal) - dist;
 
-                // If completely in front of face, no intersection
-                if (d1 > 0.0f && d2 > 0.0f) {
-                    skip_section = true; // Early-out from this entire section
-                    break;
-                }
+                    // If completely in front of face, no intersection
+                    if (d1 > 0.0f && d2 > 0.0f) {
+                        skip_section = true; // Early-out from this entire section
+                        break;
+                    }
 
-                if (d2 > 0.0f)
-                    getout = true; // Endpoint is not in solid
-                if (d1 > 0.0f)
-                    startout = true;
+                    if (d2 > 0.0f)
+                        getout = true; // Endpoint is not in solid
+                    if (d1 > 0.0f)
+                        startout = true;
 
-                if (d1 <= 0.0f && d2 <= 0.0f)
-                    continue;
+                    if (d1 <= 0.0f && d2 <= 0.0f)
+                        continue;
 
-                // Crosses face
-                if (d1 > d2) {
-                    // Enter
-                    f = (d1 - DIST_EPSILON) / (d1 - d2);
-                    if (f > enterfrac) {
-                        enterfrac = f;
-                        // Need to transform clipplane back later!
-                        clipplane = { next_plane.normal, next_plane.dist };
-                        //leadside = &side;
+                    // Crosses face
+                    if (d1 > d2) {
+                        // Enter
+                        f = (d1 - DIST_EPSILON) / (d1 - d2);
+                        if (f > enterfrac) {
+                            enterfrac = f;
+                            // Need to transform clipplane back later!
+                            clipplane = { next_plane.normal, next_plane.dist };
+                            //leadside = &side;
+                        }
+                    }
+                    else {
+                        // Leave
+                        f = (d1 + DIST_EPSILON) / (d1 - d2);
+                        if (f < leavefrac)
+                            leavefrac = f;
                     }
                 }
-                else {
-                    // Leave
-                    f = (d1 + DIST_EPSILON) / (d1 - d2);
-                    if (f < leavefrac)
-                        leavefrac = f;
+                else { // !trace->info.isswept
+                    d1 = Math::dot(start, next_plane.normal) - dist;
+
+                    // If completely in front of face, no intersection
+                    if (d1 > 0.0f) {
+                        skip_section = true; // Early-out from this entire section
+                        break;
+                    }
                 }
             }
             if (skip_section)
@@ -481,32 +516,50 @@ void DoSweptTrace_XProp(SweptTrace* trace,
         if (skip_section)
             continue; // Go to next section
 
-        if (!startout) { // If original point was inside brush
-            trace->results.startsolid = true;
-            if (!getout)
-                trace->results.allsolid = true;
-            continue; // Go to next section
-        }
+        if (trace->info.isswept) {
+            if (!startout) { // If original point was inside brush
+                trace->results.startsolid = true;
+                if (!getout)
+                    trace->results.allsolid = true;
+                continue; // Go to next section
+            }
 
-        if (enterfrac < leavefrac) {
-            if (enterfrac > NEVER_UPDATED && enterfrac < trace->results.fraction) {
-                // New closest object was hit!
-                if (enterfrac < 0.0f)
-                    enterfrac = 0.0f;
-                trace->results.fraction = enterfrac;
-                //trace->results.surface = leadside->texinfo; // Might be -1
-                //trace->contents = brush.contents; // TODO: Return hit contents in a better way
+            if (enterfrac < leavefrac) {
+                if (enterfrac > NEVER_UPDATED && enterfrac < trace->results.fraction) {
+                    // New closest object was hit!
+                    if (enterfrac < 0.0f)
+                        enterfrac = 0.0f;
+                    trace->results.fraction = enterfrac;
+                    //trace->results.surface = leadside->texinfo; // Might be -1
+                    //trace->contents = brush.contents; // TODO: Return hit contents in a better way
 
-                // Get regular rotation transformation by inverting the inverted
-                // rotation transformation
-                Quaternion xprop_rotation =
-                    xprop_collcache.inv_rotation.invertedNormalized();
+                    // Get regular rotation transformation by inverting the inverted
+                    // rotation transformation
+                    Quaternion xprop_rotation =
+                        xprop_collcache.inv_rotation.invertedNormalized();
 
-                // Transform plane normal back to regular coordinate system
-                trace->results.plane_normal =
-                    xprop_rotation.transformVectorNormalized(clipplane.normal);
+                    // Transform plane normal back to regular coordinate system
+                    trace->results.plane_normal =
+                        xprop_rotation.transformVectorNormalized(clipplane.normal);
+                }
             }
         }
+        else { // !trace->info.isswept
+            // If we got here, the unswept trace intersects the xprop section
+            trace->results.startsolid   = true;
+            trace->results.allsolid     = true;
+            // Trace fraction of 1.0 is interpreted as nothing being hit.
+            // -> Need to set fraction to something below 1.0
+            trace->results.fraction     = 0.0f;
+            // Can't report a hit surface
+            trace->results.plane_normal = Vector3(0.0f, 0.0f, 0.0f);
+            trace->results.surface      = -1;
+            //trace->contents = brush.contents; // TODO: Return hit contents in a better way
+
+            // Early-out, no point in looking at further sections after a hit
+            break;
+        }
+
         // --------- end of source-sdk-2013 code ---------
     }
 }

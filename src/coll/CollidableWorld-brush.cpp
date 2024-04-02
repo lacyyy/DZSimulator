@@ -6,7 +6,7 @@
 
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BrushSeparation.h"
 #include "csgo_parsing/BspMap.h"
 
@@ -17,25 +17,30 @@ using Plane     = BspMap::Plane;
 using Brush     = BspMap::Brush;
 using BrushSide = BspMap::BrushSide;
 
-uint64_t CollidableWorld::GetSweptTraceCost_Brush(uint32_t brush_idx)
+uint64_t CollidableWorld::GetTraceCost_Brush(uint32_t brush_idx)
 {
-    // See BVH::GetSweptLeafTraceCost() for details and considerations.
+    // See BVH::GetLeafTraceCost() for details and considerations.
     return 1; // Is brush trace cost dependent on brushside count?
 }
 
-void CollidableWorld::DoSweptTrace_Brush(SweptTrace* trace, uint32_t brush_idx)
+static bool IsBrushSolidToPlayer(const Brush& brush)
 {
-    ZoneScoped;
-
-    const Brush& brush = pImpl->origin_bsp_map->brushes[brush_idx];
     static auto test_f_1 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::SOLID);
     static auto test_f_2 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::PLAYERCLIP);
     static auto test_f_3 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::LADDER);
-    bool solid_to_player = false;
-    if (test_f_1.first && test_f_1.first(brush)) solid_to_player = true;
-    if (test_f_2.first && test_f_2.first(brush)) solid_to_player = true;
-    if (test_f_3.first && test_f_3.first(brush)) solid_to_player = true;
-    if (!solid_to_player)
+    if (test_f_1.first && test_f_1.first(brush)) return true;
+    if (test_f_2.first && test_f_2.first(brush)) return true;
+    if (test_f_3.first && test_f_3.first(brush)) return true;
+    return false;
+}
+
+void CollidableWorld::DoSweptTrace_Brush(Trace* trace, uint32_t brush_idx)
+{
+    assert(trace->info.isswept);
+    ZoneScoped;
+
+    const Brush& brush = pImpl->origin_bsp_map->brushes[brush_idx];
+    if (!IsBrushSolidToPlayer(brush))
         return;
 
     // -------- start of source-sdk-2013 code --------
@@ -141,5 +146,70 @@ void CollidableWorld::DoSweptTrace_Brush(SweptTrace* trace, uint32_t brush_idx)
             //trace->contents = brush.contents; // TODO: Return hit contents in a better way
         }
     }
+    // --------- end of source-sdk-2013 code ---------
+}
+
+void CollidableWorld::DoUnsweptTrace_Brush(Trace* trace, uint32_t brush_idx)
+{
+    assert(trace->info.isswept == false);
+    ZoneScoped;
+
+    const Brush& brush = pImpl->origin_bsp_map->brushes[brush_idx];
+    if (!IsBrushSolidToPlayer(brush))
+        return;
+
+    // -------- start of source-sdk-2013 code --------
+    // (taken and modified from source-sdk-2013/<...>/src/utils/vrad/trace.cpp)
+    const Vector3 trace_pos = trace->info.startpos;
+    const Vector3 mins = -trace->info.extents; // Box case only (!trace->info.isray)
+    const Vector3 maxs = +trace->info.extents; // Box case only (!trace->info.isray)
+
+    if (!brush.num_sides)
+        return;
+
+    float   dist;
+    Vector3 ofs;
+
+    // @Optimization Ensure the 6 axial brushsides/planes are processed first
+    for (int i = 0; i < brush.num_sides; i++)
+    {
+        const BrushSide& side = pImpl->origin_bsp_map->brushsides[brush.first_side + i];
+        const Plane& plane    = pImpl->origin_bsp_map->planes[side.plane_num];
+
+        if (trace->info.isray) // Special point case
+        {
+            if (side.bevel == 1) // Don't ray trace against bevel planes
+                continue;
+
+            dist = plane.dist;
+        }
+        else // General box case
+        {
+            // Push the plane out apropriately for mins/maxs
+            ofs.x() = (plane.normal.x() < 0.0f) ? maxs.x() : mins.x();
+            ofs.y() = (plane.normal.y() < 0.0f) ? maxs.y() : mins.y();
+            ofs.z() = (plane.normal.z() < 0.0f) ? maxs.z() : mins.z();
+
+            dist = Math::dot(ofs, plane.normal);
+            dist = plane.dist - dist;
+        }
+
+        float d1 = Math::dot(trace_pos, plane.normal) - dist;
+
+        // If completely in front of face, no intersection
+        if (d1 > 0.0f)
+            return;
+    }
+
+    // If we got here, the trace intersects the brush
+    trace->results.startsolid   = true;
+    trace->results.allsolid     = true;
+    // Trace fraction of 1.0 is interpreted as nothing being hit.
+    // -> Need to set fraction to something below 1.0
+    trace->results.fraction     = 0.0f;
+    // Can't report a hit surface
+    trace->results.plane_normal = Vector3(0.0f, 0.0f, 0.0f);
+    trace->results.surface      = -1;
+    //trace->contents = brush.contents; // TODO: Return hit contents in a better way
     // --------- end of source-sdk-2013 code ---------
 }

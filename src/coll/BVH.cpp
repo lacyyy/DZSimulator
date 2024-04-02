@@ -20,7 +20,7 @@
 #include "coll/CollidableWorld-funcbrush.h"
 #include "coll/CollidableWorld-xprop.h"
 #include "coll/Debugger.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BrushSeparation.h"
 #include "csgo_parsing/BspMap.h"
 #include "csgo_parsing/utils.h"
@@ -113,7 +113,7 @@ bool BVH::WasConstructedSuccessfully()
     return nodes.size() != 0 && total_leaf_cnt >= 2;
 }
 
-void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
+void BVH::DoTrace(Trace* trace, CollidableWorld& c_world)
 {
     ZoneScoped;
 
@@ -127,26 +127,22 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
         return; // Can't trace against non-existent BVH
     const Node& root_node = nodes[0];
 
-#if 0 // Debugging switch
-    // Trace against all leaves for debugging purposes
-    for (size_t i = 1; i < leaves.size(); i++)
-        DoSweptTraceAgainstLeaf(trace, leaves[i], c_world);
-    return;
-#endif
+    if (0) { // Debugging switch
+        // Trace against all leaves for debugging purposes
+        for (size_t i = 1; i < leaves.size(); i++)
+            DoTraceAgainstLeaf(trace, leaves[i], c_world);
+        return;
+    }
 
-    // @Optimization Doing an intersection between the AABB that encloses the
-    //               trace sweep and the AABB of the root BVH node is possibly
-    //               cheaper than doing an accurate sweep against AABB of the
-    //               root BVH node.
     // @Optimization We should probably assume that the root node is always hit,
     //               tracing outside the world's bounds should never happen.
     float root_node_aabb_hit_fraction;
-    bool is_root_hit = trace->HitsAabbOnFullSweep(root_node.mins, root_node.maxs,
-        &root_node_aabb_hit_fraction);
+    bool is_root_hit = trace->HitsAabb(root_node.mins, root_node.maxs,
+                                       &root_node_aabb_hit_fraction);
     if (!is_root_hit)
         return;
 
-    // A leaf or a node and its corresponding minimum collision time where the
+    // A leaf or a node and its corresponding minimum collision time, where the
     // trace hits the leaf's/node's AABB.
     struct TraversalCandidate {
         int32_t node_or_leaf_idx; // See Node struct for details
@@ -165,10 +161,17 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
         TraversalCandidate candidate = traversal_candidates.top();
         traversal_candidates.pop();
 
-        // Discard candidate if we already hit something before this candidate's
-        // AABB gets hit.
-        if (trace->results.fraction < candidate.aabb_hit_fraction)
-            continue;
+        // Check if we can skip candidates
+        if (trace->info.isswept) {
+            // Discard candidate if we already hit something before this candidate's
+            // AABB gets hit.
+            if (trace->results.fraction < candidate.aabb_hit_fraction)
+                continue;
+        } else {
+            // When performing unswept traces, early-out once we hit something
+            if (trace->results.DidHit())
+                break;
+        }
 
         // Traverse candidate
         if (candidate.node_or_leaf_idx < 0) { // If candidate is a leaf
@@ -178,7 +181,7 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
             // @Optimization Make sure CDispCollTree code doesn't do the same
             //               AABB check that we already do.
             coll::Debugger::DebugStart_BroadPhaseLeafHit(leaf, leaf_idx);
-            DoSweptTraceAgainstLeaf(trace, leaf, c_world);
+            DoTraceAgainstLeaf(trace, leaf, c_world);
             coll::Debugger::DebugFinish_BroadPhaseLeafHit();
         }
         else { // If candidate is a node
@@ -205,14 +208,14 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
                 //               nodes/leaves is possibly cheaper than doing an
                 //               accurate sweep against the AABB of BVH nodes/leaves.
                 float child_aabb_hit_fraction;
-                bool is_child_aabb_hit = trace->HitsAabbOnFullSweep(
-                    child_mins, child_maxs, &child_aabb_hit_fraction);
+                bool is_child_aabb_hit = trace->HitsAabb(child_mins, child_maxs,
+                                                         &child_aabb_hit_fraction);
 
                 if (is_child_aabb_hit) {
                     child_candidates.push_back({
                         .node_or_leaf_idx = child_idx,
                         .aabb_hit_fraction = child_aabb_hit_fraction
-                        });
+                    });
                 }
             }
 
@@ -235,55 +238,6 @@ void BVH::DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world)
             }
         }
     }
-}
-
-bool BVH::DoesAabbIntersectAnyDisplacement(
-    const Vector3& aabb_mins, const Vector3& aabb_maxs, CollidableWorld& c_world)
-{
-    if (!WasConstructedSuccessfully())
-        return false;
-
-    // Stack entries are indices into the nodes array
-    std::stack<int32_t> nodes_to_traverse;
-    nodes_to_traverse.push(0); // Root node idx
-
-    // Efficiently traverse the BVH tree
-    while (!nodes_to_traverse.empty()) {
-        const Node& parent_node = nodes[nodes_to_traverse.top()];
-        nodes_to_traverse.pop();
-
-        // Test this node's children
-        for (int32_t child_idx : { parent_node.child_r, parent_node.child_l }) {
-            if (child_idx >= 0) { // If child is a node
-                const Node& child_node = nodes[child_idx];
-
-                // If child node contains displacements
-                if (child_node.contained_leaf_types[Leaf::Type::Displacement] == true) {
-                    bool is_child_node_aabb_hit = AabbIntersectsAabb(
-                        aabb_mins, aabb_maxs, child_node.mins, child_node.maxs);
-                    if (is_child_node_aabb_hit)
-                        nodes_to_traverse.push(child_idx);
-                }
-            }
-            else { // If child is a leaf
-                const Leaf& leaf = leaves[-child_idx];
-
-                if (leaf.type != Leaf::Type::Displacement)
-                    continue; // Skip non-displacement leafs
-
-                bool is_leaf_aabb_hit = AabbIntersectsAabb(
-                    aabb_mins, aabb_maxs, leaf.mins, leaf.maxs);
-                if (!is_leaf_aabb_hit)
-                    continue; // Skip since leaf's AABB is not hit
-
-                CDispCollTree& disp_coll =
-                    (*c_world.pImpl->hull_disp_coll_trees)[leaf.disp_coll_idx];
-                if (disp_coll.AABBTree_IntersectAABB(aabb_mins, aabb_maxs))
-                    return true;
-            }
-        }
-    }
-    return false;
 }
 
 void BVH::GetAabbsContainingPoint(const Vector3& pt,
@@ -332,7 +286,7 @@ void BVH::CalcAabbOfBvhLeaves(std::span<const uint32_t> leaf_refs,
     if (aabb_maxs) *aabb_maxs = maxs;
 }
 
-uint64_t BVH::GetSweptLeafTraceCost(const Leaf& leaf, CollidableWorld& c_world)
+uint64_t BVH::GetLeafTraceCost(const Leaf& leaf, CollidableWorld& c_world)
 {
     // Estimated computation time of tracing a leaf under the assumption that
     // the trace already hits that leaf's AABB.
@@ -350,16 +304,11 @@ uint64_t BVH::GetSweptLeafTraceCost(const Leaf& leaf, CollidableWorld& c_world)
     //               average or worst case trace cost? What exactly do we
     //               optimize? Test both!
     switch (leaf.type) {
-    case Leaf::Type::Brush:
-        return c_world.GetSweptTraceCost_Brush       (leaf.brush_idx);
-    case Leaf::Type::Displacement:
-        return c_world.GetSweptTraceCost_Displacement(leaf.disp_coll_idx);
-    case Leaf::Type::FuncBrush:
-        return c_world.GetSweptTraceCost_FuncBrush   (leaf.funcbrush_idx);
-    case Leaf::Type::StaticProp:
-        return c_world.GetSweptTraceCost_StaticProp  (leaf.sprop_idx);
-    case Leaf::Type::DynamicProp:
-        return c_world.GetSweptTraceCost_DynamicProp (leaf.dprop_idx);
+    case Leaf::Type::Brush:        return c_world.GetTraceCost_Brush       (leaf.brush_idx);
+    case Leaf::Type::Displacement: return c_world.GetTraceCost_Displacement(leaf.disp_coll_idx);
+    case Leaf::Type::FuncBrush:    return c_world.GetTraceCost_FuncBrush   (leaf.funcbrush_idx);
+    case Leaf::Type::StaticProp:   return c_world.GetTraceCost_StaticProp  (leaf.sprop_idx);
+    case Leaf::Type::DynamicProp:  return c_world.GetTraceCost_DynamicProp (leaf.dprop_idx);
     default: // Unknown type
         assert(false && "Unknown Leaf type. Did you forget to add a switch case?");
         return 1;
@@ -406,8 +355,8 @@ BVH::NodeSplitDetails BVH::DetermineBeneficialNodeSplit(const Node& node_to_spli
     //                See: https://en.wikipedia.org/wiki/Crofton_formula
 
     // @Optimization Most traces are done with the player's hull. This SAH
-    //     method relies on the Crofton formula which applies to random rays
-    //     passing through convex objects, not random hull sweeps. Therefor,
+    //     method relies on the Crofton formula which applies to random rays,
+    //     not random hull sweeps, passing through convex objects. Therefor,
     //     during these SAH calculations, it might be beneficial to view the
     //     hull trace as a ray trace by bloating all AABBs by half the player's
     //     hull extents before calculating their surface areas.
@@ -427,7 +376,7 @@ BVH::NodeSplitDetails BVH::DetermineBeneficialNodeSplit(const Node& node_to_spli
 
     uint64_t total_leaf_trace_cost = 0;
     for (uint32_t leaf_idx : leaf_refs_sorted_along_axis[0])
-        total_leaf_trace_cost += GetSweptLeafTraceCost(leaves[leaf_idx], c_world);
+        total_leaf_trace_cost += GetLeafTraceCost(leaves[leaf_idx], c_world);
 
     for (int axis = 0; axis < 3; axis++) {
         // Precompute AABB surface area of right child for every split position
@@ -489,7 +438,7 @@ BVH::NodeSplitDetails BVH::DetermineBeneficialNodeSplit(const Node& node_to_spli
             uint32_t moved_over_leaf_idx = leaf_refs_sorted_along_axis[axis][split_pos];
             const Leaf& moved_over_leaf = leaves[moved_over_leaf_idx];
             uint64_t moved_over_leaf_cost =
-                GetSweptLeafTraceCost(moved_over_leaf, c_world);
+                GetLeafTraceCost(moved_over_leaf, c_world);
             total_l_child_cost += moved_over_leaf_cost;
             total_r_child_cost -= moved_over_leaf_cost;
 
@@ -508,23 +457,53 @@ BVH::NodeSplitDetails BVH::DetermineBeneficialNodeSplit(const Node& node_to_spli
     return split_details;
 }
 
-void BVH::DoSweptTraceAgainstLeaf(SweptTrace* trace, const Leaf& leaf,
-    CollidableWorld& c_world) const
+void BVH::DoTraceAgainstLeaf(Trace* trace, const Leaf& leaf,
+                             CollidableWorld& c_world) const
 {
     ZoneScoped;
+
+    // NOTE: Unswept traces (where the trace's start and end position are equal)
+    //       simply check whether it collides with any map geometry at a single
+    //       position, without any movement of the trace shape (contrary to
+    //       swept traces).
+    //       This isn't immediately obvious from source-sdk-2013 code. However,
+    //       some source-sdk-2013 code shows this when it checks whether the
+    //       player's hull intersects any map geometry at a single position:
+    //       See CGameMovement::CanUnDuckJump() ( https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/gamemovement.cpp#L4318-L4325 )
+    //       See CGameMovement::TryPlayerMove() ( https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/shared/gamemovement.cpp#L2640-L2661 )
+    //       (It's assumed that "test with an uswept box" has a typo and refers
+    //       to the non-swept/"unswept" trace. These code examples expect
+    //       unswept traces to set startsolid to true if the trace intersects
+    //       any map geometry.)
+    //
+    //       Note that the swept trace procedure of some collision objects can't
+    //       be used for unswept traces. For example: The displacement's swept
+    //       trace procedure fails to report intersections when the trace start
+    //       and end position are equal.
+    //       Besides, there are optimization opportunities in the unswept case.
 
     switch (leaf.type) {
     case Leaf::Type::Brush:
         // @Optimization Is the AABB check before tracing against *every* brush bad?
-        c_world.DoSweptTrace_Brush       (trace, leaf.brush_idx    ); break;
+        if (trace->info.isswept) c_world.DoSweptTrace_Brush   (trace, leaf.brush_idx);
+        else                     c_world.DoUnsweptTrace_Brush (trace, leaf.brush_idx);
+        break;
     case Leaf::Type::Displacement:
-        c_world.DoSweptTrace_Displacement(trace, leaf.disp_coll_idx); break;
+        if (trace->info.isswept) c_world.DoSweptTrace_Displacement  (trace, leaf.disp_coll_idx);
+        else                     c_world.DoUnsweptTrace_Displacement(trace, leaf.disp_coll_idx);
+        break;
     case Leaf::Type::FuncBrush:
-        c_world.DoSweptTrace_FuncBrush   (trace, leaf.funcbrush_idx); break;
+        if (trace->info.isswept) c_world.DoSweptTrace_FuncBrush  (trace, leaf.funcbrush_idx);
+        else                     c_world.DoUnsweptTrace_FuncBrush(trace, leaf.funcbrush_idx);
+        break;
     case Leaf::Type::StaticProp:
-        c_world.DoSweptTrace_StaticProp  (trace, leaf.sprop_idx    ); break;
+        if (trace->info.isswept) c_world.DoSweptTrace_StaticProp  (trace, leaf.sprop_idx);
+        else                     c_world.DoUnsweptTrace_StaticProp(trace, leaf.sprop_idx);
+        break;
     case Leaf::Type::DynamicProp:
-        c_world.DoSweptTrace_DynamicProp (trace, leaf.dprop_idx    ); break;
+        if (trace->info.isswept) c_world.DoSweptTrace_DynamicProp  (trace, leaf.dprop_idx);
+        else                     c_world.DoUnsweptTrace_DynamicProp(trace, leaf.dprop_idx);
+        break;
     default: // Unknown type
         assert(false && "Unknown Leaf type. Did you forget to add a switch case?");
         break;

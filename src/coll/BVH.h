@@ -27,14 +27,7 @@ public:
 
     // Does nothing if WasConstructedSuccessfully() returns false.
     // CAUTION: Not thread-safe yet!
-    void DoSweptTrace(SweptTrace* trace, CollidableWorld& c_world);
-
-    // Returns false if WasConstructedSuccessfully() returns false.
-    // Only displacements that don't have the NO_HULL_COLL flag are considered.
-    bool DoesAabbIntersectAnyDisplacement(
-        const Magnum::Vector3& aabb_mins,
-        const Magnum::Vector3& aabb_maxs,
-        CollidableWorld& c_world);
+    void DoTrace(Trace* trace, CollidableWorld& c_world);
 
     // Debug function. Does nothing if WasConstructedSuccessfully() returns false.
     void GetAabbsContainingPoint(const Magnum::Vector3& pt,
@@ -105,7 +98,7 @@ private:
     void CalcAabbOfBvhLeaves(std::span<const uint32_t> leaf_refs,
         Magnum::Vector3* aabb_mins, Magnum::Vector3* aabb_maxs) const;
 
-    static uint64_t GetSweptLeafTraceCost(const Leaf& leaf, CollidableWorld& c_world);
+    static uint64_t GetLeafTraceCost(const Leaf& leaf, CollidableWorld& c_world);
 
     struct NodeSplitDetails {
         // Axis to split node on. 0 -> X axis, 1 -> Y axis, 2 -> Z axis
@@ -124,8 +117,8 @@ private:
         std::span<uint32_t> leaf_refs_sorted_along_axis[3],
         CollidableWorld& c_world) const;
 
-    void DoSweptTraceAgainstLeaf(SweptTrace* trace, const Leaf& leaf,
-        CollidableWorld& c_world) const;
+    void DoTraceAgainstLeaf(Trace* trace, const Leaf& leaf,
+                            CollidableWorld& c_world) const;
 
     // Fills leaves array with one dummy leaf and further leafs.
     // Returns false if leaf creation failed, true otherwise.

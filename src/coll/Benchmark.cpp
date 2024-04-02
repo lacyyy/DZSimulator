@@ -40,11 +40,11 @@ struct SingleSPropBenchmark { // Info of benchmarking a single static prop
     size_t bvh_leaf_idx; // idx into BVH.leaves
 
     struct UniqueTrace { // A unique, realistic trace against this sprop
-        SweptTrace::Info realistic_trace_info; // Benchmark input
-        SweptTrace::Results correct_results;
+        Trace::Info realistic_trace_info; // Benchmark input
+        Trace::Results correct_results;
 
         std::vector<unsigned long long> mean_duration_ns_per_method; // Mean duration of each method
-        std::vector<SweptTrace::Results> results_per_method; // Benchmark output of each method
+        std::vector<Trace::Results> results_per_method; // Benchmark output of each method
     };
     std::vector<UniqueTrace> unique_traces;
 
@@ -102,7 +102,7 @@ void Benchmark::StaticPropHullTracing()
         size_t num_attempts = 0;
         while (sprop_bench.unique_traces.size() < NUM_REALISTIC_TRACES) {
             num_attempts++;
-            std::optional<SweptTrace> r_tr = GenRealisticTrace(gen, leaf);
+            std::optional<Trace> r_tr = GenRealisticTrace(gen, leaf);
             if (!r_tr) continue; // Failed to generate realistic trace
             SingleSPropBenchmark::UniqueTrace ut = {
                 // This trace is realistic, save its info and results
@@ -124,7 +124,7 @@ void Benchmark::StaticPropHullTracing()
             // For each benchmark method
             for (size_t method_idx = 0; method_idx < NUM_BENCHMARKED_METHODS; method_idx++) {
                 // Set up iterations
-                std::vector<SweptTrace> iter_traces;
+                std::vector<Trace> iter_traces;
                 iter_traces.reserve(NUM_ITERATIONS);
                 for (size_t i = 0; i < NUM_ITERATIONS; i++) // Precreate traces with info and empty results
                     iter_traces.emplace_back(u_tr.realistic_trace_info);
@@ -135,11 +135,11 @@ void Benchmark::StaticPropHullTracing()
 #endif
                 // On Windows, std::chrono::high_resolution_clock is the most precise clock, but sadly wall time.
                 auto method_iters_start = std::chrono::high_resolution_clock::now();
-                for (SweptTrace& trace : iter_traces) {
+                for (Trace& trace : iter_traces) {
                     switch (method_idx) {
                         case 0:
                             g_coll_world->DoSweptTrace_StaticProp(&trace, sprop_bench.sprop_idx); // not visualized, correct benchmark procedure
-//                            g_coll_world->DoSweptTrace(&iter_trace); // visualized, incorrect benchmark procedure
+//                            g_coll_world->DoTrace(&iter_trace); // visualized, incorrect benchmark procedure
                             break;
 //                        case 1:
 //                            g_coll_world->DoSweptTrace_StaticProp_New1(&trace, sprop_bench.sprop_idx);
@@ -577,7 +577,7 @@ Vector3 Benchmark::GenRandomDir(Generator& gen) {
 // Tries to generate a realistic trace against a BVH leaf.
 // Returns nothing if unrealistic trace was generated.
 template<class Generator>
-std::optional<SweptTrace> Benchmark::GenRealisticTrace(
+std::optional<Trace> Benchmark::GenRealisticTrace(
     Generator& gen, const BVH::Leaf& leaf)
 {
     assert(leaf.type == BVH::Leaf::Type::StaticProp); // Other types not tested
@@ -602,11 +602,10 @@ std::optional<SweptTrace> Benchmark::GenRealisticTrace(
         trace_start[axis] = distr(gen);
     }
 
-    SweptTrace tr{trace_start, trace_start + trace_delta, -trace_extents, +trace_extents};
+    Trace tr{trace_start, trace_start + trace_delta, -trace_extents, +trace_extents};
 
     // Filter out traces that don't hit the static prop's AABB
-    if (!IsAabbHitByFullSweptTrace(tr.info.startpos, tr.info.invdelta,
-                                   tr.info.extents, leaf.mins, leaf.maxs))
+    if (!tr.HitsAabb(leaf.mins, leaf.maxs))
         return std::nullopt;
 
     // Trace against static prop using known-good reference trace function
@@ -622,9 +621,9 @@ std::optional<SweptTrace> Benchmark::GenRealisticTrace(
 
 // Returns true if the results are (near) identical, false otherwise.
 bool Benchmark::CompareTraceResults(
-    const SweptTrace::Info& trace_info,
-    const SweptTrace::Results& ground_truth,
-    const SweptTrace::Results& untested_results)
+    const Trace::Info& trace_info,
+    const Trace::Results& ground_truth,
+    const Trace::Results& untested_results)
 {
     bool are_identical = true;
     if (ground_truth.startsolid   != untested_results.startsolid  ) { are_identical = false; Debug{} << Debug::color(Debug::Color::Red) << "[BenchmarkDiscrepancy] startsolid ="   << untested_results.startsolid   << "!=" << ground_truth.startsolid;   }

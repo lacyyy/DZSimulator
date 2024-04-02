@@ -327,7 +327,7 @@ target_sources(DZSimulator PRIVATE
     "src/coll/CollidableWorld-funcbrush.cpp"
     "src/coll/CollidableWorld-xprop.cpp"
     "src/coll/Debugger.cpp"
-    "src/coll/SweptTrace.cpp"
+    "src/coll/Trace.cpp"
 
     "src/csgo_integration/Gsi.cpp"
     "src/csgo_integration/Handler.cpp"

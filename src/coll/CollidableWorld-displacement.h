@@ -8,7 +8,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BspMap.h"
 
 // @OPTIMIZATION Test impact of __forceinline
@@ -137,12 +137,12 @@ public:
 
     // Raycasts. DOES NOT utilize collision caches.
     // Does nothing and returns false if displacement has NO_RAY_COLL flag set.
-    bool AABBTree_Ray(SweptTrace* trace, bool bSide = true);
+    bool AABBTree_Ray(Trace* trace, bool bSide = true);
 
     // Hull Sweeps. DOES utilize collision caches and might create one.
     // Does nothing and returns false if displacement has NO_HULL_COLL flag set.
     // CAUTION: Not thread-safe yet! (Due to unprotected g_DispCollPlaneIndexHash)
-    bool AABBTree_SweepAABB(SweptTrace* trace);
+    bool AABBTree_SweepAABB(Trace* trace);
 
     // Hull Intersection. DOES NOT utilize collision caches.
     // Does nothing and returns false if displacement has NO_HULL_COLL flag set.
@@ -177,26 +177,26 @@ private:
     void AABBTree_GenerateBoxes_r(int nodeIndex, Magnum::Vector3* pMins, Magnum::Vector3* pMaxs);
     void AABBTree_CalcBounds();
 
-    void AABBTree_TreeTrisRayTest(SweptTrace* trace, int iNode, bool bSide, CDispCollTri** pImpactTri);
+    void AABBTree_TreeTrisRayTest(Trace* trace, int iNode, bool bSide, CDispCollTri** pImpactTri);
     
     int FORCEINLINE BuildRayLeafList(int iNode, rayleaflist_t& list);
 
 private:
-    void SweepAABBTriIntersect(SweptTrace* trace, int iTri, CDispCollTri* pTri);
+    void SweepAABBTriIntersect(Trace* trace, int iTri, CDispCollTri* pTri);
 
     void Cache_Create(CDispCollTri* pTri, int iTri);
     bool Cache_EdgeCrossAxisX(const Magnum::Vector3& vecEdge, const Magnum::Vector3& vecOnEdge, const Magnum::Vector3& vecOffEdge, CDispCollTri* pTri, unsigned short& iPlane);
     bool Cache_EdgeCrossAxisY(const Magnum::Vector3& vecEdge, const Magnum::Vector3& vecOnEdge, const Magnum::Vector3& vecOffEdge, CDispCollTri* pTri, unsigned short& iPlane);
     bool Cache_EdgeCrossAxisZ(const Magnum::Vector3& vecEdge, const Magnum::Vector3& vecOnEdge, const Magnum::Vector3& vecOffEdge, CDispCollTri* pTri, unsigned short& iPlane);
 
-    inline bool FacePlane(const SweptTrace& trace, CDispCollTri* pTri, CDispCollHelper* pHelper);
-    bool FORCEINLINE AxisPlanesXYZ(const SweptTrace& trace, CDispCollTri* pTri, CDispCollHelper* pHelper);
-    inline bool EdgeCrossAxisX(const SweptTrace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
-    inline bool EdgeCrossAxisY(const SweptTrace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
-    inline bool EdgeCrossAxisZ(const SweptTrace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
+    inline bool FacePlane(const Trace& trace, CDispCollTri* pTri, CDispCollHelper* pHelper);
+    bool FORCEINLINE AxisPlanesXYZ(const Trace& trace, CDispCollTri* pTri, CDispCollHelper* pHelper);
+    inline bool EdgeCrossAxisX(const Trace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
+    inline bool EdgeCrossAxisY(const Trace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
+    inline bool EdgeCrossAxisZ(const Trace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
 
     bool ResolveRayPlaneIntersect(float flStart, float flEnd, const Magnum::Vector3& vecNormal, float flDist, CDispCollHelper* pHelper);
-    template <int AXIS> bool EdgeCrossAxis(const SweptTrace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
+    template <int AXIS> bool EdgeCrossAxis(const Trace& trace, unsigned short iPlane, CDispCollHelper* pHelper);
 
     // Utility
     inline void CalcClosestExtents(const Magnum::Vector3& vecPlaneNormal, const Magnum::Vector3& vecBoxExtents, Magnum::Vector3& vecBoxPoint);

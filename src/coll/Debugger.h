@@ -8,7 +8,7 @@
 
 #include "coll/BVH.h"
 #include "coll/CollidableWorld-displacement.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "gui/GuiState.h"
 #include "ren/WideLineRenderer.h"
 
@@ -35,10 +35,10 @@ public:
     // it and DebugFinish_* to be called after it.
     // Some debugged processes happen within other debugged processes.
 
-    // The hierarchy (and examplary call order) of debugging processes is
+    // The hierarchy (and exemplary call order) of debugging processes is
     // explained by the following declarations:
 
-    static void DebugStart_Trace(const SweptTrace::Info& trace_info);
+    static void DebugStart_Trace(const Trace::Info& trace_info);
 
         static void DebugStart_BroadPhaseLeafHit(const BVH::Leaf& bp_leaf, int32_t bp_leaf_idx);
 
@@ -48,7 +48,7 @@ public:
 
         static void DebugFinish_BroadPhaseLeafHit();
 
-    static void DebugFinish_Trace(const SweptTrace::Results& trace_results);
+    static void DebugFinish_Trace(const Trace::Results& trace_results);
 
     // -------------------------------------------------------------------------
 

@@ -17,7 +17,7 @@
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
 #include "coll/CollidableWorld-displacement.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BspMap.h"
 #include "GlobalVars.h"
 #include "ren/WideLineRenderer.h"
@@ -42,8 +42,8 @@ static void GenerateUsageErrorMsg(std::string_view msg) {
 
 struct Debugger::TraceHistoryEntry
 {
-    SweptTrace::Info    trace_info;
-    SweptTrace::Results trace_results;
+    Trace::Info    trace_info;
+    Trace::Results trace_results;
 
     struct BroadPhaseLeafHit {
         int32_t bvh_leaf_idx;
@@ -105,7 +105,7 @@ struct Debugger::UnfinishedTraceData {
     using BroadPhaseLeafHit = TraceHistoryEntry::BroadPhaseLeafHit;
     using DispCollLeaf      = TraceHistoryEntry::BroadPhaseLeafHit::TypeSpecificData_Displacement::DispCollLeaf;
 
-    SweptTrace::Info tr_info;
+    Trace::Info tr_info;
 
     // Has value if broad-phase leaf hit was started but not finished yet.
     std::optional<BroadPhaseLeafHit> unfinished_broad_phase_leaf_hit = std::nullopt;
@@ -118,7 +118,7 @@ struct Debugger::UnfinishedTraceData {
     // In chronological order
     std::vector<BroadPhaseLeafHit> finished_broad_phase_leaf_hits;
 
-    std::optional<SweptTrace::Results> tr_results = std::nullopt; // Has no value until trace is finished
+    std::optional<Trace::Results> tr_results = std::nullopt; // Has no value until trace is finished
 };
 
 // Has no value if previous trace was finished
@@ -146,7 +146,7 @@ void Debugger::Reset()
     draw_state = {};
 }
 
-void Debugger::DebugStart_Trace(const SweptTrace::Info& trace_info)
+void Debugger::DebugStart_Trace(const Trace::Info& trace_info)
 {
     if (!Debugger::IS_ENABLED) return;
     if (DidUsageErrorOccur()) return;
@@ -363,7 +363,7 @@ void Debugger::DebugFinish_BroadPhaseLeafHit()
     unfinished_trace->unfinished_broad_phase_leaf_hit.reset();
 }
 
-void Debugger::DebugFinish_Trace(const SweptTrace::Results& trace_results)
+void Debugger::DebugFinish_Trace(const Trace::Results& trace_results)
 {
     if (!Debugger::IS_ENABLED) return;
     if (DidUsageErrorOccur()) return;
@@ -428,8 +428,8 @@ void Debugger::Draw(
 
     for (const TraceHistoryEntry& entry : trace_history)
     {
-        const SweptTrace::Info&    tr_info    = entry.trace_info;
-        const SweptTrace::Results& tr_results = entry.trace_results;
+        const Trace::Info&    tr_info    = entry.trace_info;
+        const Trace::Results& tr_results = entry.trace_results;
         Vector3 reached_pos = tr_info.startpos + tr_results.fraction * tr_info.delta;
 
         // Success/failure color
@@ -594,8 +594,8 @@ void Debugger::DrawImGuiElements(gui::GuiState& gui_state)
     }
 
     const TraceHistoryEntry& entry = trace_history.back(); // Newest entry
-    const SweptTrace::Info&    tr_info    = entry.trace_info;
-    const SweptTrace::Results& tr_results = entry.trace_results;
+    const Trace::Info&    tr_info    = entry.trace_info;
+    const Trace::Results& tr_results = entry.trace_results;
 
     ImGui::Text("tr.startpos = (%.2F, %.2F, %.2F)",
         tr_info.startpos.x(),
@@ -614,8 +614,10 @@ void Debugger::DrawImGuiElements(gui::GuiState& gui_state)
         tr_info.extents.x(),
         tr_info.extents.y(),
         tr_info.extents.z());
-    ImGui::SameLine();
+
     ImGui::Text(tr_info.isray ? "tr.isray = true" : "tr.isray = false");
+    ImGui::SameLine();
+    ImGui::Text(tr_info.isswept ? "tr.isswept = true" : "tr.isswept = false");
 
     ImGui::Text(tr_results.startsolid ? "tr.startsolid = true" : "tr.startsolid = false");
     ImGui::Text(tr_results.allsolid ? "tr.allsolid = true" : "tr.allsolid = false");

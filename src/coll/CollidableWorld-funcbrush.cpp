@@ -13,7 +13,7 @@
 
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BrushSeparation.h"
 #include "csgo_parsing/BspMap.h"
 #include "csgo_parsing/utils.h"
@@ -27,15 +27,16 @@ using Brush          = BspMap::Brush;
 using BrushSide      = BspMap::BrushSide;
 using Ent_func_brush = BspMap::Ent_func_brush;
 
-uint64_t CollidableWorld::GetSweptTraceCost_FuncBrush(uint32_t func_brush_idx)
+uint64_t CollidableWorld::GetTraceCost_FuncBrush(uint32_t func_brush_idx)
 {
-    // See BVH::GetSweptLeafTraceCost() for details and considerations.
+    // See BVH::GetLeafTraceCost() for details and considerations.
     return 1; // Is func_brush trace cost dependent on total brushside count?
 }
 
-void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
-    uint32_t func_brush_idx)
+void CollidableWorld::DoSweptTrace_FuncBrush(Trace* trace,
+                                             uint32_t func_brush_idx)
 {
+    assert(trace->info.isswept);
     ZoneScoped;
 
     // NOTE: Collision with func_brush entities was not thoroughly tested and
@@ -80,7 +81,6 @@ void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
     bool are_we_in_csgo_only_up_map =
         bsp_map->map_version == 2915 && bsp_map->sky_name.compare("vertigoblue_hdr") == 0;
 
-    bool hit = false;
     for (size_t brush_idx : bsp_map->GetModelBrushIndices(modelIdx)) {
         const Brush& brush = bsp_map->brushes[brush_idx];
 
@@ -222,6 +222,153 @@ void CollidableWorld::DoSweptTrace_FuncBrush(SweptTrace* trace,
             }
         }
         // --------- end of source-sdk-2013 code ---------
+    }
+}
+
+// This function has an awful amount of  code duplication, but func_brush
+// entities aren't that important and this code won't ever be touched again >:)
+void CollidableWorld::DoUnsweptTrace_FuncBrush(Trace* trace,
+                                               uint32_t func_brush_idx)
+{
+    assert(trace->info.isswept == false);
+    ZoneScoped;
+
+    // NOTE: Collision with func_brush entities was not thoroughly tested and
+    //       the Source engine might be using an entirely different collision
+    //       algorithm for func_brush specifically. (?)
+    //       It's possible that further bevel planes need to be created and
+    //       tested against when doing hull traces, in the same way we already
+    //       do it for collisions with static/dynamic props.
+    //       Maybe like this: https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/map.cpp#L463-L611
+    //       Maybe useful:    https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/utils/vbsp/ivp.cpp#L1340
+
+    // @OPTIMIZATION This function is pretty inefficient. However, there are
+    //               only very few func_brush entities in DZ maps, so it might
+    //               not matter.
+
+    std::shared_ptr<const BspMap> bsp_map = pImpl->origin_bsp_map;
+    const Ent_func_brush& func_brush = bsp_map->entities_func_brush[func_brush_idx];
+    if (!func_brush.IsSolid())
+        return; // Skip this func_brush
+
+    Vector3 translated_trace_start = trace->info.startpos - func_brush.origin;
+
+    // Order of axis rotations is important! First roll, then pitch, then yaw rotation!
+    // @Optimization Use 3x3 rotation matrix, not 4x4, or quaternions
+    Matrix4 rot_transformation =
+        Matrix4::rotationZ(Deg{ func_brush.angles[1] }) * // (yaw)   rotation around z axis
+        Matrix4::rotationY(Deg{ func_brush.angles[0] }) * // (pitch) rotation around y axis
+        Matrix4::rotationX(Deg{ func_brush.angles[2] });  // (roll)  rotation around x axis
+
+    if (func_brush.model.size() == 0 || func_brush.model[0] != '*')
+        return; // Invalid, abort
+    std::string idxStr = func_brush.model.substr(1);
+    int64_t modelIdx = utils::ParseIntFromString(idxStr, -1);
+    if (modelIdx <= 0 || modelIdx >= (int64_t)bsp_map->models.size())
+        return; // Invalid model index, abort
+
+    // NOTE: Rarely in CSGO maps, brushes have invalid brushsides/planes, i.e.
+    //       they result in an AABB where (maxs[i] <= mins[i]) for some i.
+    //       For the most part, we don't care about these rare cases, except for
+    //       one func_brush in CSGO's "Only Up!" map by leander.
+    //       (https://steamcommunity.com/sharedfiles/filedetails/?id=3012684086)
+    bool are_we_in_csgo_only_up_map =
+        bsp_map->map_version == 2915 && bsp_map->sky_name.compare("vertigoblue_hdr") == 0;
+
+    for (size_t brush_idx : bsp_map->GetModelBrushIndices(modelIdx)) {
+        const Brush& brush = bsp_map->brushes[brush_idx];
+
+        // Special case: grenadeclip brushes don't work in func_brush entities
+        // (for unknown reasons)
+        static auto test_f_exclude =
+            BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::GRENADECLIP);
+        if (test_f_exclude.first && test_f_exclude.first(brush))
+            continue;
+
+        static auto test_f_1 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::SOLID);
+        static auto test_f_2 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::PLAYERCLIP);
+        static auto test_f_3 = BrushSeparation::getBrushCategoryTestFuncs(BrushSeparation::LADDER);
+
+        bool solid_to_player = false;
+        if (test_f_1.first && test_f_1.first(brush)) solid_to_player = true;
+        if (test_f_2.first && test_f_2.first(brush)) solid_to_player = true;
+        if (test_f_3.first && test_f_3.first(brush)) solid_to_player = true;
+        if (!solid_to_player)
+            continue;
+
+        // @Optimization Ensure the 6 axial brushsides/planes are processed first.
+        std::vector<Plane> planes;
+        for (int i = 0; i < brush.num_sides; i++) {
+            const BrushSide& side = bsp_map->brushsides[brush.first_side + i];
+
+            if (trace->info.isray && side.bevel)
+                continue;
+
+            // HACKHACK A specific brush in the CSGO Only Up map (by leander)
+            //          has 2 invalid planes that cause issues, skip these.
+            if (are_we_in_csgo_only_up_map && brush_idx == 2537)
+                if (i == 26 || i == 30)
+                    continue;
+
+            Plane plane = bsp_map->planes[side.plane_num];
+            plane.normal = rot_transformation.transformVector(plane.normal);
+            planes.push_back(plane);
+        }
+
+        // -------- start of source-sdk-2013 code --------
+        // (taken and modified from source-sdk-2013/<...>/src/utils/vrad/trace.cpp)
+
+        const Vector3 trace_pos = translated_trace_start;
+        const Vector3 mins = -trace->info.extents; // Box case only (!trace->info.isray)
+        const Vector3 maxs = +trace->info.extents; // Box case only (!trace->info.isray)
+
+        float   dist;
+        Vector3 ofs;
+
+        bool skip_brush = false;
+        for (const Plane& plane : planes) {
+            if (trace->info.isray) // Special point case
+            {
+                // Commented out because bevel planes were sorted out earlier
+                //if (side.bevel == 1) // Don't ray trace against bevel planes
+                //    continue;
+
+                dist = plane.dist;
+            }
+            else // General box case
+            {
+                ofs.x() = (plane.normal.x() < 0.0f) ? maxs.x() : mins.x();
+                ofs.y() = (plane.normal.y() < 0.0f) ? maxs.y() : mins.y();
+                ofs.z() = (plane.normal.z() < 0.0f) ? maxs.z() : mins.z();
+
+                dist = plane.dist - Math::dot(ofs, plane.normal);
+            }
+
+            float d1 = Math::dot(trace_pos, plane.normal) - dist;
+
+            // If completely in front of face, no intersection
+            if (d1 > 0) {
+                skip_brush = true;
+                break;
+            }
+        }
+
+        if (skip_brush)
+            continue;
+
+        // If we got here, the trace intersects the brush
+        trace->results.startsolid   = true;
+        trace->results.allsolid     = true;
+        // Trace fraction of 1.0 is interpreted as nothing being hit.
+        // -> Need to set fraction to something below 1.0
+        trace->results.fraction     = 0.0f;
+        // Can't report a hit surface
+        trace->results.plane_normal = Vector3(0.0f, 0.0f, 0.0f);
+        trace->results.surface      = -1;
+        //trace->contents = brush.contents; // TODO: Return hit contents in a better way
+        // --------- end of source-sdk-2013 code ---------
+
+        break; // Early-out, no point in checking further brushes
     }
 }
 

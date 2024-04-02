@@ -1,5 +1,5 @@
-#ifndef COLL_SWEPTTRACE_H_
-#define COLL_SWEPTTRACE_H_
+#ifndef COLL_TRACE_H_
+#define COLL_TRACE_H_
 
 #include <cassert>
 #include <cstdint>
@@ -14,8 +14,21 @@ namespace coll {
 // source-sdk-2013/<...>/src/public/cmodel.h and
 // source-sdk-2013/<...>/src/public/trace.h  and
 // source-sdk-2013/<...>/src/utils/vrad/trace.cpp)
-struct SweptTrace
+struct Trace
 {
+    // NOTE: A trace is a collision test in the game world. There are two types:
+    //       Traces that are "swept" and traces that are not "swept".
+    //       When performing swept traces, a point or AABB is moved continuously
+    //       from point A to point B, and the trace reports whether it hit
+    //       something.
+    //       When performing unswept traces, a point or AABB isn't moved at all,
+    //       and the trace reports whether it collides with something at a
+    //       single position.
+    //
+    //       Unswept traces are performed by setting the trace start position
+    //       equal to the trace end position.
+
+
     // Starting information of trace, does not change
     const struct Info {
         Magnum::Vector3 startpos;    // Starting point, centered within the extents
@@ -24,6 +37,7 @@ struct SweptTrace
         Magnum::Vector3 invdelta;    // Precomputation for Line-AABB collisions. 1 / delta
         Magnum::Vector3 extents;     // Describes an axis aligned box extruded along a ray
         bool            isray;       // Are the extents zero?
+        bool            isswept;     // Is delta != 0?
         //uint32_t        contents;    // Only collide with objects with these contents
     } info;
 
@@ -52,7 +66,8 @@ struct SweptTrace
     // =========================================================================
 
     // Init a ray trace (aka moving a point through the world until it hits something)
-    SweptTrace(
+    // If start pos is equal to end pos, this becomes an unswept point trace instead.
+    Trace(
         const Magnum::Vector3& ray_trace_start,
         const Magnum::Vector3& ray_trace_end)
         : info{
@@ -62,6 +77,7 @@ struct SweptTrace
             .invdelta    = ComputeInverseVec(ray_trace_end - ray_trace_start),
             .extents     = { 0.0f, 0.0f, 0.0f },
             .isray       = true,
+            .isswept     = (ray_trace_end - ray_trace_start).dot() != 0.0f,
         }
         , results{}
     {
@@ -71,7 +87,8 @@ struct SweptTrace
     }
 
     // Init a hull trace (aka moving an AABB through the world until it hits something)
-    SweptTrace(
+    // If start pos is equal to end pos, this becomes an unswept hull trace instead.
+    Trace(
         const Magnum::Vector3& hull_trace_start,
         const Magnum::Vector3& hull_trace_end,
         const Magnum::Vector3& hull_mins,
@@ -84,26 +101,26 @@ struct SweptTrace
             .invdelta    = ComputeInverseVec(hull_trace_end - hull_trace_start),
             .extents     = (hull_maxs - hull_mins) * 0.5f,
             .isray       = false,
+            .isswept     = (hull_trace_end - hull_trace_start).dot() != 0.0f,
         }
         , results{}
     {
     }
 
     // Init a trace from another trace's info
-    SweptTrace(const Info& other_info) : info{ other_info }, results{}
+    Trace(const Info& other_info) : info{other_info }, results{}
     {
     }
 
     // =========================================================================
 
-    // Returns true if this trace hits the given AABB when doing a full sweep,
-    // false if not. This function does not modify this trace's results!
-    // If AABB is hit, hit_fraction gets set to the fraction of the point in
+    // This function does not affect this trace's results! Returns whether this
+    // trace hits the given AABB, ignoring all other collidable objects.
+    // If the AABB is hit, hit_fraction gets set to the fraction of the point in
     // time of collision. hit_fraction is not modified otherwise!
-    bool HitsAabbOnFullSweep(
-        const Magnum::Vector3& aabb_mins,
-        const Magnum::Vector3& aabb_maxs,
-        float* hit_fraction = nullptr) const;
+    bool HitsAabb(const Magnum::Vector3& aabb_mins,
+                  const Magnum::Vector3& aabb_maxs,
+                  float* hit_fraction = nullptr) const;
 
 private:
     static Magnum::Vector3 ComputeInverseVec(const Magnum::Vector3& vec);
@@ -112,4 +129,4 @@ private:
 
 } // namespace coll
 
-#endif // COLL_SWEPTTRACE_H_
+#endif // COLL_TRACE_H_

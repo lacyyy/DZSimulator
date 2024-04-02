@@ -7,7 +7,7 @@
 #include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Functions.h>
 
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "CsgoConstants.h"
 #include "GlobalVars.h"
 #include "utils_3d.h"
@@ -225,7 +225,7 @@ Vector3 CsgoMovement::GetPlayerMaxs(bool ducked) const
     else        return { +0.5f * CSGO_PLAYER_WIDTH, +0.5f * CSGO_PLAYER_WIDTH, CSGO_PLAYER_HEIGHT_STANDING };
 }
 
-void CsgoMovement::CategorizeGroundSurface(int16_t surface/*const SweptTrace& pm*/)
+void CsgoMovement::CategorizeGroundSurface(int16_t surface/*const Trace& pm*/)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
@@ -369,7 +369,7 @@ void CsgoMovement::StartGravity(float frametime)
 //          new m_vecAbsOrigin, m_vecVelocity, and mv->m_outStepHeight.
 //-----------------------------------------------------------------------------
 void CsgoMovement::StepMove(float frametime,
-    const Vector3& vecDestination, const SweptTrace& trace)
+    const Vector3& vecDestination, const Trace& trace)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
@@ -402,7 +402,7 @@ void CsgoMovement::StepMove(float frametime,
         vecEndPos.z() += CSGO_CVAR_SV_STEPSIZE + CSGO_DIST_EPSILON;
     }
 
-    SweptTrace trace_up = TracePlayerBBox(m_vecAbsOrigin, vecEndPos);
+    Trace trace_up = TracePlayerBBox(m_vecAbsOrigin, vecEndPos);
     if (!trace_up.results.startsolid && !trace_up.results.allsolid)
     {
         m_vecAbsOrigin = m_vecAbsOrigin + trace_up.results.fraction * trace_up.info.delta;
@@ -418,7 +418,7 @@ void CsgoMovement::StepMove(float frametime,
         vecEndPos.z() -= CSGO_CVAR_SV_STEPSIZE + CSGO_DIST_EPSILON;
     }
 
-    SweptTrace trace_down = TracePlayerBBox(m_vecAbsOrigin, vecEndPos);
+    Trace trace_down = TracePlayerBBox(m_vecAbsOrigin, vecEndPos);
 
     // If we are not on the ground any more then use the original movement attempt.
     if (trace_down.results.plane_normal.z() < 0.7f)
@@ -696,14 +696,14 @@ void CsgoMovement::StayOnGround()
 
     // See how far up we can go without getting stuck
 
-    SweptTrace up_trace = TracePlayerBBox(m_vecAbsOrigin, start);
+    Trace up_trace = TracePlayerBBox(m_vecAbsOrigin, start);
     start = m_vecAbsOrigin + up_trace.results.fraction * up_trace.info.delta;
 
     // using trace.startsolid is unreliable here, it doesn't get set when
     // tracing bounding box vs. terrain
 
     // Now trace down from a known safe position
-    SweptTrace down_trace = TracePlayerBBox(start, end);
+    Trace down_trace = TracePlayerBBox(start, end);
     if (down_trace.results.fraction > 0.0f &&          // must go somewhere
         down_trace.results.fraction < 1.0f &&          // must hit something
         !down_trace.results.startsolid &&              // can't be embedded in a solid
@@ -805,7 +805,7 @@ void CsgoMovement::WalkMove(float frametime)
     dest.z() = m_vecAbsOrigin.z();
 
     // first try moving directly to the next spot
-    SweptTrace tr = TracePlayerBBox(m_vecAbsOrigin, dest);
+    Trace tr = TracePlayerBBox(m_vecAbsOrigin, dest);
 
     // If we made it all the way, then copy trace end as new player position.
     //m_outWishVel += wishdir * wishspeed;
@@ -1072,7 +1072,7 @@ bool CsgoMovement::CheckJumpButton(float frametime)
 }
 
 int CsgoMovement::TryPlayerMove(float frametime,
-    const Vector3* pFirstDest, const SweptTrace* pFirstTrace)
+    const Vector3* pFirstDest, const Trace* pFirstTrace)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
@@ -1112,7 +1112,7 @@ int CsgoMovement::TryPlayerMove(float frametime,
         end = m_vecAbsOrigin + time_left * m_vecVelocity;
 
         // See if we can make it from origin to end point.
-        SweptTrace tr = (g_bMovementOptimizations &&
+        Trace tr = (g_bMovementOptimizations &&
             // If their velocity Z is 0, then we can avoid an extra trace here during WalkMove.
             pFirstDest && pFirstTrace && SourceSdkVectorEqual(end, *pFirstDest)) ?
                 *pFirstTrace // Copy identical previous trace
@@ -1146,7 +1146,7 @@ int CsgoMovement::TryPlayerMove(float frametime,
                 // when the end position is stuck in the triangle.  Re-run the test with an uswept box to catch that
                 // case until the bug is fixed. (Narrator: It was never fixed)
                 // If we detect getting stuck, don't allow the movement
-                SweptTrace stuck = TracePlayerBBox(reached_endpos, reached_endpos);
+                Trace stuck = TracePlayerBBox(reached_endpos, reached_endpos);
                 if (stuck.results.startsolid || stuck.results.fraction != 1.0f)
                 {
                     //Msg( "Player will become stuck!!!\n" );
@@ -1449,7 +1449,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     // Check the -x, -y quadrant
     mins = minsSrc;
     maxs = { Math::min(0.0f, maxsSrc.x()), Math::min(0.0f, maxsSrc.y()), maxsSrc.z() };
-    SweptTrace tr1 = TryTouchGround(start, end, mins, maxs);
+    Trace tr1 = TryTouchGround(start, end, mins, maxs);
     if (tr1.results.DidHit() && tr1.results.plane_normal.z() >= 0.7f)
     {
         //pm.fraction = fraction;
@@ -1460,7 +1460,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     // Check the +x, +y quadrant
     mins = { Math::max(0.0f, minsSrc.x()), Math::max(0.0f, minsSrc.y()), minsSrc.z() };
     maxs = maxsSrc;
-    SweptTrace tr2 = TryTouchGround(start, end, mins, maxs);
+    Trace tr2 = TryTouchGround(start, end, mins, maxs);
     if (tr2.results.DidHit() && tr2.results.plane_normal.z() >= 0.7f)
     {
         //pm.fraction = fraction;
@@ -1471,7 +1471,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     // Check the -x, +y quadrant
     mins = { minsSrc.x(), Math::max(0.0f, minsSrc.y()), minsSrc.z() };
     maxs = { Math::min(0.0f, maxsSrc.x()), maxsSrc.y(), maxsSrc.z() };
-    SweptTrace tr3 = TryTouchGround(start, end, mins, maxs);
+    Trace tr3 = TryTouchGround(start, end, mins, maxs);
     if (tr3.results.DidHit() && tr3.results.plane_normal.z() >= 0.7f)
     {
         //pm.fraction = fraction;
@@ -1482,7 +1482,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     // Check the +x, -y quadrant
     mins = { Math::max(0.0f, minsSrc.x()), minsSrc.y(), minsSrc.z() };
     maxs = { maxsSrc.x(), Math::min(0.0f, maxsSrc.y()), maxsSrc.z() };
-    SweptTrace tr4 = TryTouchGround(start, end, mins, maxs);
+    Trace tr4 = TryTouchGround(start, end, mins, maxs);
     if (tr4.results.DidHit() && tr4.results.plane_normal.z() >= 0.7f)
     {
         //pm.fraction = fraction;
@@ -1555,7 +1555,7 @@ void CsgoMovement::CategorizePosition(void)
     else
     {
         // Try and move down.
-        SweptTrace initial_tr = TryTouchGround(bumpOrigin, point, GetPlayerMins(), GetPlayerMaxs());
+        Trace initial_tr = TryTouchGround(bumpOrigin, point, GetPlayerMins(), GetPlayerMaxs());
 
         if (initial_tr.results.DidHit() && initial_tr.results.plane_normal.z() >= 0.7f)
         {
@@ -1757,7 +1757,7 @@ void CsgoMovement::PlayerMove(float time_delta)
 }
 
 // Purpose: Traces player movement + position
-SweptTrace CsgoMovement::TracePlayerBBox(const Vector3& start, const Vector3& end)
+Trace CsgoMovement::TracePlayerBBox(const Vector3& start, const Vector3& end)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
@@ -1766,12 +1766,12 @@ SweptTrace CsgoMovement::TracePlayerBBox(const Vector3& start, const Vector3& en
     //   fMask == MASK_PLAYERSOLID and
     //   collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT
 
-    SweptTrace tr{ start, end, GetPlayerMins(), GetPlayerMaxs() };
-    g_coll_world->DoSweptTrace(&tr);
+    Trace tr{ start, end, GetPlayerMins(), GetPlayerMaxs() };
+    g_coll_world->DoTrace(&tr);
     return tr;
 }
 
-SweptTrace CsgoMovement::TryTouchGround(const Vector3& start, const Vector3& end, const Vector3& mins, const Vector3& maxs)
+Trace CsgoMovement::TryTouchGround(const Vector3& start, const Vector3& end, const Vector3& mins, const Vector3& maxs)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
@@ -1780,8 +1780,8 @@ SweptTrace CsgoMovement::TryTouchGround(const Vector3& start, const Vector3& end
     //   fMask == MASK_PLAYERSOLID and
     //   collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT
 
-    SweptTrace tr{ start, end, mins, maxs };
-    g_coll_world->DoSweptTrace(&tr);
+    Trace tr{ start, end, mins, maxs };
+    g_coll_world->DoTrace(&tr);
     return tr;
 }
 // --------- end of source-sdk-2013 code ---------

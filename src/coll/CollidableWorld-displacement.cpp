@@ -16,7 +16,7 @@
 #include "coll/CollidableWorld.h"
 #include "coll/CollidableWorld_Impl.h"
 #include "coll/Debugger.h"
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 #include "csgo_parsing/BspMap.h"
 #include "utils_3d.h"
 
@@ -52,20 +52,20 @@ static bool SourceSdkVectorEqual(const Vector3& vec1, const Vector3& vec2) {
 }
 
 
-uint64_t CollidableWorld::GetSweptTraceCost_Displacement(uint32_t dispcoll_idx)
+uint64_t CollidableWorld::GetTraceCost_Displacement(uint32_t dispcoll_idx)
 {
-    // See BVH::GetSweptLeafTraceCost() for details and considerations.
+    // See BVH::GetLeafTraceCost() for details and considerations.
     return 1; // Is displacement trace cost dependent on triangle count?
 }
 
-void CollidableWorld::DoSweptTrace_Displacement(SweptTrace* trace,
-    uint32_t dispcoll_idx)
+void CollidableWorld::DoSweptTrace_Displacement(Trace* trace,
+                                                uint32_t dispcoll_idx)
 {
+    assert(trace->info.isswept);
     ZoneScoped;
 
     assert(pImpl->hull_disp_coll_trees != Corrade::Containers::NullOpt);
     std::vector<CDispCollTree>& hull_disp_coll_trees = *pImpl->hull_disp_coll_trees;
-
     CDispCollTree& hull_dispcoll = hull_disp_coll_trees[dispcoll_idx];
 
     if (trace->info.isray) { // ray trace
@@ -89,6 +89,38 @@ void CollidableWorld::DoSweptTrace_Displacement(SweptTrace* trace,
     }
 }
 
+void CollidableWorld::DoUnsweptTrace_Displacement(Trace* trace,
+                                                  uint32_t dispcoll_idx)
+{
+    assert(trace->info.isswept == false);
+    ZoneScoped;
+
+    // Only handle unswept hull traces.
+    if (trace->info.isray)
+        return; // An unswept point trace against a displacement makes no sense.
+
+    assert(pImpl->hull_disp_coll_trees != Corrade::Containers::NullOpt);
+    std::vector<CDispCollTree>& hull_disp_coll_trees = *pImpl->hull_disp_coll_trees;
+    CDispCollTree& hull_dispcoll = hull_disp_coll_trees[dispcoll_idx];
+
+    Vector3 abs_aabb_mins = trace->info.startpos - trace->info.extents;
+    Vector3 abs_aabb_maxs = trace->info.startpos + trace->info.extents;
+
+    // AABBTree_IntersectAABB() does nothing and returns false if displacement
+    // has NO_HULL_COLL flag set.
+    if (hull_dispcoll.AABBTree_IntersectAABB(abs_aabb_mins, abs_aabb_maxs)) {
+        // We're intersecting the displacement!
+        trace->results.startsolid   = true;
+        trace->results.allsolid     = true;
+        // Trace fraction of 1.0 is interpreted as nothing being hit.
+        // -> Need to set fraction to something below 1.0
+        trace->results.fraction     = 0.0f;
+        // Can't report a hit surface
+        trace->results.plane_normal = Vector3(0.0f, 0.0f, 0.0f);
+        trace->results.surface      = -1;
+        //trace->contents = brush.contents; // TODO: Return hit contents in a better way
+    }
+}
 
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/public/mathlib/mathlib.h)
@@ -216,7 +248,7 @@ static void AddPointToBounds(const Vector3& v, Vector3& mins, Vector3& maxs)
 // oneSided will cull collisions which approach the triangle from the back
 // side, assuming the vertices are specified in counter-clockwise order
 // The vertices need not be specified in that order if oneSided is not used
-static float IntersectRayWithTriangle(const SweptTrace& trace,
+static float IntersectRayWithTriangle(const Trace& trace,
     const Vector3& v1, const Vector3& v2, const Vector3& v3,
     bool oneSided);
 
@@ -242,7 +274,7 @@ static bool IsBoxIntersectingTriangle(
 // (taken and modified from source-sdk-2013/<...>/src/public/collisionutils.cpp)
 
 // Compute the offset in t along the ray that we'll use for the collision
-static float ComputeBoxOffset(const SweptTrace& trace)
+static float ComputeBoxOffset(const Trace& trace)
 {
     if (trace.info.isray)
         return 1e-3f;
@@ -263,7 +295,7 @@ static float ComputeBoxOffset(const SweptTrace& trace)
 }
 
 // Intersects a swept box against a triangle
-static float IntersectRayWithTriangle(const SweptTrace& trace,
+static float IntersectRayWithTriangle(const Trace& trace,
     const Vector3& v1, const Vector3& v2, const Vector3& v3, bool oneSided)
 {
     // This is cute: Use barycentric coordinates to represent the triangle
@@ -813,8 +845,33 @@ static FORCEINLINE int IntersectRayWithFourBoxes(
     // ==== The following code is the non-SIMD replacement of the code above.
     int hit_mask = 0;
     for (int child_idx = 0; child_idx < 4; child_idx++) {
-        if (IsAabbHitByFullSweptTrace(rayStart, invDelta, rayExtents,
-                                        boxMins[child_idx], boxMaxs[child_idx]))
+        Vector3 hit_mins = boxMins[child_idx];
+        Vector3 hit_maxs = boxMaxs[child_idx];
+        // Offset AABB to make trace start at origin
+        hit_mins -= rayStart;
+        hit_maxs -= rayStart;
+        // Adjust for swept box by enlarging the child bounds to shrink the sweep
+        // down to a point
+        hit_mins -= rayExtents;
+        hit_maxs += rayExtents;
+        // Compute the parametric distance along the ray of intersection in each
+        // dimension
+        hit_mins *= invDelta;
+        hit_maxs *= invDelta;
+        // Find the max overall entry time across all dimensions
+        float box_entry_t =                  Math::min(hit_mins.x(), hit_maxs.x());
+        box_entry_t = Math::max(box_entry_t, Math::min(hit_mins.y(), hit_maxs.y()));
+        box_entry_t = Math::max(box_entry_t, Math::min(hit_mins.z(), hit_maxs.z()));
+        // Find the min overall exit time across all dimensions
+        float box_exit_t  =                  Math::max(hit_mins.x(), hit_maxs.x());
+        box_exit_t  = Math::min(box_exit_t,  Math::max(hit_mins.y(), hit_maxs.y()));
+        box_exit_t  = Math::min(box_exit_t,  Math::max(hit_mins.z(), hit_maxs.z()));
+        // Make sure hit check in the end does not succeed if the hit occurs
+        // before the trace start time (t=0) or after the trace end time (t=1).
+        box_entry_t = Math::max(box_entry_t, 0.0f);
+        box_exit_t  = Math::min(box_exit_t,  1.0f);
+
+        if (box_entry_t <= box_exit_t) // If entry <= exit, we've got a hit
             hit_mask |= 1 << child_idx;
     }
     return hit_mask;
@@ -1072,7 +1129,7 @@ void CDispCollTree::Uncache() {
     m_aEdgePlanes = {};
 }
 
-bool CDispCollTree::AABBTree_Ray(SweptTrace* trace, bool bSide)
+bool CDispCollTree::AABBTree_Ray(Trace* trace, bool bSide)
 {
     // Check for ray test.
     if (CheckFlags(BspMap::DispInfo::FLAG_NO_RAY_COLL))
@@ -1096,8 +1153,8 @@ bool CDispCollTree::AABBTree_Ray(SweptTrace* trace, bool bSide)
     return false;
 }
 
-void CDispCollTree::AABBTree_TreeTrisRayTest(SweptTrace* trace, int iNode,
-    bool bSide, CDispCollTri** pImpactTri)
+void CDispCollTree::AABBTree_TreeTrisRayTest(Trace* trace, int iNode,
+                                             bool bSide, CDispCollTri** pImpactTri)
 {
     rayleaflist_t list;
     // NOTE: This part is loop invariant - should be hoisted up as far as possible
@@ -1140,9 +1197,8 @@ void CDispCollTree::AABBTree_TreeTrisRayTest(SweptTrace* trace, int iNode,
     }
 }
 
-bool CDispCollTree::AABBTree_IntersectAABB(
-    const Vector3& absMins,
-    const Vector3& absMaxs)
+bool CDispCollTree::AABBTree_IntersectAABB(const Vector3& absMins,
+                                           const Vector3& absMaxs)
 {
     // Check for hull test.
     if (CheckFlags(BspMap::DispInfo::FLAG_NO_HULL_COLL))
@@ -1234,7 +1290,7 @@ bool CDispCollTree::AABBTree_IntersectAABB(
     return false;  // No collision
 }
 
-bool CDispCollTree::AABBTree_SweepAABB(SweptTrace* trace)
+bool CDispCollTree::AABBTree_SweepAABB(Trace* trace)
 {
     // Check for hull test.
     if (CheckFlags(BspMap::DispInfo::FLAG_NO_HULL_COLL))
@@ -1308,8 +1364,8 @@ bool CDispCollTree::ResolveRayPlaneIntersect(float flStart, float flEnd,
     return true;
 }
 
-inline bool CDispCollTree::FacePlane(const SweptTrace& trace, CDispCollTri* pTri,
-    CDispCollHelper* pHelper)
+inline bool CDispCollTree::FacePlane(const Trace& trace, CDispCollTri* pTri,
+                                     CDispCollHelper* pHelper)
 {
     // Calculate the closest point on box to plane (get extents in that direction).
     Vector3 vecExtent;
@@ -1329,7 +1385,7 @@ inline bool CDispCollTree::FacePlane(const SweptTrace& trace, CDispCollTri* pTri
         pTri->m_flDist, pHelper);
 }
 
-bool FORCEINLINE CDispCollTree::AxisPlanesXYZ(const SweptTrace& trace,
+bool FORCEINLINE CDispCollTree::AxisPlanesXYZ(const Trace& trace,
     CDispCollTri* pTri, CDispCollHelper* pHelper)
 {
     static const Vector3 g_ImpactNormalVecs[2][3] = {
@@ -1567,8 +1623,8 @@ bool CDispCollTree::Cache_EdgeCrossAxisZ(const Vector3& vecEdge,
 }
 
 template <int AXIS>
-bool CDispCollTree::EdgeCrossAxis(const SweptTrace& trace, unsigned short iPlane,
-    CDispCollHelper* pHelper)
+bool CDispCollTree::EdgeCrossAxis(const Trace& trace, unsigned short iPlane,
+                                  CDispCollHelper* pHelper)
 {
     if (iPlane == DISPCOLL_NORMAL_UNDEF)
         return true;
@@ -1617,26 +1673,26 @@ bool CDispCollTree::EdgeCrossAxis(const SweptTrace& trace, unsigned short iPlane
     return ResolveRayPlaneIntersect(flStart, flEnd, vecNormal, flDist, pHelper);
 }
 
-inline bool CDispCollTree::EdgeCrossAxisX(const SweptTrace& trace,
+inline bool CDispCollTree::EdgeCrossAxisX(const Trace& trace,
     unsigned short iPlane, CDispCollHelper* pHelper)
 {
     return EdgeCrossAxis<0>(trace, iPlane, pHelper);
 }
 
-inline bool CDispCollTree::EdgeCrossAxisY(const SweptTrace& trace,
+inline bool CDispCollTree::EdgeCrossAxisY(const Trace& trace,
     unsigned short iPlane, CDispCollHelper* pHelper)
 {
     return EdgeCrossAxis<1>(trace, iPlane, pHelper);
 }
 
-inline bool CDispCollTree::EdgeCrossAxisZ(const SweptTrace& trace,
+inline bool CDispCollTree::EdgeCrossAxisZ(const Trace& trace,
     unsigned short iPlane, CDispCollHelper* pHelper)
 {
     return EdgeCrossAxis<2>(trace, iPlane, pHelper);
 }
 
-void CDispCollTree::SweepAABBTriIntersect(SweptTrace* trace, int iTri,
-    CDispCollTri* pTri)
+void CDispCollTree::SweepAABBTriIntersect(Trace* trace, int iTri,
+                                          CDispCollTri* pTri)
 {
     // Init test data.
     CDispCollHelper helper;

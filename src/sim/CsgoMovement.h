@@ -4,7 +4,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
-#include "coll/SweptTrace.h"
+#include "coll/Trace.h"
 
 
 // -------- start of source-sdk-2013 code --------
@@ -113,9 +113,9 @@ public:
     Magnum::Vector3 GetPlayerMins(bool ducked) const;
     Magnum::Vector3 GetPlayerMaxs(bool ducked) const;
 
-    coll::SweptTrace TracePlayerBBox(
+    coll::Trace TracePlayerBBox(
         const Magnum::Vector3& start, const Magnum::Vector3& end);
-    coll::SweptTrace TryTouchGround(
+    coll::Trace TryTouchGround(
         const Magnum::Vector3& start, const Magnum::Vector3& end,
         const Magnum::Vector3& mins, const Magnum::Vector3& maxs);
 
@@ -178,7 +178,7 @@ public:
     // The basic solid body movement clip that slides along multiple planes
     int TryPlayerMove(float frametime,
         const Magnum::Vector3* pFirstDest = nullptr,
-        const coll::SweptTrace* pFirstTrace = nullptr);
+        const coll::Trace* pFirstTrace = nullptr);
 
     //float LadderDistance(void) const { return 2.0f; } ///< Returns the distance a player can be from a ladder and still attach to it
     //float ClimbSpeed(void) const { return MAX_CLIMB_SPEED; }
@@ -210,23 +210,23 @@ public:
     //void FinishDuck(void);
     //bool CanUnduck();
     //void UpdateDuckJumpEyeOffset(void);
-    //bool CanUnDuckJump(coll::SweptTrace& trace);
+    //bool CanUnDuckJump(coll::Trace& trace);
     //void StartUnDuckJump(void);
-    //void FinishUnDuckJump(coll::SweptTrace& trace);
+    //void FinishUnDuckJump(coll::Trace& trace);
     //void SetDuckedEyeOffset(float duckFraction);
     //
     //float SplineFraction(float value, float scale);
 
-    void CategorizeGroundSurface(int16_t surface/*const coll::SweptTrace& pm*/);
+    void CategorizeGroundSurface(int16_t surface/*const coll::Trace& pm*/);
 
     // Traces the player bbox as it is swept from start to end
-    //CBaseHandle TestPlayerPosition(const Magnum::Vector3& pos, int collisionGroup, coll::SweptTrace& pm);
+    //CBaseHandle TestPlayerPosition(const Magnum::Vector3& pos, int collisionGroup, coll::Trace& pm);
 
     // Set whether player is standing on ground, and if so, what ground surface
     void SetGroundEntity(bool has_ground, int16_t surface = -1);
 
     void StepMove(float frametime, const Magnum::Vector3& vecDestination,
-        const coll::SweptTrace& trace);
+        const coll::Trace& trace);
 
     // When we step on ground that's too steep, search to see if there's any
     // ground nearby that isn't too steep.
