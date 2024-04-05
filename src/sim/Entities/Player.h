@@ -13,14 +13,6 @@ namespace sim::Entities {
 
 class Player {
 public:
-    Magnum::Vector3 position;
-    Magnum::Vector3 velocity;
-    Magnum::Vector3 angles; // pitch, yaw, roll
-
-    float stamina = CSGO_CVAR_SV_STAMINAMAX;
-
-    bool crouched = false; // TODO: crouch progress?
-
     unsigned int weaponSlot = 0; // = WEAPON_BUMPMINE; // TODO default init this
     float timeSinceWeaponSwitch_sec = 100.0f; // seconds
 

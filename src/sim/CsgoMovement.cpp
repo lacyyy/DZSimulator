@@ -97,6 +97,14 @@ static bool SourceSdkVectorEqual(const Vector3& vec1, const Vector3& vec2) {
 
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/game/shared/shareddefs.h)
+
+// Height above entity position where the viewer's eye is.
+const Vector3 VEC_VIEW      = { 0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING  };
+const Vector3 VEC_DUCK_VIEW = { 0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_CROUCHING };
+
+const float TIME_TO_DUCK   = 0.4f;
+const float TIME_TO_UNDUCK = 0.2f;
+
 //const float PLAYER_FATAL_FALL_SPEED     = 1024.0f; // approx 60 feet
 const float PLAYER_MAX_SAFE_FALL_SPEED = 580.0f; // approx 20 feet
 const float PLAYER_MIN_BOUNCE_SPEED = 200.0f;
@@ -112,6 +120,20 @@ const float PLAYER_FALL_PUNCH_THRESHOLD = 350.0f; // won't punch player's screen
 #define GAMEMOVEMENT_JUMP_HEIGHT    21.0f  // units // remove this?
 #define GAMEMOVEMENT_TIME_TO_UNDUCK   ( TIME_TO_UNDUCK * 1000.0f )  // ms
 #define GAMEMOVEMENT_TIME_TO_UNDUCK_INV  ( GAMEMOVEMENT_DUCK_TIME - GAMEMOVEMENT_TIME_TO_UNDUCK )
+// --------- end of source-sdk-2013 code ---------
+
+
+// -------- start of source-sdk-2013 code --------
+// (taken and modified from source-sdk-2013/<...>/src/public/mathlib/mathlib.h)
+// Hermite basis function for smooth interpolation.
+// Similar to Gain() above, but very cheap to call.
+// value should be between 0 & 1 inclusive
+inline float SimpleSpline(float value)
+{
+    float valueSquared = value * value;
+    // Nice little ease-in, ease-out spline-like curve
+    return (3 * valueSquared - 2 * valueSquared * value);
+}
 // --------- end of source-sdk-2013 code ---------
 
 
@@ -223,6 +245,10 @@ Vector3 CsgoMovement::GetPlayerMaxs(bool ducked) const
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
     if (ducked) return { +0.5f * CSGO_PLAYER_WIDTH, +0.5f * CSGO_PLAYER_WIDTH, CSGO_PLAYER_HEIGHT_CROUCHED };
     else        return { +0.5f * CSGO_PLAYER_WIDTH, +0.5f * CSGO_PLAYER_WIDTH, CSGO_PLAYER_HEIGHT_STANDING };
+}
+
+Vector3 CsgoMovement::GetPlayerViewOffset(bool ducked) const {
+    return ducked ? VEC_DUCK_VIEW : VEC_VIEW;
 }
 
 void CsgoMovement::CategorizeGroundSurface(int16_t surface/*const Trace& pm*/)
@@ -915,7 +941,7 @@ void CsgoMovement::FullWalkMove(float frametime)
             m_nOldButtons &= ~IN_JUMP;
         }
 
-        // Fricion is handled before we add in any base velocity. That way, if we are on a conveyor, 
+        // Friction is handled before we add in any base velocity. That way, if we are on a conveyor,
         //  we don't slow when standing still, relative to the conveyor.
         if (m_hGroundEntity)
         {
@@ -1645,6 +1671,418 @@ void CsgoMovement::CheckFalling(void)
     m_flFallVelocity = 0.0f;
 }
 
+bool CsgoMovement::CanUnduck()
+{
+    Vector3 newOrigin = m_vecAbsOrigin;
+
+    if (!m_hGroundEntity)
+    {
+        // If in air an letting go of crouch, make sure we can offset origin to
+        // make up for uncrouching
+        Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
+        Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
+        Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+        viewDelta = -viewDelta;
+        newOrigin += viewDelta;
+    }
+
+    bool saveducked = m_bDucked;
+    m_bDucked = false;
+    Trace trace = TracePlayerBBox(m_vecAbsOrigin, newOrigin);
+    m_bDucked = saveducked;
+    if (trace.results.startsolid || trace.results.fraction != 1.0f)
+        return false;
+    return true;
+}
+
+// Purpose: Stop ducking
+void CsgoMovement::FinishUnDuck(void)
+{
+    Vector3 newOrigin = m_vecAbsOrigin;
+
+    if (!m_hGroundEntity)
+    {
+        // If in air an letting go of crouch, make sure we can offset origin to
+        // make up for uncrouching
+        Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
+        Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
+        Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+        viewDelta = -viewDelta;
+        newOrigin += viewDelta;
+    }
+
+    m_fFlags &= ~FL_DUCKING;
+    m_bDucked     = false;
+    m_bDucking    = false;
+    m_bInDuckJump = false;
+    m_vecViewOffset = GetPlayerViewOffset(false);
+    m_flDucktime = 0;
+
+    m_vecAbsOrigin = newOrigin;
+
+    // player->ResetLatched(); // Some kind of animation reset
+
+    // Recategorize position since ducking can change origin
+    CategorizePosition();
+}
+
+void CsgoMovement::UpdateDuckJumpEyeOffset(void)
+{
+    if (m_flDuckJumpTime != 0.0f)
+    {
+        float flDuckMilliseconds =
+            Math::max(0.0f, GAMEMOVEMENT_DUCK_TIME - m_flDuckJumpTime);
+        float flDuckSeconds = flDuckMilliseconds / GAMEMOVEMENT_DUCK_TIME;
+        if (flDuckSeconds > TIME_TO_UNDUCK)
+        {
+            m_flDuckJumpTime = 0.0f;
+            SetDuckedEyeOffset(0.0f);
+        }
+        else
+        {
+            float flDuckFraction = SimpleSpline(1.0f - (flDuckSeconds / TIME_TO_UNDUCK));
+            SetDuckedEyeOffset(flDuckFraction);
+        }
+    }
+}
+
+void CsgoMovement::FinishUnDuckJump(float trace_fraction)
+{
+    Vector3 vecNewOrigin = m_vecAbsOrigin;
+
+    //  Up for uncrouching.
+    Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
+    Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
+    Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+
+    float flDeltaZ = viewDelta.z();
+    viewDelta.z() *= trace_fraction;
+    flDeltaZ -= viewDelta.z();
+
+    m_fFlags &= ~FL_DUCKING;
+    m_bDucked     = false;
+    m_bDucking    = false;
+    m_bInDuckJump = false;
+    m_flDucktime     = 0.0f;
+    m_flDuckJumpTime = 0.0f;
+    m_flJumpTime     = 0.0f;
+
+    Vector3 vecViewOffset = GetPlayerViewOffset(false);
+    vecViewOffset.z() -= flDeltaZ;
+    m_vecViewOffset = vecViewOffset;
+
+    vecNewOrigin -= viewDelta;
+    m_vecAbsOrigin = vecNewOrigin;
+
+    // Recategorize position since ducking can change origin
+    CategorizePosition();
+}
+
+// Purpose: Finish ducking
+void CsgoMovement::FinishDuck(void)
+{
+    if (m_fFlags & FL_DUCKING)
+        return;
+
+    m_fFlags |= FL_DUCKING;
+    m_bDucked = true;
+    m_bDucking = false;
+
+    m_vecViewOffset = GetPlayerViewOffset(true);
+
+    if (!m_hGroundEntity)
+    {
+        Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
+        Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
+        Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+        Vector3 out = m_vecAbsOrigin + viewDelta;
+        m_vecAbsOrigin = out;
+
+        // player->ResetLatched(); // Some kind of animation reset
+    }
+
+    // See if we are stuck?
+    //FixPlayerCrouchStuck(true);
+
+    // Recategorize position since ducking can change origin
+    CategorizePosition();
+}
+
+void CsgoMovement::StartUnDuckJump(void)
+{
+    m_fFlags |= FL_DUCKING;
+    m_bDucked = true;
+    m_bDucking = false;
+
+    m_vecViewOffset = GetPlayerViewOffset(true);
+
+    Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
+    Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
+    Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+    Vector3 out = m_vecAbsOrigin + viewDelta;
+    m_vecAbsOrigin = out;
+
+    // See if we are stuck?
+    //FixPlayerCrouchStuck(true);
+
+    // Recategorize position since ducking can change origin
+    CategorizePosition();
+}
+
+void CsgoMovement::SetDuckedEyeOffset(float duckFraction)
+{
+    Vector3 vDuckHullMin  = GetPlayerMins(true);
+    Vector3 vStandHullMin = GetPlayerMins(false);
+
+    float fMore = vDuckHullMin.z() - vStandHullMin.z();
+
+    Vector3 vecDuckViewOffset  = GetPlayerViewOffset(true);
+    Vector3 vecStandViewOffset = GetPlayerViewOffset(false);
+    Vector3 temp = m_vecViewOffset;
+    temp.z() = (     duckFraction  * (vecDuckViewOffset.z() - fMore)) +
+               ((1 - duckFraction) * vecStandViewOffset.z());
+    m_vecViewOffset = temp;
+}
+
+// Purpose: Crop the speed of the player when ducking and on the ground.
+//   Input: bInDuck - is the player already ducking
+//          bInAir - is the player in air
+//    NOTE: Only crop player speed once.
+void CsgoMovement::HandleDuckingSpeedCrop(void)
+{
+    if (!(m_iSpeedCropped & SPEED_CROPPED_DUCK) && (m_fFlags & FL_DUCKING) && m_hGroundEntity)
+    {
+        float frac = 0.33333333f;
+        m_flForwardMove *= frac;
+        m_flSideMove    *= frac;
+        //m_flUpMove      *= frac;
+        m_iSpeedCropped |= SPEED_CROPPED_DUCK;
+    }
+}
+
+// Purpose: Check to see if we are in a situation where we can unduck jump.
+bool CsgoMovement::CanUnDuckJump(float* trace_fraction)
+{
+    // Trace down to the stand position and see if we can stand.
+    Vector3 vecEnd = m_vecAbsOrigin;
+    vecEnd.z() -= 36.0f; // This will have to change if bounding hull change!
+    Trace trace = TracePlayerBBox(m_vecAbsOrigin, vecEnd);
+    *trace_fraction = trace.results.fraction;
+    if (trace.results.fraction < 1.0f)
+    {
+        // Find the endpoint.
+        vecEnd.z() = m_vecAbsOrigin.z() + (-36.0f * trace.results.fraction);
+
+        // Test a normal hull.
+        bool bWasDucked = m_bDucked;
+        m_bDucked = false;
+        Trace traceUp = TracePlayerBBox(vecEnd, vecEnd);
+        m_bDucked = bWasDucked;
+        if (!traceUp.results.startsolid)
+            return true;
+    }
+
+    return false;
+}
+
+// Purpose: See if duck button is pressed and do the appropriate things
+void CsgoMovement::Duck(void)
+{
+    int buttonsChanged  = m_nOldButtons ^ m_nButtons;     // These buttons have changed this frame
+    int buttonsPressed  = buttonsChanged & m_nButtons;    // The changed ones still down are "pressed"
+    int buttonsReleased = buttonsChanged & m_nOldButtons; // The changed ones which were previously down are "released"
+
+    // Check to see if we are in the air.
+    bool bInAir  = !m_hGroundEntity;
+    bool bInDuck = m_fFlags & FL_DUCKING;
+    bool bDuckJump     = m_flJumpTime     > 0.0f;
+    bool bDuckJumpTime = m_flDuckJumpTime > 0.0f;
+
+    if (m_nButtons & IN_DUCK)
+        m_nOldButtons |= IN_DUCK;
+    else
+        m_nOldButtons &= ~IN_DUCK;
+
+    // Slow down ducked players.
+    HandleDuckingSpeedCrop();
+
+    // If the player is holding down the duck button, the player is in duck transition, ducking, or duck-jumping.
+    if ((m_nButtons & IN_DUCK) || m_bDucking || bInDuck || bDuckJump)
+    {
+        // DUCK
+        if ((m_nButtons & IN_DUCK) || bDuckJump)
+        {
+            // Have the duck button pressed, but the player currently isn't in the duck position.
+            if ((buttonsPressed & IN_DUCK) && !bInDuck && !bDuckJump && !bDuckJumpTime)
+            {
+                m_flDucktime = GAMEMOVEMENT_DUCK_TIME;
+                m_bDucking = true;
+            }
+
+            // The player is in duck transition and not duck-jumping.
+            if (m_bDucking && !bDuckJump && !bDuckJumpTime)
+            {
+                float flDuckMilliseconds =
+                    Math::max(0.0f, GAMEMOVEMENT_DUCK_TIME - m_flDucktime);
+                float flDuckSeconds = flDuckMilliseconds * 0.001f;
+
+                // Finish in duck transition when transition time is over, in "duck", in air.
+                if (flDuckSeconds > TIME_TO_DUCK || bInDuck || bInAir)
+                {
+                    FinishDuck();
+                }
+                else
+                {
+                    // Calc parametric time
+                    float flDuckFraction = SimpleSpline(flDuckSeconds / TIME_TO_DUCK);
+                    SetDuckedEyeOffset(flDuckFraction);
+                }
+            }
+
+            if (bDuckJump)
+            {
+                // Make the bounding box small immediately.
+                if (!bInDuck)
+                {
+                    StartUnDuckJump();
+                }
+                else
+                {
+                    // Check for a crouch override.
+                    if (!(m_nButtons & IN_DUCK))
+                    {
+                        float trace_fraction;
+                        if (CanUnDuckJump(&trace_fraction))
+                        {
+                            FinishUnDuckJump(trace_fraction);
+                            m_flDuckJumpTime =
+                                GAMEMOVEMENT_TIME_TO_UNDUCK * (1.0f - trace_fraction)
+                                + GAMEMOVEMENT_TIME_TO_UNDUCK_INV;
+                        }
+                    }
+                }
+            }
+        }
+        // UNDUCK (or attempt to...)
+        else
+        {
+            if (m_bInDuckJump)
+            {
+                // Check for a crouch override.
+                if (!(m_nButtons & IN_DUCK))
+                {
+                    float trace_fraction;
+                    if (CanUnDuckJump(&trace_fraction))
+                    {
+                        FinishUnDuckJump(trace_fraction);
+
+                        if (trace_fraction < 1.0f)
+                        {
+                            m_flDuckJumpTime =
+                                GAMEMOVEMENT_TIME_TO_UNDUCK * (1.0f - trace_fraction)
+                                + GAMEMOVEMENT_TIME_TO_UNDUCK_INV;
+                        }
+                    }
+                }
+                else
+                {
+                    m_bInDuckJump = false;
+                }
+            }
+
+            if (bDuckJumpTime)
+                return;
+
+            // Try to unduck unless automovement is not allowed
+            // NOTE: When not onground, you can always unduck
+            if (m_bAllowAutoMovement || bInAir || m_bDucking)
+            {
+                // We released the duck button, we aren't in "duck" and we are not in the air - start unduck transition.
+                if (buttonsReleased & IN_DUCK)
+                {
+                    if (bInDuck && !bDuckJump)
+                    {
+                        m_flDucktime = GAMEMOVEMENT_DUCK_TIME;
+                    }
+                    else if (m_bDucking && !m_bDucked)
+                    {
+                        // Invert time if release before fully ducked!!!
+                        float unduckMilliseconds = 1000.0f * TIME_TO_UNDUCK;
+                        float duckMilliseconds   = 1000.0f * TIME_TO_DUCK;
+                        float elapsedMilliseconds = GAMEMOVEMENT_DUCK_TIME - m_flDucktime;
+
+                        float fracDucked = elapsedMilliseconds / duckMilliseconds;
+                        float remainingUnduckMilliseconds = fracDucked * unduckMilliseconds;
+
+                        m_flDucktime = GAMEMOVEMENT_DUCK_TIME - unduckMilliseconds
+                            + remainingUnduckMilliseconds;
+                    }
+                }
+
+
+                // Check to see if we are capable of unducking.
+                if (CanUnduck())
+                {
+                    // or unducking
+                    if (m_bDucking || m_bDucked)
+                    {
+                        float flDuckMilliseconds =
+                            Math::max(0.0f, GAMEMOVEMENT_DUCK_TIME - m_flDucktime);
+                        float flDuckSeconds = flDuckMilliseconds * 0.001f;
+
+                        // Finish ducking immediately if duck time is over or not on ground
+                        if (flDuckSeconds > TIME_TO_UNDUCK || (bInAir && !bDuckJump))
+                        {
+                            FinishUnDuck();
+                        }
+                        else
+                        {
+                            // Calc parametric time
+                            float flDuckFraction = SimpleSpline(1.0f - (flDuckSeconds / TIME_TO_UNDUCK));
+                            SetDuckedEyeOffset(flDuckFraction);
+                            m_bDucking = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // Still under something where we can't unduck, so make sure we reset this timer so
+                    //  that we'll unduck once we exit the tunnel, etc.
+                    if (m_flDucktime != GAMEMOVEMENT_DUCK_TIME)
+                    {
+                        SetDuckedEyeOffset(1.0f);
+                        m_flDucktime = GAMEMOVEMENT_DUCK_TIME;
+                        m_bDucked = true;
+                        m_bDucking = false;
+                        m_fFlags |= FL_DUCKING;
+                    }
+                }
+            }
+        }
+    }
+    // HACK: (jimd 5/25/2006) we have a reoccuring bug (#50063 in Tracker) where the player's
+    // view height gets left at the ducked height while the player is standing, but we haven't
+    // been  able to repro it to find the cause.  It may be fixed now due to a change I'm
+    // also making in UpdateDuckJumpEyeOffset but just in case, this code will sense the
+    // problem and restore the eye to the proper position.  It doesn't smooth the transition,
+    // but it is preferable to leaving the player's view too low.
+    //
+    // If the player is still alive and not an observer, check to make sure that
+    // his view height is at the standing height.
+    else if (true /* !IsDead() && !player->IsObserver() && !player->IsInAVehicle() */)
+    {
+        if (m_flDuckJumpTime == 0.0f && Math::abs(m_vecViewOffset.z() - GetPlayerViewOffset(false).z()) > 0.1)
+        {
+            // we should rarely ever get here, so assert so a coder knows when it happens
+            //assert(0); // Commented out for DZSimulator
+            Debug{} << "[GameMovement] source-sdk-2013 HACK: Restoring player view height";
+
+            // set the eye height to the non-ducked height
+            SetDuckedEyeOffset(0.0f);
+        }
+    }
+}
+
 void CsgoMovement::PlayerMove(float time_delta)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
@@ -1696,8 +2134,8 @@ void CsgoMovement::PlayerMove(float time_delta)
 
     //player->UpdateStepSound(player->m_pSurfaceData, m_vecAbsOrigin, m_vecVelocity);
 
-    //UpdateDuckJumpEyeOffset();
-    //Duck();
+    UpdateDuckJumpEyeOffset();
+    Duck();
 
     // If was not on a ladder now, but was on one before, 
     //  get off of the ladder
@@ -1784,4 +2222,5 @@ Trace CsgoMovement::TryTouchGround(const Vector3& start, const Vector3& end, con
     g_coll_world->DoTrace(&tr);
     return tr;
 }
+
 // --------- end of source-sdk-2013 code ---------

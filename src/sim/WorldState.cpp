@@ -23,11 +23,11 @@ WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& s
     
     WorldState interpState = stateA;
 
-    interpState.player.position += phase * (stateB.player.position - stateA.player.position);
+    // NOTE: Player movement state is only partially being interpolated.
+    interpState.csgo_mv.m_vecAbsOrigin  += phase * (stateB.csgo_mv.m_vecAbsOrigin  - stateA.csgo_mv.m_vecAbsOrigin);
+    interpState.csgo_mv.m_vecViewOffset += phase * (stateB.csgo_mv.m_vecViewOffset - stateA.csgo_mv.m_vecViewOffset);
 
     // TODO Interpolate Bumpmines (do we need unique IDs for them?)
-
-    // NOTE: Player movement state is not being interpolated.
 
     return interpState;
 }
@@ -87,7 +87,7 @@ void WorldState::DoTimeStep(double step_size_sec,
     // FIXME we want the angles when the bumpmine was thrown, exactly! Confirm that's in CSGO the same way.
     if (!player_input.empty()) {
         // The latest input decides the new viewing angle
-        this->player.angles = {
+        csgo_mv.m_vecViewAngles = {
             player_input.back().viewingAnglePitch,
             player_input.back().viewingAngleYaw,
             0.0f
@@ -103,8 +103,8 @@ void WorldState::DoTimeStep(double step_size_sec,
     // Toggle CSGO and flying movement
     if (this->player.inputCmdActiveCount_attack2 != 0) {
         // ---- FLYING MOVEMENT ----
-        Vector3 forward_dir_xy  { Math::cos(Deg{this->player.angles.y()        }), Math::sin(Deg{this->player.angles.y()        }), 0.0f };
-        Vector3 moveright_dir_xy{ Math::cos(Deg{this->player.angles.y() - 90.0f}), Math::sin(Deg{this->player.angles.y() - 90.0f}), 0.0f };
+        Vector3 forward_dir_xy  { Math::cos(Deg{csgo_mv.m_vecViewAngles.y()        }), Math::sin(Deg{csgo_mv.m_vecViewAngles.y()        }), 0.0f };
+        Vector3 moveright_dir_xy{ Math::cos(Deg{csgo_mv.m_vecViewAngles.y() - 90.0f}), Math::sin(Deg{csgo_mv.m_vecViewAngles.y() - 90.0f}), 0.0f };
 
         Vector3 wish_dir_xy = { 0.0f, 0.0f, 0.0f };
         if      (tryMoveForward && !tryMoveBack   ) wish_dir_xy += forward_dir_xy;
@@ -112,8 +112,8 @@ void WorldState::DoTimeStep(double step_size_sec,
         if      (tryMoveRight   && !tryMoveLeft   ) wish_dir_xy += moveright_dir_xy;
         else if (tryMoveLeft    && !tryMoveRight  ) wish_dir_xy -= moveright_dir_xy;
         if (wish_dir_xy.x() == 0.0f && wish_dir_xy.y() == 0.0f) {
-            this->player.velocity.x() = 0.0f;
-            this->player.velocity.y() = 0.0f;
+            csgo_mv.m_vecVelocity.x() = 0.0f;
+            csgo_mv.m_vecVelocity.y() = 0.0f;
         }
         else {
             NormalizeInPlace(wish_dir_xy);
@@ -121,24 +121,24 @@ void WorldState::DoTimeStep(double step_size_sec,
             float WALK_SPEED = 250.0f;
             if (this->player.inputCmdActiveCount_speed) WALK_SPEED *= 12;
 
-            this->player.velocity.x() = WALK_SPEED * wish_dir_xy.x();
-            this->player.velocity.y() = WALK_SPEED * wish_dir_xy.y();
+            csgo_mv.m_vecVelocity.x() = WALK_SPEED * wish_dir_xy.x();
+            csgo_mv.m_vecVelocity.y() = WALK_SPEED * wish_dir_xy.y();
         }
 
         if (this->player.inputCmdActiveCount_jump != 0) {
             if (this->player.inputCmdActiveCount_speed)
-                this->player.velocity.z() = 6 * 300.0f;
+                csgo_mv.m_vecVelocity.z() = 6 * 300.0f;
             else
-                this->player.velocity.z() = 300.0f;
+                csgo_mv.m_vecVelocity.z() = 300.0f;
         }
         else if (this->player.inputCmdActiveCount_duck != 0) {
-            this->player.velocity.z() = 6 * -300.0f;
+            csgo_mv.m_vecVelocity.z() = 6 * -300.0f;
         }
         else {
-            this->player.velocity.z() = 0.0f;
+            csgo_mv.m_vecVelocity.z() = 0.0f;
         }
 
-        this->player.position += timeDelta * this->player.velocity;
+        csgo_mv.m_vecAbsOrigin += timeDelta * csgo_mv.m_vecVelocity;
     }
     else {
         // ---- CSGO MOVEMENT ----
@@ -167,15 +167,10 @@ void WorldState::DoTimeStep(double step_size_sec,
         if (tryMoveRight) csgo_mv.m_flSideMove += 450.0f; // cl_sidespeed  ?
         if (tryMoveLeft)  csgo_mv.m_flSideMove -= 450.0f; // cl_sidespeed  ?
 
-        // TODO This is redundant, don't need this m_vecViewAngles global var
-        csgo_mv.m_vecViewAngles = this->player.angles;
-        csgo_mv.m_vecAbsOrigin  = this->player.position;
-        //csgo_mv.m_vecVelocity   = this->player.velocity;
-
         // Temporary: On attack input, boost player in looking direction 
         if (tryAttack) {
             Vector3 forward;
-            AngleVectors(player.angles, &forward);
+            AngleVectors(csgo_mv.m_vecViewAngles, &forward);
             csgo_mv.m_vecVelocity += 1400 * forward;
         }
 
@@ -200,11 +195,5 @@ void WorldState::DoTimeStep(double step_size_sec,
         csgo_mv.PlayerMove(timeDelta);
         csgo_mv.FinishMove();
         // --------- end of source-sdk-2013 code ---------
-
-        // After all Source engine movement code was run, update relevant results in
-        // our structures
-        this->player.position = csgo_mv.m_vecAbsOrigin;
-        //this->player.velocity = csgo_mv.m_vecVelocity;
-        this->player.crouched = csgo_mv.m_bDucked;
     }
 }

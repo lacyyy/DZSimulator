@@ -830,8 +830,8 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
         csgo_parsing::BspMap::PlayerSpawn& playerSpawn = _bsp_map->player_spawns[0];
         _cam_pos = playerSpawn.origin; // wrong cam pos
         _cam_ang = playerSpawn.angles;
-        initial_worldstate.player.position = playerSpawn.origin;
-        initial_worldstate.player.angles   = playerSpawn.angles;
+        initial_worldstate.csgo_mv.m_vecAbsOrigin  = playerSpawn.origin;
+        initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
     }
     _csgo_game_sim.Start(1.0f / CSGO_TICKRATE, 1.0f, initial_worldstate);
     _drawn_worldstate = std::move(initial_worldstate);
@@ -1535,8 +1535,8 @@ void DZSimApplication::DoUpdate()
                 CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
     else { // Take position from our game simulation
-        _cam_pos = _drawn_worldstate.player.position
-            + Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
+        _cam_pos = _drawn_worldstate.csgo_mv.m_vecAbsOrigin +
+                   _drawn_worldstate.csgo_mv.m_vecViewOffset;
     }
 
     // When in "sparing low latency draw mode", force a frame redraw if the last
@@ -1632,7 +1632,7 @@ void DZSimApplication::drawEvent() {
         hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
     }
     else {
-        player_feet_pos = _cam_pos - Vector3(0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING);
+        player_feet_pos = _drawn_worldstate.csgo_mv.m_vecAbsOrigin;
         hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
     }
 

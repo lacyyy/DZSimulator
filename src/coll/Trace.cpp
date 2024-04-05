@@ -14,9 +14,9 @@ bool Trace::HitsAabb(const Magnum::Vector3 &aabb_mins,
                      const Magnum::Vector3 &aabb_maxs,
                      float* hit_fraction) const
 {
-	// NOTE: The code in this method was written for swept traces, but also
-	//       works for unswept traces.
-	
+    // NOTE: The code in this method was written for swept traces, but also
+    //       works for unswept traces.
+
     // @Optimization If this trace is unswept, just do a simple AABB-point
     //               intersection test?
     // @Optimization Make these trace tests inline? Use __forceinline on

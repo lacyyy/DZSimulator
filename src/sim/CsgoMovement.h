@@ -84,6 +84,7 @@ public:
     float m_flSideMove    = 0.0f;
     int   m_nButtons    = 0;
     int   m_nOldButtons = 0;
+    Magnum::Vector3 m_vecViewOffset   = { 0.0f, 0.0f, 0.0f }; // Object eye position
     Magnum::Vector3 m_vecViewAngles   = { 0.0f, 0.0f, 0.0f }; // Command view angles (local space)
     Magnum::Vector3 m_vecAbsOrigin    = { 0.0f, 0.0f, 0.0f };
     Magnum::Vector3 m_vecVelocity     = { 0.0f, 0.0f, 0.0f };
@@ -112,6 +113,7 @@ public:
 
     Magnum::Vector3 GetPlayerMins(bool ducked) const;
     Magnum::Vector3 GetPlayerMaxs(bool ducked) const;
+    Magnum::Vector3 GetPlayerViewOffset(bool ducked) const;
 
     coll::Trace TracePlayerBBox(
         const Magnum::Vector3& start, const Magnum::Vector3& end);
@@ -204,17 +206,17 @@ public:
     void CheckFalling(void);
 
     // Ducking
-    //void Duck(void);
-    //void HandleDuckingSpeedCrop();
-    //void FinishUnDuck(void);
-    //void FinishDuck(void);
-    //bool CanUnduck();
-    //void UpdateDuckJumpEyeOffset(void);
-    //bool CanUnDuckJump(coll::Trace& trace);
-    //void StartUnDuckJump(void);
-    //void FinishUnDuckJump(coll::Trace& trace);
-    //void SetDuckedEyeOffset(float duckFraction);
-    //
+    void Duck(void);
+    void HandleDuckingSpeedCrop();
+    void FinishUnDuck(void);
+    void FinishDuck(void);
+    bool CanUnduck();
+    void UpdateDuckJumpEyeOffset(void);
+    bool CanUnDuckJump(float* trace_fraction);
+    void StartUnDuckJump(void);
+    void FinishUnDuckJump(float trace_fraction);
+    void SetDuckedEyeOffset(float duckFraction);
+
     //float SplineFraction(float value, float scale);
 
     void CategorizeGroundSurface(int16_t surface/*const coll::Trace& pm*/);
