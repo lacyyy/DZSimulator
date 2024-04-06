@@ -137,6 +137,13 @@ const float CSGO_CVAR_SV_KNIFE_ATTACK_EXTEND_FROM_PLAYER_AABB = 10.0f; // (def: 
 //cl_pdump 1 for player values
 //
 //r_eyewaterepsilon
+//
+//sv_ledge_mantle_helper (default: 1, apparently removed in CS2?)
+//  "1=Only improves success of jump+ducks to windows or vents (jump+duck to
+//  duck), 2=Improves success of all jump+ducks to ledges, 3=if you can get your
+//  eyes above it, you'll pull yourself up"
+//sv_ledge_mantle_helper_dzonly (default: 0)
+//sv_ledge_mantle_helper_debug (hidden cvar)
 
 // ==== HARDCODED GAME CONSTANTS ====
 
