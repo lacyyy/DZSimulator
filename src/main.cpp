@@ -28,7 +28,6 @@
 #include "coll/Benchmark.h"
 #include "coll/CollidableWorld.h"
 #include "coll/Trace.h"
-#include "csgo_integration/Gsi.h"
 #include "csgo_integration/Handler.h"
 #include "csgo_integration/RemoteConsole.h"
 #include "csgo_parsing/AssetFinder.h"
@@ -97,10 +96,6 @@ class DZSimApplication: public Platform::Application {
         csgo_integration::Handler::CsgoServerTickData _latest_csgo_server_data;
         csgo_integration::Handler::CsgoClientsideData _latest_csgo_client_data;
 
-        csgo_integration::Gsi _gsi;
-        csgo_integration::GsiState _latest_gsi_state;
-        size_t _num_received_gsi_states = 0;
-
         GitHubChecker _update_checker;
 
         DebugTools::FrameProfilerGL _magnum_profiler; // Simple profiler class provided by Magnum
@@ -121,7 +116,6 @@ class DZSimApplication: public Platform::Application {
         };
         UserInputMode _user_input_mode;
 
-        Vector3 _cam_pos; // X, Y, Z
         Vector3 _cam_ang; // pitch, yaw, roll
 
         // State recently set to avoid redundant system calls
@@ -167,7 +161,8 @@ class DZSimApplication: public Platform::Application {
 #ifndef DZSIM_WEB_PORT
         void tickEvent() override;
 #endif
-        void CalcViewProjTransformation();
+        Matrix4 CalcViewProjTransformation(const Vector3& cam_pos,
+                                           const Vector3& cam_ang);
         Vector3 GetCameraForwardVector(); // Normalized
         void drawEvent() override;
         void textInputEvent(TextInputEvent& event) override
@@ -234,8 +229,6 @@ class DZSimApplication: public Platform::Application {
                 if (_gui._context.handleKeyReleaseEvent(event)) return;
             _inputs.HandleKeyReleaseEvent(event);
         }
-        
-        Matrix4 _view_proj_transformation; // = projection_matrix * view_matrix
 };
 
 DZSimApplication::DZSimApplication(const Arguments& arguments)
@@ -523,7 +516,6 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 #endif
 
     ConfigureGameKeyBindings();
-    CalcViewProjTransformation();
 
 #ifndef DZSIM_WEB_PORT
     _update_checker.StartAsyncUpdateAndMotdCheck();
@@ -825,7 +817,6 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     sim::WorldState initial_worldstate;
     if (_bsp_map->player_spawns.size() > 0) {
         csgo_parsing::BspMap::PlayerSpawn& playerSpawn = _bsp_map->player_spawns[0];
-        _cam_pos = playerSpawn.origin; // wrong cam pos
         _cam_ang = playerSpawn.angles;
         initial_worldstate.csgo_mv.m_vecAbsOrigin  = playerSpawn.origin;
         initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
@@ -936,11 +927,16 @@ void DZSimApplication::ShootTestTraceOutFromCamera()
     if (!coll::Debugger::IS_ENABLED)                     return;
     if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
 
+    if (!_csgo_game_sim.HasBeenStarted()) return;
+    Vector3 game_sim_cam_pos =
+        _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin +
+        _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecViewOffset;
+
     float trace_length = 600.0f;
     Vector3 delta = trace_length * GetCameraForwardVector();
     Vector3 hull_mins = { -16.0f, -16.0f,  0.0f };
     Vector3 hull_maxs = { +16.0f, +16.0f, 72.0f };
-    Vector3 start = _cam_pos - 0.5f * (hull_maxs + hull_mins) + Vector3{ 0.0f, 0.0f, 15.0f };
+    Vector3 start = game_sim_cam_pos - 0.5f * (hull_maxs + hull_mins) + Vector3{ 0.0f, 0.0f, 15.0f };
     coll::Trace tr(
         start,
         start + delta,
@@ -961,7 +957,6 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
         << "(" << dpiScaling().x() << "," << dpiScaling().y() << ")";
 
     GL::defaultFramebuffer.setViewport({{}, windowSize()});
-    CalcViewProjTransformation();
 
     // Pass new framebuffer size to apis handling user events or scale UI
     // elements
@@ -1072,7 +1067,8 @@ void DZSimApplication::DoUpdate()
         }
     }
     // Delete input commands if we haven't been in first person mode
-    if (_user_input_mode != UserInputMode::FIRST_PERSON)
+    if (_user_input_mode != UserInputMode::FIRST_PERSON ||
+        _gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION)
         _currentGameInput.inputCommands.clear();
     // Send all possible MINUS_* player input commands to stop ingame input
     // after leaving first person control
@@ -1387,83 +1383,16 @@ void DZSimApplication::DoUpdate()
         }
     }
 
-
-    // Read GSI data if available
-    std::optional<Vector3> latest_new_gsi_cam_angles; // initially empty
-    std::optional<Vector3> latest_new_gsi_cam_pos; // initially empty
-    //for (auto& gsi_state : _gsi.GetNewestGsiStates()) {
-    //    //if (gsi_state.map_name.has_value())
-    //    //    Magnum::Debug{} << "map =" << gsi_state.map_name.value().c_str();
-    //    if (gsi_state.spec_pos.has_value())
-    //        latest_new_gsi_cam_pos = gsi_state.spec_pos.value();
-
-    //    if (gsi_state.spec_forward.has_value())
-    //        latest_new_gsi_cam_angles = utils_3d::CalcAnglesFromForwardVec(
-    //            gsi_state.spec_forward.value());
-
-    //    _latest_gsi_state = std::move(gsi_state);
-    //    _num_received_gsi_states++;
-    //}
-    //// Start/stop game state integration
-    //if (_gsi.IsRunning()) {
-    //    if (_gui_state.in_gsi_enabled == false)
-    //        _gsi.Stop();
-    //}
-    //else { // If GSI is NOT running
-    //    if (_gui_state.in_gsi_enabled == true) {
-    //        // Reset gsi state
-    //        _num_received_gsi_states = 0;
-    //        _latest_gsi_state = {};
-    //        if (!_gsi.Start(GSI_HOST, GSI_PORT, GSI_AUTH_TOKEN))
-    //            // If starting GSI fails, disable gui state again
-    //            _gui_state.in_gsi_enabled = false;
-    //    }
-    //}
-    //// Update GSI GUI state
-    //_gui_state.out_gsi_running = _gsi.IsRunning();
-    //_gui_state.out_gsi_exited_unexpectedly = _gsi.HasHttpServerUnexpectedlyClosed();
-    //std::string gsi_info = "Game states received: "
-    //    + std::to_string(_num_received_gsi_states);
-    //gsi_info += "\nmap: ";
-    //if (_latest_gsi_state.map_name.has_value())
-    //    gsi_info += _latest_gsi_state.map_name.value();
-
-    //gsi_info += "\nspec pos:    ";
-    //if (_latest_gsi_state.spec_pos.has_value()) {
-    //    Vector3& v = _latest_gsi_state.spec_pos.value();
-    //    gsi_info += std::format("({:8.2f}, {:8.2f}, {:8.2f})", v[0], v[1], v[2]);
-    //}
-
-    //gsi_info += "\nspec angles: ";
-    //if (_latest_gsi_state.spec_forward.has_value()) {
-    //    Vector3 v = _latest_gsi_state.spec_forward.value();
-    //    v = utils_3d::CalcAnglesFromForwardVec(v); // Convert to pitch, yaw, roll
-    //    gsi_info += std::format("({:6.1f}, {:6.1f}, {:6.1f})", v[0], v[1], v[2]);
-    //}
-    //_gui_state.out_gsi_info = gsi_info;
-    //_gui_state.out_gsi_latest_json_payload = _latest_gsi_state.json_payload;
-
-    const Float AIM_SENSITIVITY = 0.03f;
-
-    //bool cam_input_mouse_enabled = true;
-    //if (_gui_state.in_gsi_imitate_spec_cam)
-    //    cam_input_mouse_enabled = false;
-
     // Get mouse movement
     Vector2i mouse_pos_change = _inputs.GetMousePosChangeAndReset();
 
     // Override with CSGO camera angles if we're connected to CSGO's console
-    if (_csgo_rcon.IsConnected() &&
-        _gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+    if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
         _cam_ang = _latest_csgo_client_data.player_angles;
     }
-    // Override camera angles if GSI cam imitation is enabled
-    else if (_gui_state.gsi.IN_imitate_spec_cam) {
-        if (latest_new_gsi_cam_angles.has_value())
-            _cam_ang = latest_new_gsi_cam_angles.value();
-    }
     else if (_user_input_mode == UserInputMode::FIRST_PERSON) {
-        //if (cam_input_mouse_enabled) {
+        const Float AIM_SENSITIVITY = 0.03f;
+
         // If you update these cursor types, also update them were they're set
 #ifdef DZSIM_WEB_PORT
         const auto fp_cursor_type = Cursor::Hidden;
@@ -1477,7 +1406,7 @@ void DZSimApplication::DoUpdate()
         }
 
         // Clamp camera angles
-        if (_cam_ang.x() > 89.0f) _cam_ang.x() = 89.0f;
+        if (_cam_ang.x() >  89.0f) _cam_ang.x() =  89.0f;
         if (_cam_ang.x() < -89.0f) _cam_ang.x() = -89.0f;
         // Let yaw wrap around from -180 to +180 and vice versa
         if (_cam_ang.y() > 180.0f || _cam_ang.y() < -180.0f) {
@@ -1490,15 +1419,16 @@ void DZSimApplication::DoUpdate()
             overturn -= full_360s * 360.0f;
 
             if (_cam_ang.y() > 180.0f) _cam_ang.y() = -180 + overturn;
-            else                      _cam_ang.y() = 180 + overturn;
+            else                       _cam_ang.y() =  180 + overturn;
         }
-        //}
     }
 
     // Update viewing angles of game input for game simulation
     _currentGameInput.viewingAnglePitch = _cam_ang.x();
-    _currentGameInput.viewingAngleYaw = _cam_ang.y();
+    _currentGameInput.viewingAngleYaw   = _cam_ang.y();
 
+    // @Optimization Don't perform game simulation when DZSimulator is
+    //               replicating player movement from a local CSGO session.
     if (_csgo_game_sim.HasBeenStarted()) {
         // Send game input to simulation
         auto game_sim_start_time = std::chrono::high_resolution_clock::now();
@@ -1513,29 +1443,6 @@ void DZSimApplication::DoUpdate()
     // Clear game commands for next frame's commands.
     // We keep the remaining game input values.
     _currentGameInput.inputCommands.clear();
-
-    // Override with CS:GO camera position if we're connected to CSGO's console
-    if (_csgo_rcon.IsConnected() &&
-        _gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
-
-        // When we are in overlay mode, the client-side eye position makes for
-        // a smoother overlay compared to the server-side eye position!
-        _cam_pos = _latest_csgo_client_data.player_pos_eye;
-    }
-    // Override camera position if GSI cam imitation is enabled
-    else if (_gui_state.gsi.IN_imitate_spec_cam) {
-        if (latest_new_gsi_cam_pos.has_value())
-            _cam_pos = latest_new_gsi_cam_pos.value() + Vector3(0, 0,
-                CSGO_PLAYER_EYE_LEVEL_STANDING);
-    }
-    // Take interpolated player eye position from our game simulation
-    else if (_csgo_game_sim.HasBeenStarted()) {
-        _cam_pos = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin +
-                   _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecViewOffset;
-    }
-    else {
-        _cam_pos = { 0.0f, 0.0f, 0.0f };
-    }
 
     // When in "sparing low latency draw mode", force a frame redraw if the last
     // redraw was too long ago
@@ -1553,7 +1460,6 @@ void DZSimApplication::DoUpdate()
 
     if (redraw_needed) {
         s_last_redraw_time = current_time; // Remember last redraw time
-        CalcViewProjTransformation();
         redraw();
     }
 }
@@ -1574,12 +1480,14 @@ Matrix4 CalcCsgoPerspectiveProjection(float aspect_ratio, Magnum::Deg vert_fov) 
         2.0f * near * std::tan(float(Rad{ vert_fov }) * 0.5f) * Vector2::xScale(aspect_ratio), near, far);
 }
 
-void DZSimApplication::CalcViewProjTransformation() {
+Matrix4 DZSimApplication::CalcViewProjTransformation(const Vector3& cam_pos,
+                                                     const Vector3& cam_ang)
+{
     Matrix4 view_transformation =
-        Matrix4::rotationZ(Deg{  (_cam_ang.z()) }            ) * // camera roll
-        Matrix4::rotationX(Deg{  (_cam_ang.x()) } - 90.0_degf) * // camera pitch
-        Matrix4::rotationZ(Deg{ -(_cam_ang.y()) } + 90.0_degf) * // camera yaw
-        Matrix4::translation(-_cam_pos);
+        Matrix4::rotationZ(Deg{  (cam_ang.z()) }            ) * // camera roll
+        Matrix4::rotationX(Deg{  (cam_ang.x()) } - 90.0_degf) * // camera pitch
+        Matrix4::rotationZ(Deg{ -(cam_ang.y()) } + 90.0_degf) * // camera yaw
+        Matrix4::translation(-cam_pos);
 
     Deg vertical_fov = _gui_state.video.IN_use_custom_fov ?
         Deg{ _gui_state.video.IN_custom_vert_fov_degrees } : CSGO_VERT_FOV;
@@ -1591,7 +1499,7 @@ void DZSimApplication::CalcViewProjTransformation() {
         vertical_fov
     );
 
-    _view_proj_transformation = projection_transformation * view_transformation;
+    return projection_transformation * view_transformation;
 }
 
 // Returned vector is normalized
@@ -1619,26 +1527,30 @@ void DZSimApplication::drawEvent() {
     GL::defaultFramebuffer.clear(
         GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 
+    // Set default world rendering values
+    float hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+    Vector3 player_feet_pos = { 0.0f, 0.0f, 0.0f };
+    Vector3 cam_pos         = { 0.0f, 0.0f, 0.0f };
 
-    Vector3 player_feet_pos;
-    float hori_player_speed;
-
+    // If we render from the local CSGO session's POV
     if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
         // World renderer needs server-side player position and velocity to
         // optimally visualize surface slidability
-        player_feet_pos = _latest_csgo_server_data.player_pos_feet;
         hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
+        player_feet_pos   = _latest_csgo_server_data.player_pos_feet;
+        // When we are in overlay mode, the client-side eye position makes for
+        // a smoother overlay compared to the server-side eye position!
+        cam_pos = _latest_csgo_client_data.player_pos_eye;
     }
+    // If we render from our game simulation's POV
     else if (_csgo_game_sim.HasBeenStarted()) {
+        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
         player_feet_pos = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin;
-        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
-    }
-    else {
-        player_feet_pos = { 0.0f, 0.0f, 0.0f };
-        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+        cam_pos         = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin +
+                          _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecViewOffset;
     }
 
-
+    // If we have a world to render
     if (_bsp_map) {
         GL::Renderer::enable(GL::Renderer::Feature::Blending);
 
@@ -1648,17 +1560,20 @@ void DZSimApplication::drawEvent() {
             bump_mine_positions.push_back(bump_mine_data.pos);
         }
 
+        Matrix4 view_proj_transformation =
+            CalcViewProjTransformation(cam_pos, _cam_ang);
+
         _world_renderer.Draw(
             _ren_world,
-            _view_proj_transformation,
+            view_proj_transformation,
             player_feet_pos,
             hori_player_speed,
             bump_mine_positions);
 
         if (coll::Debugger::IS_ENABLED)
-            coll::Debugger::Draw(_cam_pos, GetCameraForwardVector(),
-                _view_proj_transformation,
-                _wide_line_renderer, _gui_state);
+            coll::Debugger::Draw(cam_pos, GetCameraForwardVector(),
+                                 view_proj_transformation,
+                                 _wide_line_renderer, _gui_state);
 
         GL::Renderer::disable(GL::Renderer::Feature::Blending);
     }
