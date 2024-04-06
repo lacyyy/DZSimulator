@@ -89,9 +89,6 @@ class DZSimApplication: public Platform::Application {
 
         sim::CsgoGame _csgo_game_sim;
 
-        // The current worldstate rendered to the screen
-        sim::WorldState _drawn_worldstate;
-
         // Game inputs of current frame
         sim::PlayerInputState _currentGameInput;
 
@@ -834,7 +831,6 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
         initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
     }
     _csgo_game_sim.Start(1.0f / CSGO_TICKRATE, 1.0f, initial_worldstate);
-    _drawn_worldstate = std::move(initial_worldstate);
 
     Debug{} << "DONE loading bsp map";
     return true;
@@ -1504,11 +1500,9 @@ void DZSimApplication::DoUpdate()
     _currentGameInput.viewingAngleYaw = _cam_ang.y();
 
     if (_csgo_game_sim.HasBeenStarted()) {
+        // Send game input to simulation
         auto game_sim_start_time = std::chrono::high_resolution_clock::now();
-
-        // Send game input to simulation and receive the current worldstate to draw
-        _drawn_worldstate = _csgo_game_sim.ProcessNewPlayerInput(_currentGameInput);
-
+        _csgo_game_sim.ProcessNewPlayerInput(_currentGameInput);
         auto game_sim_end_time = std::chrono::high_resolution_clock::now();
 
         // Maybe add # of simulated ticks to perf stats?
@@ -1534,9 +1528,13 @@ void DZSimApplication::DoUpdate()
             _cam_pos = latest_new_gsi_cam_pos.value() + Vector3(0, 0,
                 CSGO_PLAYER_EYE_LEVEL_STANDING);
     }
-    else { // Take position from our game simulation
-        _cam_pos = _drawn_worldstate.csgo_mv.m_vecAbsOrigin +
-                   _drawn_worldstate.csgo_mv.m_vecViewOffset;
+    // Take interpolated player eye position from our game simulation
+    else if (_csgo_game_sim.HasBeenStarted()) {
+        _cam_pos = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin +
+                   _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecViewOffset;
+    }
+    else {
+        _cam_pos = { 0.0f, 0.0f, 0.0f };
     }
 
     // When in "sparing low latency draw mode", force a frame redraw if the last
@@ -1631,8 +1629,12 @@ void DZSimApplication::drawEvent() {
         player_feet_pos = _latest_csgo_server_data.player_pos_feet;
         hori_player_speed = _latest_csgo_server_data.player_vel.xy().length();
     }
+    else if (_csgo_game_sim.HasBeenStarted()) {
+        player_feet_pos = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin;
+        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+    }
     else {
-        player_feet_pos = _drawn_worldstate.csgo_mv.m_vecAbsOrigin;
+        player_feet_pos = { 0.0f, 0.0f, 0.0f };
         hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
     }
 

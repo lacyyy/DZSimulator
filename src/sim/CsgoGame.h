@@ -32,10 +32,23 @@ public:
     // Process newly generated player input and possibly advance the game
     // simulation. Given player input must have time point that chronologically
     // comes after all previously passed inputs' time point!
-    // This method must be called after a CSGO game was started!
-    // Returns a worldstate representing the game's current state.
-    // It is intended to be used for drawing the game world to the screen.
-    WorldState ProcessNewPlayerInput(const PlayerInputState& new_player_input);
+    // This method must be called after this CSGO game was started!
+    void ProcessNewPlayerInput(const PlayerInputState& new_player_input);
+
+    // Returns the current actual (non-interpolated) state of the game
+    // simulation, computed by a recent call to ProcessNewPlayerInput().
+    // This method must be called after this CSGO game was started!
+    // CAUTION: Returned reference stays valid until this CsgoGame instance is
+    //          destroyed, or ProcessNewPlayerInput() or Start() is called!
+    const WorldState& GetLatestActualWorldState();
+
+    // Returns the current drawable (partially interpolated) state of the game
+    // simulation, computed by the most recent call to ProcessNewPlayerInput().
+    // It's intended to be used for drawing the game simulation to the screen.
+    // This method must be called after this CSGO game was started!
+    // CAUTION: Returned reference stays valid until this CsgoGame instance is
+    //          destroyed, or ProcessNewPlayerInput() or Start() is called!
+    const WorldState& GetLatestDrawableWorldState();
 
 private:
     // Returns realtime time point of a game tick. Game must have been started!
@@ -61,9 +74,9 @@ private:
     // m_prev_finalized_game_tick)
     WorldState m_prev_predicted_game_tick;
 
-    // The worldstate that was most recently drawn to the screen, and its time.
-    WorldState             m_prev_drawn_worldstate;
-    sim::Clock::time_point m_prev_drawn_worldstate_timepoint;
+    // The most recent drawable worldstate, and its time.
+    WorldState             m_prev_drawable_worldstate;
+    sim::Clock::time_point m_prev_drawable_worldstate_timepoint;
 };
 
 } // namespace sim

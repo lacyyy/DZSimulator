@@ -24,12 +24,12 @@ CsgoGame::CsgoGame()
     , m_game_timescale{ 0.0f }
     , m_realtime_game_tick_interval{}
     , m_game_start{}
-    , m_prev_finalized_game_tick_id{0 }
+    , m_prev_finalized_game_tick_id{ 0 }
     , m_prev_finalized_game_tick{}
     , m_inputs_since_prev_finalized_game_tick{}
     , m_prev_predicted_game_tick{}
-    , m_prev_drawn_worldstate{}
-    , m_prev_drawn_worldstate_timepoint{}
+    , m_prev_drawable_worldstate{}
+    , m_prev_drawable_worldstate_timepoint{}
 {
 }
 
@@ -61,17 +61,17 @@ void CsgoGame::Start(float sim_step_size_in_secs, float game_timescale,
     m_prev_predicted_game_tick = initial_worldstate;
     m_prev_predicted_game_tick.DoTimeStep(sim_step_size_in_secs, {});
 
-    m_prev_drawn_worldstate = initial_worldstate;
-    m_prev_drawn_worldstate_timepoint = current_time;
+    m_prev_drawable_worldstate = initial_worldstate;
+    m_prev_drawable_worldstate_timepoint = current_time;
 }
 
-WorldState CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
+void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
 {
     ZoneScoped;
 
     if (!HasBeenStarted()) {
         assert(0);
-        return WorldState();
+        return;
     }
 
     // Note: We define that a player input affects a game tick if:
@@ -129,39 +129,47 @@ WorldState CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
     sim::Clock::time_point next_game_tick_timepoint =
         GetTimePointOfGameTick(m_prev_finalized_game_tick_id + 1);
 
-    // Step 4: Determine current drawn world state by interpolating between
-    //         previously drawn world state and the predicted next game tick.
-    WorldState cur_drawn_worldstate;
+    // Step 4: Determine current drawable world state by interpolating between
+    //         previous drawable world state and the predicted next game tick.
+    WorldState cur_drawable_worldstate;
     if (ENABLE_INTERPOLATION_OF_DRAWN_WORLDSTATE) {
         // @Optimization We could measure the current time again after the game
         //               tick simulations and use it for interpolation.
         //               This might help with responsiveness on low-end machines.
         //               CAUTION: This might lead to exceeding the interpolation
         //                        range! Handle that.
-        auto interpRange = next_game_tick_timepoint - m_prev_drawn_worldstate_timepoint;
-        auto interpStep  =                 cur_time - m_prev_drawn_worldstate_timepoint;
+        auto interpRange = next_game_tick_timepoint - m_prev_drawable_worldstate_timepoint;
+        auto interpStep  =                 cur_time - m_prev_drawable_worldstate_timepoint;
         float interpRange_ns = std::chrono::duration_cast<nanoseconds>(interpRange).count();
         float interpStep_ns  = std::chrono::duration_cast<nanoseconds>(interpStep ).count();
         if (interpRange_ns == 0.0f) {
-            cur_drawn_worldstate = predicted_next_game_tick;
+            cur_drawable_worldstate = predicted_next_game_tick;
         } else {
             float phase = interpStep_ns / interpRange_ns;
-            cur_drawn_worldstate = WorldState::Interpolate(m_prev_drawn_worldstate,
-                                                           predicted_next_game_tick,
-                                                           phase);
+            cur_drawable_worldstate = WorldState::Interpolate(m_prev_drawable_worldstate,
+                                                              predicted_next_game_tick,
+                                                              phase);
         }
     }
     else { // ENABLE_INTERPOLATION_OF_DRAWN_WORLDSTATE == false
         // Instead of interpolating, just draw the last finalized game tick
-        cur_drawn_worldstate = m_prev_finalized_game_tick;
+        cur_drawable_worldstate = m_prev_finalized_game_tick;
     }
 
-    // Remember for future ProcessNewPlayerInput() calls
-    m_prev_predicted_game_tick        = std::move(predicted_next_game_tick);
-    m_prev_drawn_worldstate           = cur_drawn_worldstate;
-    m_prev_drawn_worldstate_timepoint = cur_time;
+    // Remember for user access and future ProcessNewPlayerInput() calls
+    m_prev_predicted_game_tick           = std::move(predicted_next_game_tick);
+    m_prev_drawable_worldstate           = std::move(cur_drawable_worldstate);
+    m_prev_drawable_worldstate_timepoint = cur_time;
+}
 
-    return cur_drawn_worldstate;
+const WorldState& CsgoGame::GetLatestActualWorldState() {
+    assert(HasBeenStarted());
+    return m_prev_finalized_game_tick;
+}
+
+const WorldState& CsgoGame::GetLatestDrawableWorldState() {
+    assert(HasBeenStarted());
+    return m_prev_drawable_worldstate;
 }
 
 sim::Clock::time_point CsgoGame::GetTimePointOfGameTick(size_t tick_id)
