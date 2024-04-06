@@ -12,6 +12,7 @@
 #include "GlobalVars.h"
 #include "utils_3d.h"
 
+using namespace sim;
 using namespace Magnum;
 using namespace utils_3d;
 using namespace coll;

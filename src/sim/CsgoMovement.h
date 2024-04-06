@@ -6,6 +6,7 @@
 
 #include "coll/Trace.h"
 
+namespace sim {
 
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/game/shared/in_buttons.h)
@@ -239,5 +240,6 @@ public:
 };
 // --------- end of source-sdk-2013 code ---------
 
+} // namespace sim
 
 #endif // SIM_CSGOMOVEMENT_H_
