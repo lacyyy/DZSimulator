@@ -1864,15 +1864,19 @@ void CsgoMovement::HandleDuckingSpeedCrop(void)
 // Purpose: Check to see if we are in a situation where we can unduck jump.
 bool CsgoMovement::CanUnDuckJump(float* trace_fraction)
 {
+    Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
+    Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
+    Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+
     // Trace down to the stand position and see if we can stand.
     Vector3 vecEnd = m_vecAbsOrigin;
-    vecEnd.z() -= 36.0f; // This will have to change if bounding hull change!
+    vecEnd.z() -= viewDelta.z();
     Trace trace = TracePlayerBBox(m_vecAbsOrigin, vecEnd);
     *trace_fraction = trace.results.fraction;
     if (trace.results.fraction < 1.0f)
     {
         // Find the endpoint.
-        vecEnd.z() = m_vecAbsOrigin.z() + (-36.0f * trace.results.fraction);
+        vecEnd.z() = m_vecAbsOrigin.z() - viewDelta.z() * trace.results.fraction;
 
         // Test a normal hull.
         bool bWasDucked = m_bDucked;
