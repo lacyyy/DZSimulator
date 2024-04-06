@@ -1438,6 +1438,13 @@ void DZSimApplication::DoUpdate()
         // Maybe add # of simulated ticks to perf stats?
         _gui_state.perf.OUT_last_sim_calc_time_us = std::chrono::duration_cast<std::chrono::microseconds>(
             game_sim_end_time - game_sim_start_time).count();
+        // Display movement data in GUI
+        if (sim::ENABLE_MOVEMENT_DEBUGGING) {
+            // Note that we copy here to avoid relying on the returned reference
+            // staying valid!
+            _gui_state.mv_debug.OUT_csgo_mv =
+                _csgo_game_sim.GetLatestActualWorldState().csgo_mv;
+        }
     }
 
     // Clear game commands for next frame's commands.

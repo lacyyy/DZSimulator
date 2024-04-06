@@ -10,6 +10,7 @@
 #include <Magnum/Math/Vector2.h>
 
 #include "CsgoConstants.h"
+#include "sim/CsgoMovement.h"
 
 namespace gui {
 
@@ -154,6 +155,10 @@ public:
         // Last frame's game simulation calc time (Changes every frame)
         float OUT_last_sim_calc_time_us;
     } perf;
+
+    struct MovementDebugging { // Only available in Debug builds
+        sim::CsgoMovement OUT_csgo_mv;
+    } mv_debug;
 
     struct CollisionDebugging { // Only available in Debug builds
         // Show all displacements that ...

@@ -8,6 +8,12 @@
 
 namespace sim {
 
+#ifdef NDEBUG
+const bool ENABLE_MOVEMENT_DEBUGGING = false;
+#else
+const bool ENABLE_MOVEMENT_DEBUGGING = true;
+#endif
+
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/game/shared/in_buttons.h)
 // TODO rename / move these defines

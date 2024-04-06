@@ -351,6 +351,12 @@ void MenuWindow::Draw()
         DrawOther();
     }
 
+    if (sim::ENABLE_MOVEMENT_DEBUGGING) {
+        if (ImGui::CollapsingHeader("Movement Debugging (Debug only)")) {
+            DrawMovementDebugging();
+        }
+    }
+
 #ifndef NDEBUG
     if (ImGui::CollapsingHeader("Collision Debugging (Debug only)"))
     {
@@ -940,6 +946,68 @@ void MenuWindow::DrawOther()
         "4. Re-open DZSimulator"
     );
 #endif
+}
+
+void MenuWindow::DrawMovementDebugging()
+{
+    if (!sim::ENABLE_MOVEMENT_DEBUGGING)
+        return;
+
+    using namespace sim;
+    const CsgoMovement& mv = _gui_state.mv_debug.OUT_csgo_mv;
+
+    ImGui::PushFont(_gui._font_mono); // Select monospace font
+
+    switch (mv.m_MoveType) {
+        case MOVETYPE_NONE:   ImGui::Text("m_MoveType = MOVETYPE_NONE"); break;
+        case MOVETYPE_WALK:   ImGui::Text("m_MoveType = MOVETYPE_WALK"); break;
+        case MOVETYPE_NOCLIP: ImGui::Text("m_MoveType = MOVETYPE_NOCLIP"); break;
+        case MOVETYPE_LADDER: ImGui::Text("m_MoveType = MOVETYPE_LADDER"); break;
+        default:              ImGui::Text("m_MoveType = %i", mv.m_MoveType); break;
+    }
+    ImGui::Text(mv.m_hGroundEntity ? "m_hGroundEntity = true" : "m_hGroundEntity = false");
+    ImGui::Text("m_fFlags = %i", mv.m_fFlags);
+    ImGui::Text(mv.m_bDucked     ? "m_bDucked = true"     : "m_bDucked = false");
+    ImGui::Text(mv.m_bDucking    ? "m_bDucking = true"    : "m_bDucking = false");
+    ImGui::Text(mv.m_bInDuckJump ? "m_bInDuckJump = true" : "m_bInDuckJump = false");
+    ImGui::Text("m_flDucktime     = %.1F", mv.m_flDucktime);
+    ImGui::Text("m_flDuckJumpTime = %.1F", mv.m_flDuckJumpTime);
+    ImGui::Text("m_flJumpTime     = %.1F", mv.m_flJumpTime);
+    ImGui::Text("m_flFallVelocity = %.1F", mv.m_flFallVelocity);
+    ImGui::Text(mv.m_bAllowAutoMovement ? "m_bAllowAutoMovement = true" : "m_bAllowAutoMovement = false");
+    ImGui::Text("m_flMaxSpeed = %.2F", mv.m_flMaxSpeed);
+    ImGui::Text("m_flForwardMove = %.2F", mv.m_flForwardMove);
+    ImGui::Text("m_flSideMove    = %.2F", mv.m_flSideMove);
+    ImGui::Text("m_nButtons    = %i", mv.m_nButtons);
+    ImGui::Text("m_nOldButtons = %i", mv.m_nOldButtons);
+    ImGui::Text("m_vecViewOffset = (%.3F, %.3F, %.3F)",
+                mv.m_vecViewOffset.x(),
+                mv.m_vecViewOffset.y(),
+                mv.m_vecViewOffset.z());
+    ImGui::Text("m_vecViewAngles = (%.1F, %.1F, %.1F)",
+                mv.m_vecViewAngles.x(),
+                mv.m_vecViewAngles.y(),
+                mv.m_vecViewAngles.z());
+    ImGui::Text("m_vecAbsOrigin = (%.3F, %.3F, %.3F)",
+                mv.m_vecAbsOrigin.x(),
+                mv.m_vecAbsOrigin.y(),
+                mv.m_vecAbsOrigin.z());
+    ImGui::Text("m_vecVelocity = (%.2F, %.2F, %.2F)",
+                mv.m_vecVelocity.x(),
+                mv.m_vecVelocity.y(),
+                mv.m_vecVelocity.z());
+    ImGui::Text("m_vecBaseVelocity = (%.2F, %.2F, %.2F)",
+                mv.m_vecBaseVelocity.x(),
+                mv.m_vecBaseVelocity.y(),
+                mv.m_vecBaseVelocity.z());
+    ImGui::Text("m_outJumpVel = (%.2F, %.2F, %.2F)",
+                mv.m_outJumpVel.x(),
+                mv.m_outJumpVel.y(),
+                mv.m_outJumpVel.z());
+    ImGui::Text("m_iSpeedCropped = %i", mv.m_iSpeedCropped);
+    ImGui::Text("m_surfaceFriction = %.4F", mv.m_surfaceFriction);
+
+    ImGui::PopFont();
 }
 
 void MenuWindow::DrawCollisionDebugging()
