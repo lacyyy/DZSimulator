@@ -103,8 +103,8 @@ static bool SourceSdkVectorEqual(const Vector3& vec1, const Vector3& vec2) {
 const Vector3 VEC_VIEW      = { 0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_STANDING  };
 const Vector3 VEC_DUCK_VIEW = { 0.0f, 0.0f, CSGO_PLAYER_EYE_LEVEL_CROUCHING };
 
-const float TIME_TO_DUCK   = 0.4f;
-const float TIME_TO_UNDUCK = 0.2f;
+const float TIME_TO_DUCK   = 0.2f;
+const float TIME_TO_UNDUCK = 0.001f; // Unducking on ground is instant in CSGO...
 
 //const float PLAYER_FATAL_FALL_SPEED     = 1024.0f; // approx 60 feet
 const float PLAYER_MAX_SAFE_FALL_SPEED = 580.0f; // approx 20 feet
