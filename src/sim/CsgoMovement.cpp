@@ -1650,7 +1650,10 @@ bool CsgoMovement::CanUnduck()
         Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
         Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
         viewDelta = -viewDelta;
-        newOrigin += viewDelta;
+        // CSGO unducks in the air by increasing the hull size 9 units at the
+        // top and bottom.
+        // -> Lower origin by 9 units
+        newOrigin += 0.5f * viewDelta;
     }
 
     bool saveducked = m_bDucked;
@@ -1675,7 +1678,10 @@ void CsgoMovement::FinishUnDuck(void)
         Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
         Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
         viewDelta = -viewDelta;
-        newOrigin += viewDelta;
+        // CSGO unducks in the air by increasing the hull size 9 units at the
+        // top and bottom.
+        // -> Lower origin by 9 units
+        newOrigin += 0.5f * viewDelta;
     }
 
     m_fFlags &= ~FL_DUCKING;
@@ -1709,6 +1715,11 @@ void CsgoMovement::FinishDuck(void)
         Vector3 hullSizeNormal = GetPlayerMaxs(false) - GetPlayerMins(false);
         Vector3 hullSizeCrouch = GetPlayerMaxs(true)  - GetPlayerMins(true);
         Vector3 viewDelta = hullSizeNormal - hullSizeCrouch;
+        // CSGO ducks in the air by decreasing the hull size 9 units at the top
+        // and bottom.
+        // -> Elevate origin by 9 units
+        viewDelta *= 0.5f;
+
         Vector3 out = m_vecAbsOrigin + viewDelta;
         m_vecAbsOrigin = out;
 
