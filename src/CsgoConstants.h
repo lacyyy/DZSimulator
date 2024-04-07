@@ -34,9 +34,8 @@ const Magnum::Math::Deg CSGO_VERT_FOV = 73.75_degf; // CSGO's fixed vertical fie
 const float CSGO_PLAYER_HEIGHT_STANDING = 72.0f;
 const float CSGO_PLAYER_HEIGHT_CROUCHED = 54.0f;
 const float CSGO_PLAYER_WIDTH = 32.0f; // width and depth
-const float CSGO_PLAYER_EYE_LEVEL_STANDING = 64.093811f;
-const float CSGO_PLAYER_EYE_LEVEL_CROUCHING = 46.076218f;
-const float CSGO_PLAYER_FEET_LEVEL = 0.031250f; // "cl_showpos 2" and "getpos_exact" show feet position
+const float CSGO_PLAYER_EYE_LEVEL_STANDING  = 64.062561f;
+const float CSGO_PLAYER_EYE_LEVEL_CROUCHING = 46.044983f;
 
 // CSGO convars' default values in the Danger Zone(!) gamemode
 const float CSGO_CVAR_SV_ACCELERATE = 5.5f; // Linear acceleration amount for when player walks
