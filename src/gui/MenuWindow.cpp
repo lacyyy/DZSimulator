@@ -969,10 +969,7 @@ void MenuWindow::DrawMovementDebugging()
     ImGui::Text("m_fFlags = %i", mv.m_fFlags);
     ImGui::Text(mv.m_bDucked     ? "m_bDucked = true"     : "m_bDucked = false");
     ImGui::Text(mv.m_bDucking    ? "m_bDucking = true"    : "m_bDucking = false");
-    ImGui::Text(mv.m_bInDuckJump ? "m_bInDuckJump = true" : "m_bInDuckJump = false");
     ImGui::Text("m_flDucktime     = %.1F", mv.m_flDucktime);
-    ImGui::Text("m_flDuckJumpTime = %.1F", mv.m_flDuckJumpTime);
-    ImGui::Text("m_flJumpTime     = %.1F", mv.m_flJumpTime);
     ImGui::Text("m_flFallVelocity = %.1F", mv.m_flFallVelocity);
     ImGui::Text(mv.m_bAllowAutoMovement ? "m_bAllowAutoMovement = true" : "m_bAllowAutoMovement = false");
     ImGui::Text("m_flMaxSpeed = %.2F", mv.m_flMaxSpeed);

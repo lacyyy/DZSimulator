@@ -77,12 +77,8 @@ public:
     // FIXME TODO Seems like all these values must be stored inside WorldState!
     bool  m_bDucked     = false; // Fully ducked
     bool  m_bDucking    = false; // In process of ducking
-    bool  m_bInDuckJump = false; // In process of duck-jumping
     // During ducking process, amount of time before full duck
     float m_flDucktime     = 0.0f; // in milliseconds!
-    float m_flDuckJumpTime = 0.0f; // in milliseconds!
-    // Jump time, time to auto unduck (since we auto crouch jump now).
-    float m_flJumpTime     = 0.0f; // in milliseconds!
     float m_flFallVelocity = 0.0f; // Velocity at time when we hit ground
     bool  m_bAllowAutoMovement = true;
 
@@ -218,10 +214,6 @@ public:
     void FinishUnDuck(void);
     void FinishDuck(void);
     bool CanUnduck();
-    void UpdateDuckJumpEyeOffset(void);
-    bool CanUnDuckJump(float* trace_fraction);
-    void StartUnDuckJump(void);
-    void FinishUnDuckJump(float trace_fraction);
     void SetDuckedEyeOffset(float duckFraction);
 
     //float SplineFraction(float value, float scale);
