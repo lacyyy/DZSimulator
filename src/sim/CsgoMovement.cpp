@@ -1025,10 +1025,6 @@ bool CsgoMovement::CheckJumpButton(float frametime)
     if (m_nOldButtons & IN_JUMP)
         return false; // don't pogo stick
 
-    // Cannot jump will in the unduck transition.
-    if (m_bDucking && (m_fFlags & FL_DUCKING))
-        return false;
-
     // In the air now.
     SetGroundEntity(false);
 
@@ -1776,7 +1772,7 @@ void CsgoMovement::Duck(void)
     // Slow down ducked players.
     HandleDuckingSpeedCrop();
 
-    // If the player is holding down the duck button, the player is in duck transition, ducking, or duck-jumping.
+    // If the player is holding down the duck button, the player is in duck transition or ducking
     if ((m_nButtons & IN_DUCK) || m_bDucking || bInDuck)
     {
         // DUCK
@@ -1789,7 +1785,7 @@ void CsgoMovement::Duck(void)
                 m_bDucking = true;
             }
 
-            // The player is in duck transition and not duck-jumping.
+            // The player is in duck transition
             if (m_bDucking)
             {
                 float flDuckMilliseconds =

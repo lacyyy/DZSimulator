@@ -75,8 +75,8 @@ public:
     int   m_fFlags = 0; // Player flags (see macros starting with FL_*)
     
     // FIXME TODO Seems like all these values must be stored inside WorldState!
-    bool  m_bDucked     = false; // Fully ducked
-    bool  m_bDucking    = false; // In process of ducking
+    bool  m_bDucked  = false; // Fully ducked
+    bool  m_bDucking = false; // In process of ducking or unducking
     // During ducking process, amount of time before full duck
     float m_flDucktime     = 0.0f; // in milliseconds!
     float m_flFallVelocity = 0.0f; // Velocity at time when we hit ground
