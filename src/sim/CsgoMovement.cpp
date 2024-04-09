@@ -1972,7 +1972,25 @@ void CsgoMovement::PlayerMove(float time_delta)
 
     //player->UpdateStepSound(player->m_pSurfaceData, m_vecAbsOrigin, m_vecVelocity);
 
+    // If this function slows down the player due to ducking,
+    // the SPEED_CROPPED_DUCK flag gets set in m_iSpeedCropped.
     Duck();
+
+    // Slow down player if walk button is pressed AND the ducking speed crop
+    // WASN'T applied by the Duck() function.
+    // CAUTION: This check must happen after Duck() was called!
+    bool walkBtnPressed = m_nButtons & IN_SPEED;
+    if (walkBtnPressed && !(m_iSpeedCropped & SPEED_CROPPED_DUCK))
+    {
+        // NOTE: CSGO's speed factor when walking is precisely 0.52 .
+        //       CSGO running speed with knife (outside DZ): 250
+        //       CSGO walking speed with knife (outside DZ): 130
+        //       -> Walking speed factor = 130 / 250 = 0.52
+        float frac = 0.52f;
+        m_flForwardMove *= frac;
+        m_flSideMove    *= frac;
+        //m_flUpMove      *= frac;
+    }
 
     // If was not on a ladder now, but was on one before, 
     //  get off of the ladder
