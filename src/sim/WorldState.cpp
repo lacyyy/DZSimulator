@@ -183,7 +183,9 @@ void WorldState::DoTimeStep(double step_size_sec,
         //  flag globally here once per usercmd cycle.
         csgo_mv.m_iSpeedCropped = SPEED_CROPPED_RESET;
 
-        csgo_mv.m_flMaxSpeed = 260.0f; // Can see 260 value when running "cl_pdump 1" in CSGO
+        // Init max speed using type of weapon equipped by player
+        // TODO: Distinguish between different equipped weapons here
+        csgo_mv.m_flMaxSpeed = CSGO_WEAPON_KNIFE_MAX_PLAYER_SPEED;
 
         //Debug{} << "m_nButtons = " << csgo_mv.m_nButtons;
         //Debug{} << "m_flForwardMove = " << csgo_mv.m_flForwardMove;

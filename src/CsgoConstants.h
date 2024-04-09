@@ -37,6 +37,11 @@ const float CSGO_PLAYER_WIDTH = 32.0f; // width and depth
 const float CSGO_PLAYER_EYE_LEVEL_STANDING  = 64.062561f;
 const float CSGO_PLAYER_EYE_LEVEL_CROUCHING = 46.044983f;
 
+// CSGO weapon stats (from CSGO's 'scripts/items/items_game.txt')
+const float CSGO_WEAPON_FISTS_MAX_PLAYER_SPEED    = 275.0f;
+const float CSGO_WEAPON_KNIFE_MAX_PLAYER_SPEED    = 250.0f;
+const float CSGO_WEAPON_BUMPMINE_MAX_PLAYER_SPEED = 245.0f;
+
 // CSGO convars' default values in the Danger Zone(!) gamemode
 const float CSGO_CVAR_SV_ACCELERATE = 5.5f; // Linear acceleration amount for when player walks
 const bool  CSGO_CVAR_SV_ACCELERATE_USE_WEAPON_SPEED = 1; // whether or not player acceleration is affected by carried weapons

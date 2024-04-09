@@ -1756,7 +1756,11 @@ void CsgoMovement::HandleDuckingSpeedCrop(void)
 {
     if (!(m_iSpeedCropped & SPEED_CROPPED_DUCK) && (m_fFlags & FL_DUCKING) && m_hGroundEntity)
     {
-        float frac = 0.33333333f;
+        // NOTE: CSGO's speed factor when ducked is precisely 0.34 .
+        //       CSGO running speed with knife (outside DZ): 250
+        //       CSGO ducked speed with knife (outside DZ): 85
+        //       -> Ducked speed factor = 85 / 250 = 0.34
+        float frac = 0.34f;
         m_flForwardMove *= frac;
         m_flSideMove    *= frac;
         //m_flUpMove      *= frac;
