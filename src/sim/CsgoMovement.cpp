@@ -1754,7 +1754,15 @@ void CsgoMovement::SetDuckedEyeOffset(float duckFraction)
 //    NOTE: Only crop player speed once.
 void CsgoMovement::HandleDuckingSpeedCrop(void)
 {
-    if (!(m_iSpeedCropped & SPEED_CROPPED_DUCK) && (m_fFlags & FL_DUCKING) && m_hGroundEntity)
+    // NOTE: The original source-sdk-2013 only crops player speed here once the
+    //       player is fully ducked (m_fFlags & FL_DUCKING).
+    //       This leads to a running player, that enters a crouch, moving quite
+    //       fast across the floor during the ducking process.
+    //       CSGO on the other hand slows down the running player, that enters a
+    //       crouch, much quicker once he enters a crouch.
+    //       --> We additionally crop player speed here while player is in the
+    //           ducking process (m_bDucking).
+    if (!(m_iSpeedCropped & SPEED_CROPPED_DUCK) && ((m_fFlags & FL_DUCKING) || m_bDucking) && m_hGroundEntity)
     {
         // NOTE: CSGO's speed factor when ducked is precisely 0.34 .
         //       CSGO running speed with knife (outside DZ): 250
