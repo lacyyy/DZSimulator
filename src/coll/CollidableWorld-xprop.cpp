@@ -724,20 +724,20 @@ XPropSectionBevelPlaneLut::XPropSectionBevelPlaneLut(
     // Further example sequence conversions when using 'recursive indexing' and
     // a maximum int value of 255:
     //   A, 0, B  ->  A, 0, B
-    //	 A, 1, B  ->  A, 1, B
+    //   A, 1, B  ->  A, 1, B
     //   A, 2, B  ->  A, 2, B
-    //	 ...
-    //	 A, 253, B  ->  A, 253, B
-    //	 A, 254, B  ->  A, 254, B
-    //	 A, 255, B  ->  A, 255, 0, B
-    //	 A, 256, B  ->  A, 255, 1, B
-    //	 A, 257, B  ->  A, 255, 2, B
-    //	 ...
-    //	 A, 508, B  ->  A, 255, 253, B
-    //	 A, 509, B  ->  A, 255, 254, B
-    //	 A, 510, B  ->  A, 255, 255, 0, B
-    //	 A, 511, B  ->  A, 255, 255, 1, B
-    //	 A, 512, B  ->  A, 255, 255, 2, B
+    //   ...
+    //   A, 253, B  ->  A, 253, B
+    //   A, 254, B  ->  A, 254, B
+    //   A, 255, B  ->  A, 255, 0, B
+    //   A, 256, B  ->  A, 255, 1, B
+    //   A, 257, B  ->  A, 255, 2, B
+    //   ...
+    //   A, 508, B  ->  A, 255, 253, B
+    //   A, 509, B  ->  A, 255, 254, B
+    //   A, 510, B  ->  A, 255, 255, 0, B
+    //   A, 511, B  ->  A, 255, 255, 1, B
+    //   A, 512, B  ->  A, 255, 255, 2, B
     //   ...
 
     // Maximum usable int value relevant to 'recursive indexing'
