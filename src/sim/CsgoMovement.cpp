@@ -107,8 +107,8 @@ const float TIME_TO_DUCK   = 0.2f;
 const float TIME_TO_UNDUCK = 0.001f; // Unducking on ground is instant in CSGO...
 
 //const float PLAYER_FATAL_FALL_SPEED     = 1024.0f; // approx 60 feet
-const float PLAYER_MAX_SAFE_FALL_SPEED = 580.0f; // approx 20 feet
-const float PLAYER_MIN_BOUNCE_SPEED = 200.0f;
+const float PLAYER_MAX_SAFE_FALL_SPEED  = 580.0f; // approx 20 feet
+const float PLAYER_MIN_BOUNCE_SPEED     = 200.0f;
 const float PLAYER_FALL_PUNCH_THRESHOLD = 350.0f; // won't punch player's screen/make scrape noise unless player falling at least this fast.
 //const float DAMAGE_FOR_FALL_SPEED = 100.0f / (PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED); // damage per unit per second.
 // --------- end of source-sdk-2013 code ---------
@@ -116,7 +116,7 @@ const float PLAYER_FALL_PUNCH_THRESHOLD = 350.0f; // won't punch player's screen
 
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.h)
-#define GAMEMOVEMENT_DUCK_TIME    1000.0f  // ms
+#define GAMEMOVEMENT_DUCK_TIME 1000.0f  // ms
 // --------- end of source-sdk-2013 code ---------
 
 
@@ -145,7 +145,7 @@ const bool g_bMovementOptimizations = true;
 // Roughly how often we want to update the info about the ground surface we're on.
 // We don't need to do this very often.
 #define CATEGORIZE_GROUND_SURFACE_INTERVAL 0.3f
-#define CATEGORIZE_GROUND_SURFACE_TICK_INTERVAL ( (int)( CATEGORIZE_GROUND_SURFACE_INTERVAL / TICK_INTERVAL ) )
+#define CATEGORIZE_GROUND_SURFACE_TICK_INTERVAL ((int)(CATEGORIZE_GROUND_SURFACE_INTERVAL / TICK_INTERVAL))
 
 //// Purpose: Debug - draw the displacement collision plane.
 //void DrawDispCollPlane(CBaseTrace* pTrace)
@@ -244,7 +244,8 @@ Vector3 CsgoMovement::GetPlayerMaxs(bool ducked) const
     else        return { +0.5f * CSGO_PLAYER_WIDTH, +0.5f * CSGO_PLAYER_WIDTH, CSGO_PLAYER_HEIGHT_STANDING };
 }
 
-Vector3 CsgoMovement::GetPlayerViewOffset(bool ducked) const {
+Vector3 CsgoMovement::GetPlayerViewOffset(bool ducked) const
+{
     return ducked ? VEC_DUCK_VIEW : VEC_VIEW;
 }
 
@@ -454,9 +455,9 @@ void CsgoMovement::StepMove(float frametime,
 
     // decide which one went farther
     float flDownDist = (vecDownPos.x() - vecPos.x()) * (vecDownPos.x() - vecPos.x())
-        + (vecDownPos.y() - vecPos.y()) * (vecDownPos.y() - vecPos.y());
+                     + (vecDownPos.y() - vecPos.y()) * (vecDownPos.y() - vecPos.y());
     float flUpDist = (vecUpPos.x() - vecPos.x()) * (vecUpPos.x() - vecPos.x())
-        + (vecUpPos.y() - vecPos.y()) * (vecUpPos.y() - vecPos.y());
+                   + (vecUpPos.y() - vecPos.y()) * (vecUpPos.y() - vecPos.y());
     if (flDownDist > flUpDist)
     {
         m_vecAbsOrigin = vecDownPos;
@@ -627,7 +628,7 @@ void CsgoMovement::AirMove(float frametime)
     //
     // clamp to server defined max speed
     //
-    if (wishspeed != 0 && (wishspeed > m_flMaxSpeed))
+    if (wishspeed != 0 && wishspeed > m_flMaxSpeed)
     {
         wishvel *= m_flMaxSpeed / wishspeed;
         wishspeed = m_flMaxSpeed;
@@ -1685,8 +1686,8 @@ void CsgoMovement::FinishUnDuck(void)
     }
 
     m_fFlags &= ~FL_DUCKING;
-    m_bDucked     = false;
-    m_bDucking    = false;
+    m_bDucked = false;
+    m_bDucking = false;
     m_vecViewOffset = GetPlayerViewOffset(false);
     m_flDucktime = 0;
 
@@ -1707,7 +1708,6 @@ void CsgoMovement::FinishDuck(void)
     m_fFlags |= FL_DUCKING;
     m_bDucked = true;
     m_bDucking = false;
-
     m_vecViewOffset = GetPlayerViewOffset(true);
 
     if (!m_hGroundEntity)
