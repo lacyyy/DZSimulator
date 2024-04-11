@@ -241,6 +241,24 @@ bool ParseEntity_prop_dynamic(std::multimap<std::string, std::string>& key_value
     if (kv == key_values.end()) return true; // No model, skip this prop_dynamic
     dp.model = utils::NormalizeGameFilePath(kv->second);
 
+    // Attempt to filter out breakable props (e.g. vents).
+    // DZSimulator currently can't break map objects at runtime. To allow the
+    // player to maneuver the map regardless, avoid loading breakable objects.
+    // Filtering out by hand-chosen model names like this is hacky.
+    // The .mdl file itself specifies a health of "1" if the model is breakable.
+    if (dp.model == "models/props/de_mirage/shutter_window_l_breakable.mdl" ||
+        dp.model == "models/props/de_mirage/wall_hole_b_cover_sheetmetal.mdl" ||
+        dp.model == "models/props/de_mirage/wall_hole_cover_sheetmetal.mdl" ||
+        dp.model == "models/props/de_nuke/hr_nuke/nuke_vent_bombsite/nuke_vent_bombsite_breakable_c.mdl" ||
+        dp.model == "models/props/de_nuke/hr_nuke/nuke_vent_slats/nuke_vent_slats.mdl" ||
+        dp.model == "models/fmpone/de_cache/workingnewvents.mdl" ||
+        dp.model == "models/props/de_mirage/wall_hole_cover_sheetmetal.mdl")
+    {
+        Debug{} << "Skipped breakable dynamic prop with blocklisted model:"
+            << dp.model.c_str();
+        return true; // Model is breakable, skip this prop_dynamic
+    }
+
     kv = key_values.find("origin");
     if (kv == key_values.end()) return false; // 'origin' is required
     std::vector<float> origin_vals = utils::ParseFloatsFromString(kv->second);
