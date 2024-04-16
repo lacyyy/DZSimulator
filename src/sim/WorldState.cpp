@@ -20,7 +20,7 @@ WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& s
 {
     if (phase <= 0.0f) return stateA;
     if (phase >= 1.0f) return stateB;
-    
+
     WorldState interpState = stateA;
 
     // NOTE: Player movement state is only partially being interpolated.
@@ -160,14 +160,14 @@ void WorldState::DoTimeStep(double step_size_sec,
             csgo_mv.m_nButtons |= IN_DUCK;
 
         csgo_mv.m_flForwardMove = 0.0f;
-        if (tryMoveForward) csgo_mv.m_flForwardMove += 450.0f; // cl_forwardspeed ?
-        if (tryMoveBack)    csgo_mv.m_flForwardMove -= 450.0f; // cl_backspeed ?
+        if (tryMoveForward) csgo_mv.m_flForwardMove += CSGO_CVAR_CL_FORWARDSPEED;
+        if (tryMoveBack)    csgo_mv.m_flForwardMove -= CSGO_CVAR_CL_BACKSPEED;
 
         csgo_mv.m_flSideMove = 0.0f;
-        if (tryMoveRight) csgo_mv.m_flSideMove += 450.0f; // cl_sidespeed  ?
-        if (tryMoveLeft)  csgo_mv.m_flSideMove -= 450.0f; // cl_sidespeed  ?
+        if (tryMoveRight) csgo_mv.m_flSideMove += CSGO_CVAR_CL_SIDESPEED;
+        if (tryMoveLeft)  csgo_mv.m_flSideMove -= CSGO_CVAR_CL_SIDESPEED;
 
-        // Temporary: On attack input, boost player in looking direction 
+        // Temporary: On attack input, boost player in looking direction
         if (tryAttack) {
             Vector3 forward;
             AngleVectors(csgo_mv.m_vecViewAngles, &forward);

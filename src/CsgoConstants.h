@@ -106,8 +106,8 @@ const float CSGO_CVAR_SV_FALLDAMAGE_EXOJUMP_MULTIPLIER = 0.4f; // ExoJump fall d
 const float CSGO_CVAR_SV_FALLDAMAGE_TO_BELOW_PLAYER_MULTIPLIER = 1.5f; // (def. 1) Scale damage when distributed across two players
 const float CSGO_CVAR_SV_FALLDAMAGE_TO_BELOW_PLAYER_RATIO = 0.6f; // (def. 0) Landing on a another player's head gives them this ratio of the damage.
 
-const float CSGO_CVAR_SV_STANDABLE_NORMAL = 0.7f;
-const float CSGO_CVAR_SV_WALKABLE_NORMAL = 0.7f; // controls what angle is surf and what you can walk on ?
+const float CSGO_CVAR_SV_STANDABLE_NORMAL = 0.7f; // Inclination of surfaces the player can stand on
+const float CSGO_CVAR_SV_WALKABLE_NORMAL  = 0.7f; // Inclination of surfaces the player can walk on
 
 const float CSGO_CVAR_SV_BUMPMINE_ARM_DELAY      = 0.3f;   // doesn't appear to have an effect ingame
 const float CSGO_CVAR_SV_BUMPMINE_DETONATE_DELAY = 0.25f;  // doesn't appear to have an effect ingame
