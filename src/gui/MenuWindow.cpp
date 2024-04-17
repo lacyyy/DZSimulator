@@ -989,6 +989,7 @@ void MenuWindow::DrawMovementDebugging()
                 mv.m_vecAbsOrigin.x(),
                 mv.m_vecAbsOrigin.y(),
                 mv.m_vecAbsOrigin.z());
+    ImGui::Text("hori speed    = %.3F", mv.m_vecVelocity.xy().length());
     ImGui::Text("m_vecVelocity = (%.2F, %.2F, %.2F)",
                 mv.m_vecVelocity.x(),
                 mv.m_vecVelocity.y(),
