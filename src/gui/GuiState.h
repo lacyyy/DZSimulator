@@ -9,7 +9,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector2.h>
 
-#include "CsgoConstants.h"
+#include "sim/CsgoConfig.h"
+#include "sim/CsgoConstants.h"
 #include "sim/CsgoMovement.h"
 
 namespace gui {
@@ -99,7 +100,7 @@ public:
         int IN_user_gui_scaling_factor_pct = 100; // percentage
 
         bool IN_use_custom_fov = false;
-        float IN_custom_vert_fov_degrees = float(Magnum::Deg{ CSGO_VERT_FOV });
+        float IN_custom_vert_fov_degrees = float(Magnum::Deg{ sim::CSGO_VERT_FOV });
 
         enum WindowMode {
             WINDOWED,
@@ -128,6 +129,11 @@ public:
         // FPS limit, only used if VSync disabled, initialized to default 125 FPS
         unsigned int IN_min_loop_period = 8; // Default FPS limit = 1000ms / 8ms = 125
     } video;
+
+    struct GameConfiguration {
+        // TODO This game mode setting should be saved to file
+        sim::CsgoConfig::GameMode IN_game_mode = sim::CsgoConfig::GameMode::DANGER_ZONE;
+    } game_cfg;
 
     struct RemoteConsole {
         bool IN_start_connect = false;

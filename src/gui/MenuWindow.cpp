@@ -293,6 +293,11 @@ void MenuWindow::Draw()
         }
     }
 
+    if (ImGui::CollapsingHeader("Game Configuration"))
+    {
+        DrawGameConfig();
+    }
+
     //if (ImGui::CollapsingHeader("CS:GO Integration"))
     //{
     //    // GSI is commented because it's currently pretty useless
@@ -659,6 +664,27 @@ void MenuWindow::DrawMapSelection()
     if (is_map_load_box_open && !s_prev_is_map_load_box_open)
         _gui_state.map_select.IN_box_opened = true; // -> user just opened box
     s_prev_is_map_load_box_open = is_map_load_box_open; // save for next frame
+}
+
+void MenuWindow::DrawGameConfig()
+{
+    using GameMode = sim::CsgoConfig::GameMode;
+    bool dz_active   = _gui_state.game_cfg.IN_game_mode == GameMode::DANGER_ZONE;
+    bool comp_active = _gui_state.game_cfg.IN_game_mode == GameMode::COMPETITIVE;
+
+    ImGui::Text("Simulated game mode:");
+    ImGui::SameLine();
+    _gui.HelpMarker(
+        ">>>> Some visualizations and movement mechanics behave differently\n"
+        "depending on the simulated game mode (e.g. player running speeds).");
+
+    if (ImGui::RadioButton("CS:GO Danger Zone", dz_active))
+        _gui_state.game_cfg.IN_game_mode = GameMode::DANGER_ZONE;
+
+    ImGui::SameLine();
+
+    if (ImGui::RadioButton("CS:GO Competitive", comp_active))
+        _gui_state.game_cfg.IN_game_mode = GameMode::COMPETITIVE;
 }
 
 void MenuWindow::DrawPerformanceStats()

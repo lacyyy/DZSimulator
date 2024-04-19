@@ -86,6 +86,7 @@ class DZSimApplication: public Platform::Application {
         ren::BigTextRenderer _big_text_renderer;
         ren::WideLineRenderer _wide_line_renderer;
 
+        // Note: g_csgo_game_sim_cfg should probably be a part of _csgo_game_sim
         sim::CsgoGame _csgo_game_sim;
 
         // Game inputs of current frame
@@ -243,6 +244,9 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
 {
     tracy::SetThreadName("Main Thread");
     ZoneScopedN("DZSimApplication Ctor");
+
+    // Some global variables aren't initialized yet, do that now.
+    PerformLateGlobalVarsInit(_gui_state);
 
     // Save immediately to file for the sole purpose of ensuring the
     // settings file and its directory exist.
@@ -821,7 +825,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
         initial_worldstate.csgo_mv.m_vecAbsOrigin  = playerSpawn.origin;
         initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
     }
-    _csgo_game_sim.Start(1.0f / CSGO_TICKRATE, 1.0f, initial_worldstate);
+    _csgo_game_sim.Start(1.0f / sim::CSGO_TICKRATE, 1.0f, initial_worldstate);
 
     Debug{} << "DONE loading bsp map";
     return true;
@@ -1016,6 +1020,23 @@ void DZSimApplication::DoUpdate()
 
     if (!is_sparing_low_latency_draw_mode_enabled)
         redraw_needed = true; // Here, always draw new frames
+
+    // Update simulated game settings if user changed them
+    if (_gui_state.game_cfg.IN_game_mode != g_csgo_game_sim_cfg.game_mode) {
+        switch(_gui_state.game_cfg.IN_game_mode) {
+            case sim::CsgoConfig::GameMode::DANGER_ZONE:
+                g_csgo_game_sim_cfg = sim::CsgoConfig(InitWithDzDefaults);
+                Debug{} << "[GameCfg] Changed to default DZ settings";
+                break;
+            case sim::CsgoConfig::GameMode::COMPETITIVE:
+                g_csgo_game_sim_cfg = sim::CsgoConfig(InitWithCompDefaults);
+                Debug{} << "[GameCfg] Changed to default Competitive settings";
+                break;
+            default:
+                assert(0);
+                break;
+        }
+    }
 
     // Communicate with csgo console if connected and process its data
     _csgo_handler.Update();
@@ -1497,7 +1518,7 @@ Matrix4 DZSimApplication::CalcViewProjTransformation(const Vector3& cam_pos,
         Matrix4::translation(-cam_pos);
 
     Deg vertical_fov = _gui_state.video.IN_use_custom_fov ?
-        Deg{ _gui_state.video.IN_custom_vert_fov_degrees } : CSGO_VERT_FOV;
+        Deg{ _gui_state.video.IN_custom_vert_fov_degrees } : sim::CSGO_VERT_FOV;
 
     // Get exact same projection like CSGO to make DZSim's image accurate when
     // used as a CSGO overlay

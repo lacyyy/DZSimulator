@@ -8,8 +8,8 @@
 #include <Magnum/Math/Functions.h>
 
 #include "coll/Trace.h"
-#include "CsgoConstants.h"
 #include "GlobalVars.h"
+#include "sim/CsgoConstants.h"
 #include "utils_3d.h"
 
 using namespace sim;
@@ -365,7 +365,8 @@ void CsgoMovement::StartGravity(float frametime)
 
     // Add gravity so they'll be in the correct position during movement
     // yes, this 0.5 looks wrong, but it's not.  
-    m_vecVelocity.z() -= ent_gravity * CSGO_CVAR_SV_GRAVITY * 0.5f * frametime;
+    m_vecVelocity.z() -=
+        ent_gravity * g_csgo_game_sim_cfg.sv_gravity * 0.5f * frametime;
 
     m_vecVelocity.z() += m_vecBaseVelocity.z() * frametime;
     m_vecBaseVelocity.z() = 0;
@@ -409,7 +410,7 @@ void CsgoMovement::StepMove(float frametime,
     vecEndPos = m_vecAbsOrigin;
     if (m_bAllowAutoMovement)
     {
-        vecEndPos.z() += CSGO_CVAR_SV_STEPSIZE + CSGO_DIST_EPSILON;
+        vecEndPos.z() += g_csgo_game_sim_cfg.sv_stepsize + CSGO_DIST_EPSILON;
     }
 
     Trace trace_up = TracePlayerBBox(m_vecAbsOrigin, vecEndPos);
@@ -425,13 +426,13 @@ void CsgoMovement::StepMove(float frametime,
     vecEndPos = m_vecAbsOrigin;
     if (m_bAllowAutoMovement)
     {
-        vecEndPos.z() -= CSGO_CVAR_SV_STEPSIZE + CSGO_DIST_EPSILON;
+        vecEndPos.z() -= g_csgo_game_sim_cfg.sv_stepsize + CSGO_DIST_EPSILON;
     }
 
     Trace trace_down = TracePlayerBBox(m_vecAbsOrigin, vecEndPos);
 
     // If we are not on the ground any more then use the original movement attempt.
-    if (trace_down.results.plane_normal.z() < CSGO_CVAR_SV_WALKABLE_NORMAL)
+    if (trace_down.results.plane_normal.z() < g_csgo_game_sim_cfg.sv_walkable_normal)
     {
         m_vecAbsOrigin = vecDownPos;
         m_vecVelocity = vecDownVel;
@@ -501,12 +502,13 @@ void CsgoMovement::Friction(float frametime)
     // apply ground friction
     if (m_hGroundEntity)  // On an entity that is the ground
     {
-        friction = CSGO_CVAR_SV_FRICTION * m_surfaceFriction;
+        friction = g_csgo_game_sim_cfg.sv_friction * m_surfaceFriction;
 
         // Bleed off some speed, but if we have less than the bleed
         //  threshold, bleed the threshold amount.
 
-        control = (speed < CSGO_CVAR_SV_STOPSPEED) ? CSGO_CVAR_SV_STOPSPEED : speed;
+        control = (speed < g_csgo_game_sim_cfg.sv_stopspeed) ?
+            g_csgo_game_sim_cfg.sv_stopspeed : speed;
 
         // Add the amount to the drop amount.
         drop += control * friction * frametime;
@@ -539,7 +541,8 @@ void CsgoMovement::FinishGravity(float frametime)
     //    return;
 
     // Get the correct velocity for the end of the dt 
-    m_vecVelocity.z() -= ent_gravity * CSGO_CVAR_SV_GRAVITY * 0.5f * frametime;
+    m_vecVelocity.z() -=
+        ent_gravity * g_csgo_game_sim_cfg.sv_gravity * 0.5f * frametime;
 
     CheckVelocity();
 }
@@ -563,8 +566,8 @@ void CsgoMovement::AirAccelerate(float frametime,
     //    return;
 
     // Cap speed
-    if (wishspd > CSGO_CVAR_SV_AIR_MAX_WISHSPEED)
-        wishspd = CSGO_CVAR_SV_AIR_MAX_WISHSPEED;
+    if (wishspd > g_csgo_game_sim_cfg.sv_air_max_wishspeed)
+        wishspd = g_csgo_game_sim_cfg.sv_air_max_wishspeed;
 
     // Determine veer amount
     currentspeed = Math::dot(m_vecVelocity, wishdir);
@@ -634,7 +637,7 @@ void CsgoMovement::AirMove(float frametime)
         wishspeed = m_flMaxSpeed;
     }
 
-    AirAccelerate(frametime, wishdir, wishspeed, CSGO_CVAR_SV_AIRACCELERATE);
+    AirAccelerate(frametime, wishdir, wishspeed, g_csgo_game_sim_cfg.sv_airaccelerate);
 
     // Add in any base velocity to the current velocity.
     m_vecVelocity += m_vecBaseVelocity;
@@ -702,7 +705,7 @@ void CsgoMovement::StayOnGround()
     Vector3 start = m_vecAbsOrigin;
     Vector3 end = m_vecAbsOrigin;
     start.z() += 2;
-    end.z() -= CSGO_CVAR_SV_STEPSIZE;
+    end.z() -= g_csgo_game_sim_cfg.sv_stepsize;
 
     // See how far up we can go without getting stuck
 
@@ -717,7 +720,7 @@ void CsgoMovement::StayOnGround()
     if (down_trace.results.fraction > 0.0f && // must go somewhere
         down_trace.results.fraction < 1.0f && // must hit something
         !down_trace.results.startsolid &&     // can't be embedded in a solid
-        down_trace.results.plane_normal.z() >= CSGO_CVAR_SV_STANDABLE_NORMAL) // can't hit a steep slope that we can't stand on anyway
+        down_trace.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal) // can't hit a steep slope that we can't stand on anyway
     {
         Vector3 endpos = start + down_trace.results.fraction * down_trace.info.delta;
         float flDelta = Math::abs(m_vecAbsOrigin.z() - endpos.z());
@@ -793,7 +796,7 @@ void CsgoMovement::WalkMove(float frametime)
 
     // Set pmove velocity
     m_vecVelocity.z() = 0;
-    Accelerate(wishdir, wishspeed, CSGO_CVAR_SV_ACCELERATE, frametime);
+    Accelerate(wishdir, wishspeed, g_csgo_game_sim_cfg.sv_accelerate, frametime);
     m_vecVelocity.z() = 0;
 
     // Add in any base velocity to the current velocity.
@@ -1033,7 +1036,7 @@ bool CsgoMovement::CheckJumpButton(float frametime)
     //MoveHelper()->PlayerSetAnimation(PLAYER_JUMP);
 
     // Initial upward velocity for player jumps; sqrt(2*gravity*height).
-    float flMul = CSGO_CVAR_SV_JUMP_IMPULSE;
+    float flMul = g_csgo_game_sim_cfg.sv_jump_impulse;
 
     // Accelerate upward
     // If we are ducking...
@@ -1169,7 +1172,7 @@ int CsgoMovement::TryPlayerMove(float frametime,
 
         // If the plane we hit has a high z component in the normal, then
         //  it's probably a floor
-        if (tr.results.plane_normal.z() > CSGO_CVAR_SV_STANDABLE_NORMAL)
+        if (tr.results.plane_normal.z() > g_csgo_game_sim_cfg.sv_standable_normal)
         {
             blocked |= 1; // floor
         }
@@ -1209,7 +1212,7 @@ int CsgoMovement::TryPlayerMove(float frametime,
         {
             for (i = 0; i < numplanes; i++)
             {
-                if (planes[i].z() > CSGO_CVAR_SV_STANDABLE_NORMAL)
+                if (planes[i].z() > g_csgo_game_sim_cfg.sv_standable_normal)
                 {
                     // floor or slope
                     ClipVelocity(original_velocity, planes[i], new_velocity, 1.0f);
@@ -1322,17 +1325,17 @@ void CsgoMovement::CheckVelocity(void)
         }
 
         // Bound it.
-        if (m_vecVelocity[i] > CSGO_CVAR_SV_MAXVELOCITY)
+        if (m_vecVelocity[i] > g_csgo_game_sim_cfg.sv_maxvelocity)
         {
             Debug{} << "[GameMovement] WARNING: Got a velocity too high on axis"
                 << i << ". ->" << m_vecVelocity;
-            m_vecVelocity[i] = CSGO_CVAR_SV_MAXVELOCITY;
+            m_vecVelocity[i] = g_csgo_game_sim_cfg.sv_maxvelocity;
         }
-        else if (m_vecVelocity[i] < -CSGO_CVAR_SV_MAXVELOCITY)
+        else if (m_vecVelocity[i] < -g_csgo_game_sim_cfg.sv_maxvelocity)
         {
             Debug{} << "[GameMovement] WARNING: Got a velocity too low on axis"
                 << i << ". ->" << m_vecVelocity;
-            m_vecVelocity[i] = -CSGO_CVAR_SV_MAXVELOCITY;
+            m_vecVelocity[i] = -g_csgo_game_sim_cfg.sv_maxvelocity;
         }
     }
 }
@@ -1444,7 +1447,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     mins = minsSrc;
     maxs = { Math::min(0.0f, maxsSrc.x()), Math::min(0.0f, maxsSrc.y()), maxsSrc.z() };
     Trace tr1 = TryTouchGround(start, end, mins, maxs);
-    if (tr1.results.DidHit() && tr1.results.plane_normal.z() >= CSGO_CVAR_SV_STANDABLE_NORMAL)
+    if (tr1.results.DidHit() && tr1.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal)
     {
         //pm.fraction = fraction;
         //pm.endpos = endpos;
@@ -1455,7 +1458,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     mins = { Math::max(0.0f, minsSrc.x()), Math::max(0.0f, minsSrc.y()), minsSrc.z() };
     maxs = maxsSrc;
     Trace tr2 = TryTouchGround(start, end, mins, maxs);
-    if (tr2.results.DidHit() && tr2.results.plane_normal.z() >= CSGO_CVAR_SV_STANDABLE_NORMAL)
+    if (tr2.results.DidHit() && tr2.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal)
     {
         //pm.fraction = fraction;
         //pm.endpos = endpos;
@@ -1466,7 +1469,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     mins = { minsSrc.x(), Math::max(0.0f, minsSrc.y()), minsSrc.z() };
     maxs = { Math::min(0.0f, maxsSrc.x()), maxsSrc.y(), maxsSrc.z() };
     Trace tr3 = TryTouchGround(start, end, mins, maxs);
-    if (tr3.results.DidHit() && tr3.results.plane_normal.z() >= CSGO_CVAR_SV_STANDABLE_NORMAL)
+    if (tr3.results.DidHit() && tr3.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal)
     {
         //pm.fraction = fraction;
         //pm.endpos = endpos;
@@ -1477,7 +1480,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     mins = { Math::max(0.0f, minsSrc.x()), minsSrc.y(), minsSrc.z() };
     maxs = { maxsSrc.x(), Math::min(0.0f, maxsSrc.y()), maxsSrc.z() };
     Trace tr4 = TryTouchGround(start, end, mins, maxs);
-    if (tr4.results.DidHit() && tr4.results.plane_normal.z() >= CSGO_CVAR_SV_STANDABLE_NORMAL)
+    if (tr4.results.DidHit() && tr4.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal)
     {
         //pm.fraction = fraction;
         //pm.endpos = endpos;
@@ -1519,7 +1522,7 @@ void CsgoMovement::CategorizePosition(void)
     // Shooting up really fast.  Definitely not on ground.
     // On ladder moving up, so not on ground either
     // NOTE: 145 is a jump.
-#define NON_JUMP_VELOCITY CSGO_CONST_MIN_NO_GROUND_CHECKS_VEL_Z //140.0f
+#define NON_JUMP_VELOCITY CSGO_MIN_NO_GROUND_CHECKS_VEL_Z //140.0f
 
     float zvel = m_vecVelocity.z();
     bool bMovingUp = zvel > 0.0f;
@@ -1551,7 +1554,7 @@ void CsgoMovement::CategorizePosition(void)
         // Try and move down.
         Trace initial_tr = TryTouchGround(bumpOrigin, point, GetPlayerMins(), GetPlayerMaxs());
 
-        if (initial_tr.results.DidHit() && initial_tr.results.plane_normal.z() >= CSGO_CVAR_SV_STANDABLE_NORMAL)
+        if (initial_tr.results.DidHit() && initial_tr.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal)
         {
             SetGroundEntity(true, initial_tr.results.surface);
         }
@@ -1953,7 +1956,7 @@ void CsgoMovement::PlayerMove(float time_delta)
     }
     else
     {
-        if (m_vecVelocity.z() > CSGO_CONST_MIN_LEAVE_GROUND_VEL_Z)
+        if (m_vecVelocity.z() > CSGO_MIN_LEAVE_GROUND_VEL_Z)
         {
             SetGroundEntity(false);
         }

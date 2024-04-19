@@ -352,6 +352,7 @@ target_sources(DZSimulator PRIVATE
     "src/ren/WideLineRenderer.cpp"
     "src/ren/WorldRenderer.cpp"
 
+    "src/sim/CsgoConfig.cpp"
     "src/sim/CsgoGame.cpp"
     "src/sim/CsgoMovement.cpp"
     "src/sim/WorldState.cpp"

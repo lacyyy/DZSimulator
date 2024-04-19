@@ -6,7 +6,8 @@
 #include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Functions.h>
 
-#include "CsgoConstants.h"
+#include "GlobalVars.h"
+#include "sim/CsgoConstants.h"
 #include "sim/CsgoMovement.h"
 #include "utils_3d.h"
 
@@ -160,12 +161,12 @@ void WorldState::DoTimeStep(double step_size_sec,
             csgo_mv.m_nButtons |= IN_DUCK;
 
         csgo_mv.m_flForwardMove = 0.0f;
-        if (tryMoveForward) csgo_mv.m_flForwardMove += CSGO_CVAR_CL_FORWARDSPEED;
-        if (tryMoveBack)    csgo_mv.m_flForwardMove -= CSGO_CVAR_CL_BACKSPEED;
+        if (tryMoveForward) csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
+        if (tryMoveBack)    csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
 
         csgo_mv.m_flSideMove = 0.0f;
-        if (tryMoveRight) csgo_mv.m_flSideMove += CSGO_CVAR_CL_SIDESPEED;
-        if (tryMoveLeft)  csgo_mv.m_flSideMove -= CSGO_CVAR_CL_SIDESPEED;
+        if (tryMoveRight) csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
+        if (tryMoveLeft)  csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
 
         // Temporary: On attack input, boost player in looking direction
         if (tryAttack) {
@@ -185,7 +186,7 @@ void WorldState::DoTimeStep(double step_size_sec,
 
         // Init max speed using type of weapon equipped by player
         // TODO: Distinguish between different equipped weapons here
-        csgo_mv.m_flMaxSpeed = CSGO_WEAPON_KNIFE_MAX_PLAYER_SPEED;
+        csgo_mv.m_flMaxSpeed = g_csgo_game_sim_cfg.WEAPON_KNIFE_MAX_PLAYER_SPEED;
 
         //Debug{} << "m_nButtons = " << csgo_mv.m_nButtons;
         //Debug{} << "m_flForwardMove = " << csgo_mv.m_flForwardMove;

@@ -13,7 +13,8 @@
 #include <Magnum/Math/Matrix4.h>
 
 #include "csgo_parsing/BrushSeparation.h"
-#include "CsgoConstants.h"
+#include "sim/CsgoConstants.h"
+#include "GlobalVars.h"
 #include "ren/RenderableWorld.h"
 #include "utils_3d.h"
 #include "WorldCreator.h"
@@ -89,10 +90,10 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
 
         // Game settings
         glid_shader
-            .SetGravity(CSGO_CVAR_SV_GRAVITY)
-            .SetMinNoGroundChecksVelZ(CSGO_CONST_MIN_NO_GROUND_CHECKS_VEL_Z)
-            .SetMaxVelocity(CSGO_CVAR_SV_MAXVELOCITY)
-            .SetStandableNormal(CSGO_CVAR_SV_STANDABLE_NORMAL);
+            .SetGravity(g_csgo_game_sim_cfg.sv_gravity)
+            .SetMinNoGroundChecksVelZ(sim::CSGO_MIN_NO_GROUND_CHECKS_VEL_Z)
+            .SetMaxVelocity(g_csgo_game_sim_cfg.sv_maxvelocity)
+            .SetStandableNormal(g_csgo_game_sim_cfg.sv_standable_normal);
     }
 
     GL::Renderer::setFrontFace(GL::Renderer::FrontFace::ClockWise);
