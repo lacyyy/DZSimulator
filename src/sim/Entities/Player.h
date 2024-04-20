@@ -6,7 +6,6 @@
 #include <Corrade/Utility/Debug.h>
 
 #include "sim/CsgoConstants.h"
-#include "GlobalVars.h"
 #include "sim/PlayerInputState.h"
 
 namespace sim::Entities {
@@ -69,7 +68,8 @@ public:
         case PlayerInputState::Command::MINUS_ATTACK2:
             return inputCmdActiveCount_attack2;
         }
-        ACQUIRE_COUT(Magnum::Error{} << "[ERROR] Player::inputCmdActiveCount() Unknown cmd! Forgot a switch case?";)
+        Magnum::Error{} << "[ERROR] Player::inputCmdActiveCount() Unknown cmd! "
+                           "Forgot a switch case?";
         std::terminate();
         return inputCmdActiveCount_forward; // irrelevant
     }

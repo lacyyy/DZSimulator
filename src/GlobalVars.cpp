@@ -1,18 +1,10 @@
-#include <memory>
-#include <mutex>
+#include "GlobalVars.h"
 
 #include <Magnum/Tags.h>
-
-#include "coll/CollidableWorld.h"
-#include "gui/GuiState.h"
-#include "sim/CsgoConfig.h"
 
 using namespace Magnum;
 
 // -----------------------------
-
-// Protects std::cout
-std::mutex g_cout_mutex;
 
 // World data for easy access
 std::shared_ptr<coll::CollidableWorld> g_coll_world;
