@@ -1,6 +1,8 @@
 #ifndef SIM_ENTITIES_PLAYER_H_
 #define SIM_ENTITIES_PLAYER_H_
 
+#include <vector>
+
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/BitVector.h>
 #include <Magnum/Math/Vector3.h>
@@ -33,15 +35,17 @@ public:
         using WeaponList = Magnum::Math::BitVector<Weapon::TOTAL_COUNT>;
         WeaponList non_active_weapons;
 
-        // Default ctor equips player with Bump Mines.
-        Loadout()
-            : active_weapon{ BumpMine }
+        Loadout(Weapon active, const std::vector<Weapon>& non_active_list)
+            : active_weapon{ active }
             , non_active_weapons{ Magnum::Math::ZeroInit }
         {
+            for (Weapon non_active_weapon : non_active_list)
+                if (non_active_weapon != active)
+                    non_active_weapons.set(non_active_weapon, true);
         }
     };
 
-    Loadout loadout;
+    Loadout loadout = Loadout(Loadout::Weapon::Fists, {});
 
 
     // ---- Player input command states

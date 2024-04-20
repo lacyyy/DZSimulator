@@ -63,6 +63,9 @@
 using namespace Magnum;
 using namespace Math::Literals;
 
+const float SIM_STEP_SIZE_IN_SECS = 1.0f / sim::CSGO_TICKRATE;
+const float SIM_TIMESCALE = 1.0f; // Equivalent to CSGO ConVar "host_timescale"
+
 class DZSimApplication: public Platform::Application {
     public:
         explicit DZSimApplication(const Arguments& arguments);
@@ -825,7 +828,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
         initial_worldstate.csgo_mv.m_vecAbsOrigin  = playerSpawn.origin;
         initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
     }
-    _csgo_game_sim.Start(1.0f / sim::CSGO_TICKRATE, 1.0f, initial_worldstate);
+    _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, initial_worldstate);
 
     Debug{} << "DONE loading bsp map";
     return true;
@@ -1035,6 +1038,24 @@ void DZSimApplication::DoUpdate()
             default:
                 assert(0);
                 break;
+        }
+    }
+
+    // Update simulation player loadout if user wants to change it
+    if (_csgo_game_sim.HasBeenStarted()) {
+        const sim::WorldState& sim_worldstate = _csgo_game_sim.GetLatestActualWorldState();
+        using Loadout = sim::Entities::Player::Loadout;
+        const Loadout& sim_loadout = sim_worldstate.player.loadout;
+        const Loadout& gui_loadout = _gui_state.game_cfg.IN_loadout;
+        if (gui_loadout.active_weapon      != sim_loadout.active_weapon ||
+            gui_loadout.non_active_weapons != sim_loadout.non_active_weapons)
+        {
+            sim::WorldState new_worldstate = sim_worldstate; // Intentional copy
+            new_worldstate.player.loadout.active_weapon      = gui_loadout.active_weapon;
+            new_worldstate.player.loadout.non_active_weapons = gui_loadout.non_active_weapons;
+            // Restart simulation with updated loadout
+            _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, new_worldstate);
+            Debug{} << "[Sim] Updated player loadout";
         }
     }
 

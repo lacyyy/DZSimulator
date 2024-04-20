@@ -130,9 +130,16 @@ public:
         unsigned int IN_min_loop_period = 8; // Default FPS limit = 1000ms / 8ms = 125
     } video;
 
+    // TODO This struct should be saved to file
     struct GameConfiguration {
-        // TODO This game mode setting should be saved to file
-        sim::CsgoConfig::GameMode IN_game_mode = sim::CsgoConfig::GameMode::DANGER_ZONE;
+        sim::CsgoConfig::GameMode IN_game_mode =
+            sim::CsgoConfig::GameMode::DANGER_ZONE;
+
+        using Loadout = sim::Entities::Player::Loadout;
+        Loadout IN_loadout = Loadout(
+            Loadout::Weapon::BumpMine, // Active weapon
+            {Loadout::Weapon::Fists, Loadout::Weapon::Knife} // Non-active weapons
+        );
     } game_cfg;
 
     struct RemoteConsole {

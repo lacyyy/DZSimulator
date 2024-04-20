@@ -8,6 +8,7 @@
 
 #include "build_info.h"
 #include "coll/Debugger.h"
+#include "GlobalVars.h"
 #include "gui/Gui.h"
 #include "gui/GuiState.h"
 #include "SavedUserDataHandler.h"
@@ -669,8 +670,9 @@ void MenuWindow::DrawMapSelection()
 void MenuWindow::DrawGameConfig()
 {
     using GameMode = sim::CsgoConfig::GameMode;
-    bool dz_active   = _gui_state.game_cfg.IN_game_mode == GameMode::DANGER_ZONE;
-    bool comp_active = _gui_state.game_cfg.IN_game_mode == GameMode::COMPETITIVE;
+    using Weapon   = sim::Entities::Player::Loadout::Weapon;
+    GuiState::GameConfiguration&    cfg     = _gui_state.game_cfg;
+    sim::Entities::Player::Loadout& loadout = _gui_state.game_cfg.IN_loadout;
 
     ImGui::Text("Simulated game mode:");
     ImGui::SameLine();
@@ -678,13 +680,80 @@ void MenuWindow::DrawGameConfig()
         ">>>> Some visualizations and movement mechanics behave differently\n"
         "depending on the simulated game mode (e.g. player running speeds).");
 
+    bool dz_active = cfg.IN_game_mode == GameMode::DANGER_ZONE;
     if (ImGui::RadioButton("CS:GO Danger Zone", dz_active))
         _gui_state.game_cfg.IN_game_mode = GameMode::DANGER_ZONE;
 
     ImGui::SameLine();
 
+    bool comp_active = cfg.IN_game_mode == GameMode::COMPETITIVE;
     if (ImGui::RadioButton("CS:GO Competitive", comp_active))
         _gui_state.game_cfg.IN_game_mode = GameMode::COMPETITIVE;
+
+    ImGui::Separator();
+
+    ImGui::Text("Simulated player equipment:");
+    ImGui::Indent();
+
+    ImGui::Text("Held weapon:");
+    ImGui::SameLine();
+    const char* combo_box_preview;
+    switch (loadout.active_weapon) {
+        case Weapon::Knife:    combo_box_preview = "Knife";     break;
+        case Weapon::BumpMine: combo_box_preview = "Bump Mine"; break;
+        case Weapon::Fists:    combo_box_preview = "Fists";     break;
+        case Weapon::Taser:    combo_box_preview = "Zeus x27";  break;
+        case Weapon::XM1014:   combo_box_preview = "XM1014";    break;
+        default:               combo_box_preview = "";          break;
+    }
+    if (ImGui::BeginCombo("##ActiveWeaponCombo", combo_box_preview, ImGuiComboFlags_WidthFitPreview)) {
+        if (ImGui::Selectable("Knife##active",     loadout.active_weapon == Weapon::Knife   )) loadout.active_weapon = Weapon::Knife;
+        if (ImGui::Selectable("Bump Mine##active", loadout.active_weapon == Weapon::BumpMine)) loadout.active_weapon = Weapon::BumpMine;
+        if (ImGui::Selectable("Fists##active",     loadout.active_weapon == Weapon::Fists   )) loadout.active_weapon = Weapon::Fists;
+        if (ImGui::Selectable("Zeus x27##active",  loadout.active_weapon == Weapon::Taser   )) loadout.active_weapon = Weapon::Taser;
+        if (ImGui::Selectable("XM1014##active",    loadout.active_weapon == Weapon::XM1014  )) loadout.active_weapon = Weapon::XM1014;
+        ImGui::EndCombo();
+    }
+    // Ensure that the active weapon isn't in the non-active weapon list
+    loadout.non_active_weapons.set(loadout.active_weapon, false);
+
+    ImGui::Text("Other carried weapons:"); ImGui::Indent(); {
+        bool is_non_active[Weapon::TOTAL_COUNT];
+        for (size_t i = 0; i < Weapon::TOTAL_COUNT; i++)
+            is_non_active[i] = loadout.non_active_weapons[i];
+
+        if (loadout.active_weapon == Weapon::Knife) ImGui::BeginDisabled();
+        ImGui::Checkbox("Knife##nonactive", &is_non_active[Weapon::Knife]);
+        if (loadout.active_weapon == Weapon::Knife) ImGui::EndDisabled();
+
+        if (loadout.active_weapon == Weapon::BumpMine) ImGui::BeginDisabled();
+        ImGui::Checkbox("Bump Mine##nonactive", &is_non_active[Weapon::BumpMine]);
+        if (loadout.active_weapon == Weapon::BumpMine) ImGui::EndDisabled();
+
+        if (loadout.active_weapon == Weapon::Fists) ImGui::BeginDisabled();
+        ImGui::Checkbox("Fists##nonactive", &is_non_active[Weapon::Fists]);
+        if (loadout.active_weapon == Weapon::Fists) ImGui::EndDisabled();
+
+        if (loadout.active_weapon == Weapon::Taser) ImGui::BeginDisabled();
+        ImGui::Checkbox("Zeus x27##nonactive", &is_non_active[Weapon::Taser]);
+        if (loadout.active_weapon == Weapon::Taser) ImGui::EndDisabled();
+
+        if (loadout.active_weapon == Weapon::XM1014) ImGui::BeginDisabled();
+        ImGui::Checkbox("XM1014##nonactive", &is_non_active[Weapon::XM1014]);
+        if (loadout.active_weapon == Weapon::XM1014) ImGui::EndDisabled();
+
+        for (size_t i = 0; i < Weapon::TOTAL_COUNT; i++)
+            loadout.non_active_weapons.set(i, is_non_active[i]);
+    }
+    ImGui::Unindent();
+
+    ImGui::Unindent();
+
+    ImGui::Separator();
+
+    float loadout_max_running_speed =
+        g_csgo_game_sim_cfg.GetMaxPlayerRunningSpeed(loadout);
+    ImGui::Text("Resulting max running speed: %.1f", loadout_max_running_speed);
 }
 
 void MenuWindow::DrawPerformanceStats()
