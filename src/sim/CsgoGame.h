@@ -56,7 +56,6 @@ private:
 
 private:
     float m_sim_step_size_in_secs; // Simulation step size in seconds
-    float m_game_timescale; // Adjusts frequency of game ticks
     sim::Clock::duration m_realtime_game_tick_interval;
 
     // When the game was last (re-)started. Time point of tick 0's worldstate.

@@ -3,7 +3,6 @@
 #include <cassert>
 #include <chrono>
 #include <utility>
-#include <vector>
 
 #include <Tracy.hpp>
 
@@ -21,7 +20,6 @@ const bool ENABLE_INTERPOLATION_OF_DRAWN_WORLDSTATE = true;
 
 CsgoGame::CsgoGame()
     : m_sim_step_size_in_secs{ 0.0f } // Indicates that game hasn't been started
-    , m_game_timescale{ 0.0f }
     , m_realtime_game_tick_interval{}
     , m_game_start{}
     , m_prev_finalized_game_tick_id{ 0 }
@@ -49,7 +47,6 @@ void CsgoGame::Start(float sim_step_size_in_secs, float game_timescale,
         (1e6f * sim_step_size_in_secs) / game_timescale;
 
     m_sim_step_size_in_secs = sim_step_size_in_secs;
-    m_game_timescale = game_timescale;
     m_realtime_game_tick_interval = microseconds{ realtime_game_tick_interval_us };
     m_game_start = current_time;
 
