@@ -2,6 +2,7 @@
 #define SIM_ENTITIES_PLAYER_H_
 
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/BitVector.h>
 #include <Magnum/Math/Vector3.h>
 #include <Corrade/Utility/Debug.h>
 
@@ -12,8 +13,36 @@ namespace sim::Entities {
 
 class Player {
 public:
-    unsigned int weaponSlot = 0; // = WEAPON_BUMPMINE; // TODO default init this
-    float timeSinceWeaponSwitch_sec = 100.0f; // seconds
+    class Loadout {
+    public:
+        enum Weapon {
+            Fists = 0,
+            Knife,
+            BumpMine,
+            Taser,
+            XM1014,
+            TOTAL_COUNT // Must be the last enum value!
+        };
+
+        // Which weapon the player is currently holding.
+        Weapon active_weapon;
+
+        // Flags indicating which weapons are carried by the player, _excluding_
+        // the active weapon.
+        // A weapon's enum value signifies its bit position in this BitVector.
+        using WeaponList = Magnum::Math::BitVector<Weapon::TOTAL_COUNT>;
+        WeaponList non_active_weapons;
+
+        // Default ctor equips player with Bump Mines.
+        Loadout()
+            : active_weapon{ BumpMine }
+            , non_active_weapons{ Magnum::Math::ZeroInit }
+        {
+        }
+    };
+
+    Loadout loadout;
+
 
     // ---- Player input command states
     // inputCmdActiveCount: Each time +cmd is issued, increment the count.

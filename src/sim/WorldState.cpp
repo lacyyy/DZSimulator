@@ -184,9 +184,9 @@ void WorldState::DoTimeStep(double step_size_sec,
         //  flag globally here once per usercmd cycle.
         csgo_mv.m_iSpeedCropped = SPEED_CROPPED_RESET;
 
-        // Init max speed using type of weapon equipped by player
-        // TODO: Distinguish between different equipped weapons here
-        csgo_mv.m_flMaxSpeed = g_csgo_game_sim_cfg.WEAPON_KNIFE_MAX_PLAYER_SPEED;
+        // Init max speed depending on weapons equipped by player
+        csgo_mv.m_flMaxSpeed =
+            g_csgo_game_sim_cfg.GetMaxPlayerRunningSpeed(player.loadout);
 
         //Debug{} << "m_nButtons = " << csgo_mv.m_nButtons;
         //Debug{} << "m_flForwardMove = " << csgo_mv.m_flForwardMove;

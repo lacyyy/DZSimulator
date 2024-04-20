@@ -1,6 +1,10 @@
 #include "sim/CsgoConfig.h"
 
+#include <cassert>
+
 using namespace sim;
+using namespace Magnum::Math;
+using Loadout = sim::Entities::Player::Loadout;
 
 CsgoConfig::CsgoConfig(Corrade::NoInitT)
 {
@@ -132,4 +136,127 @@ CsgoConfig::CsgoConfig(InitWithCompDefaults_Tag)
     , sv_timebetweenducks( 0.4f )
     , sv_knife_attack_extend_from_player_aabb( 0.0f ) // differs in DZ
 {
+}
+
+
+// =============================================================================
+
+
+// Properties of a player with a specific loadout.
+struct LoadoutCharacteristics {
+    float max_player_running_speed;
+};
+
+static LoadoutCharacteristics GetCharacteristics(const Loadout& lo,
+                                                 const CsgoConfig& cfg)
+{
+    constexpr Loadout::Weapon Fists    = Loadout::Weapon::Fists;
+    constexpr Loadout::Weapon Knife    = Loadout::Weapon::Knife;
+    constexpr Loadout::Weapon BumpMine = Loadout::Weapon::BumpMine;
+    constexpr Loadout::Weapon Taser    = Loadout::Weapon::Taser;
+    constexpr Loadout::Weapon XM1014   = Loadout::Weapon::XM1014;
+
+    // -------------------------------------------------------------------------
+
+    // Depending on mode and setting, non-active weapons limit the max speed.
+    bool encumbrance_enabled = false; // Whether non-active weapons slow down
+    if (cfg.game_mode == CsgoConfig::GameMode::COMPETITIVE) {
+        encumbrance_enabled = false;
+    }
+    else if (cfg.game_mode == CsgoConfig::GameMode::DANGER_ZONE) {
+        if (cfg.sv_accelerate_use_weapon_speed) encumbrance_enabled = true;
+        else                                    encumbrance_enabled = false;
+    }
+    else { // Error: Invalid game mode
+        assert(0);
+        return { .max_player_running_speed = 0.0f };
+    }
+
+    // -------------------------------------------------------------------------
+
+    if (!encumbrance_enabled)
+    {
+        switch (lo.active_weapon) {
+            // Note: CSGO's 'scripts/items/items_game.txt' lists fists with a
+            //       max speed of 275, but CSGO caps at 260.
+            case Fists:    return { .max_player_running_speed = 260.0f };
+            case Knife:    return { .max_player_running_speed = 250.0f };
+            case BumpMine: return { .max_player_running_speed = 245.0f };
+            case Taser:    return { .max_player_running_speed = 220.0f };
+            case XM1014:   return { .max_player_running_speed = 215.0f };
+            default:       break; // Error
+        }
+    }
+    else { // encumbrance_enabled
+        // In Danger Zone, the max running speed depends on non-active weapons
+        // the player carries and whether exojump is equipped.
+        // I gave up trying to understand that mechanic, so here's a look-up
+        // table for different combinations of weapons on a player, assuming the
+        // player has exojump.
+
+        // These values were obtained from CSGO tests under these circumstances:
+        // - sv_accelerate_use_weapon_speed 1
+        // - sv_weapon_encumbrance_per_item 0.85
+        // - sv_weapon_encumbrance_scale 0.3
+        // - Player equipped the exojump (!)
+        // CAUTION: All of these influence the LUT values!
+        //          In CSGO, a player without an exojump is slightly slower in
+        //          some cases.
+        //          We are not handling non-exojump cases, it'd be too much work.
+
+        // NOTE: The inner if-checks must be ordered by descending encumbrance!
+        // NOTE: Non-active fists, Bump Mines or a tablet don't seem to cause
+        //       encumbrance!
+
+        switch (lo.active_weapon) {
+            case Fists: {
+                if (lo.non_active_weapons[XM1014])
+                    return { .max_player_running_speed = 239.018f };
+                if (lo.non_active_weapons[Taser])
+                    return { .max_player_running_speed = 240.344f };
+                if (lo.non_active_weapons[Knife])
+                    return { .max_player_running_speed = 248.3f };
+                // Else, no slowdown
+                // Note: CSGO's 'scripts/items/items_game.txt' lists fists with
+                //       a max speed of 275, but CSGO caps at 260.
+                return { .max_player_running_speed = 260.0f };
+            }
+            case Knife: {
+                if (lo.non_active_weapons[XM1014])
+                    return { .max_player_running_speed = 229.825f };
+                if (lo.non_active_weapons[Taser])
+                    return { .max_player_running_speed = 231.1f };
+                // Else, no slowdown
+                return { .max_player_running_speed = 250.0f };
+            }
+            case BumpMine: {
+                if (lo.non_active_weapons[XM1014])
+                    return { .max_player_running_speed = 229.825f };
+                if (lo.non_active_weapons[Taser])
+                    return { .max_player_running_speed = 231.1f };
+                if (lo.non_active_weapons[Knife])
+                    return { .max_player_running_speed = 238.75f };
+                // Else, no slowdown
+                return { .max_player_running_speed = 245.0f };
+            }
+            case Taser: {
+                // No slowdown, not even with XM1014
+                return { .max_player_running_speed = 220.0f };
+            }
+            case XM1014: {
+                // No slowdown
+                return { .max_player_running_speed = 215.0f };
+            }
+            default: break; // Error
+        }
+    }
+
+    // Error: Missing weapon checks or invalid game mode or invalid loadout
+    assert(0);
+    return { .max_player_running_speed = 0.0f };
+}
+
+float CsgoConfig::GetMaxPlayerRunningSpeed(const Loadout& lo) const
+{
+    return GetCharacteristics(lo, *this).max_player_running_speed;
 }

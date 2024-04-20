@@ -3,6 +3,8 @@
 
 #include <Corrade/Tags.h>
 
+#include "sim/Entities/Player.h"
+
 // Tags to select the correct CsgoConfig constructor
 struct InitWithDzDefaults_Tag{};
 struct InitWithCompDefaults_Tag{};
@@ -135,12 +137,7 @@ public:
 
     // ------------- CSGO weapon stats -------------
 
-    // FIXME TODO The max weapon speeds differ in DZ mode, we currently don't
-    //            differentiate!
-    // from CSGO's 'scripts/items/items_game.txt'
-    float WEAPON_FISTS_MAX_PLAYER_SPEED    = 275.0f;
-    float WEAPON_KNIFE_MAX_PLAYER_SPEED    = 250.0f;
-    float WEAPON_BUMPMINE_MAX_PLAYER_SPEED = 245.0f;
+    float GetMaxPlayerRunningSpeed(const Entities::Player::Loadout& lo) const;
 
 };
 
