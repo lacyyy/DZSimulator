@@ -4,7 +4,7 @@
 ![Latest Release Date](https://img.shields.io/github/release-date/lacyyy/DZSimulator)
 ![Total Downloads](https://img.shields.io/github/downloads/lacyyy/DZSimulator/total?label=total%20downloads)
 
-A standalone app that partially loads maps from Counter-Strike:Global Offensive and makes practicing rampsliding and using "Bump Mines" in CSGO's "Danger Zone" gamemode much easier!
+A standalone app that partially loads maps from Counter-Strike:Global Offensive and makes practicing rampsliding and using "Bump Mines" in CS:GO's "Danger Zone" gamemode much easier!
 
 If you don't know what I mean with rampsliding and Bump Mines, watch this: https://youtu.be/xmAYeyYd4AE
 
@@ -19,15 +19,15 @@ TODO: Add more images and/or video for demonstration
 
 ## <ins>Requirements</ins>
 
-Steam and CSGO must be installed on your machine so that DZSimulator is able to load CSGO maps.
+Steam and CS:GO must be installed on your machine so that DZSimulator is able to load CS:GO maps.
 
-DZSimulator can be used by just itself to explore maps, but it can also act as a CSGO overlay!
+DZSimulator can be used by just itself to explore maps, but it can also act as a CS:GO overlay!
 
-If DZSimulator is used as a CSGO overlay (works only in local server), make sure that:
-- CSGO is in "Fullscreen Windowed mode"
-- CSGO was started with the launch option `-netconport 34755`
-- CSGO loaded a map locally (e.g. with console commands `game_mode 0;game_type 6;map dz_blacksite`) and DZSimulator has the same map loaded
-- In DZSimulator's "Visualizations" menu, "Glidability for player in local CS:GO session" is enabled and you pressed "CONNECT" once CSGO was started
+If DZSimulator is used as a CS:GO overlay (works only in local server), make sure that:
+- CS:GO is in "Fullscreen Windowed" mode
+- CS:GO was started with the launch option `-netconport 34755`
+- CS:GO loaded a map locally (e.g. with console commands `game_mode 0;game_type 6;map dz_blacksite`) and DZSimulator has the same map loaded
+- In DZSimulator's "Visualizations" menu, "Glidability for player in local CS:GO session" is enabled and you pressed "CONNECT" once CS:GO was started
 - In DZSimulator's "Video Settings" menu, overlay mode is enabled
 
 To get started with practicing Bump Mines, I recommend watching [this](https://youtu.be/IPWxlnEsLkQ) and [this](https://youtu.be/YblZkx7mXFM) video!
@@ -37,9 +37,9 @@ To get started with practicing Bump Mines, I recommend watching [this](https://y
 
 No, this is not a cheat and can't get you VAC-banned!
 
-DZSimulator doesn't modify CSGO's game files or injects code into CSGO's DLL files, like a cheat would. Instead, it just reads CSGO's map files to display them in its own window and then simulates CSGO gameplay and movement within itself to figure out rampsliding spots, without touching the CSGO process.
+DZSimulator doesn't modify CS:GO's game files or injects code into CS:GO's DLL files, like a cheat would. Instead, it just reads CS:GO's map files to display them in its own window and then simulates CS:GO gameplay and movement within itself to figure out rampsliding spots, without touching the CS:GO process.
 
-There's one more feature that needs to be explained: DZSimulator's ability to read the player's movement from within a local CSGO server: Is this cheat behaviour? No! This works legitimately through CSGO's launch option `-netconport`. It allows outside programs to connect to CSGO's console, send commands and receive console output. So when CSGO is inside a local server, `sv_cheats 1` can be enabled and DZSimulator is then able to get the player position through the `getpos` command! This doesn't work in online matches because the server is required to have `sv_cheats` set to `1` in order for `getpos` to work.
+There's one more feature that needs to be explained: DZSimulator's ability to read the player's movement from within a local CS:GO server: Is this cheat behaviour? No! This works legitimately through CS:GO's launch option `-netconport`. It allows outside programs to connect to CS:GO's console, send commands and receive console output. So when CS:GO is inside a local server, `sv_cheats 1` can be enabled and DZSimulator is then able to get the player position through the `getpos` command! This doesn't work in online matches because the server is required to have `sv_cheats` set to `1` in order for `getpos` to work.
 
 Hence, you can't get VAC-banned for using DZSimulator.
 

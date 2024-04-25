@@ -267,7 +267,7 @@ void MenuWindow::Draw()
 
 #ifndef DZSIM_WEB_PORT
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f,0.86f,0.46f,0.4f));
-            if (ImGui::Button("How to fix lag when used as CSGO overlay"))
+            if (ImGui::Button("How to fix lag when used as CS:GO overlay"))
                 ShowOverlayLagAdvice();
             ImGui::PopStyleColor(1);
 #endif
@@ -383,7 +383,7 @@ void MenuWindow::Draw()
         if (ImGui::Button("Why is this not a cheat and how does it work?"))
             ShowTechnicalities();
 
-        if (ImGui::Button("How accurately is CSGO movement simulated?"))
+        if (ImGui::Button("How accurately is CS:GO movement simulated?"))
             ShowMovementRecreationDetails();
 
         if (ImGui::Button("Show known issues/bugs"))
@@ -495,7 +495,7 @@ void MenuWindow::ShowAppExplanation()
     _gui_state.popup.QueueMsgInfo(
         "This is a very early version of the \"Danger Zone Simulator\", a "
         "tool for practicing \"Bump Mine\" jumps in the battle-royale game "
-        "mode \"Danger Zone\" of Counter-Strike Global Offensive.\n\n"
+        "mode \"Danger Zone\" of Counter-Strike: Global Offensive.\n\n"
         "Due to bugs in the video game engine, players can satisfyingly "
         "slide up sloped surfaces if they have enough speed. (Check out "
         "\"Speed in Excess\" by \"catfjsh?\" on YouTube: "
@@ -548,8 +548,8 @@ void MenuWindow::ShowTechnicalities()
 void MenuWindow::ShowMovementRecreationDetails()
 {
     _gui_state.popup.QueueMsgInfo(
-        "While this app tries to recreate CSGO player movement as accurately as"
-        " possible, there are some differences:\n\n"
+        "While this app tries to recreate CS:GO player movement as accurately"
+        "as possible, there are some differences:\n\n"
         "  - Walking and rampsliding on props can be slightly inaccurate (up to"
         " 1 unit).\n"
         "  - ...\n"
@@ -587,13 +587,13 @@ void MenuWindow::ShowPlannedFeatures()
 void MenuWindow::ShowOverlayLagAdvice()
 {
     _gui_state.popup.QueueMsgInfo(
-        "When you use DZSimulator as an overlay on top of CSGO, you might "
-        "encounter a noticable visual delay between CSGO and the overlay, on "
+        "When you use DZSimulator as an overlay on top of CS:GO, you might "
+        "encounter a noticable visual delay between CS:GO and the overlay, on "
         "some maps worse than on others. Try reducing it with these steps:\n\n"
 
-        "1. Reduce CSGO's FPS limit (preferably to 128 or 64). As you decrease "
+        "1. Reduce CS:GO's FPS limit (preferably to 128 or 64). As you decrease "
         "it, the overlay should get smoother. For example, you can set the FPS "
-        "limit to 64 by entering this into CSGO's console:\n\n"
+        "limit to 64 by entering this into CS:GO's console:\n\n"
         "    fps_max 64\n\n"
 
         "2. If step 1 didn't help enough, make sure your local server is "
@@ -601,14 +601,14 @@ void MenuWindow::ShowOverlayLagAdvice()
         "power to smoothly run a local server (especially with a DZ map) on a "
         "tick rate of 128.\n"
         "To make sure you're on 64, Go to your Steam library, right-click "
-        "CSGO, go to \"Properties\" > \"General\" > \"Launch Options\". "
-        "There, remove any \"-tickrate XXX\" option and restart CSGO. If you "
+        "CS:GO, go to \"Properties\" > \"General\" > \"Launch Options\". "
+        "There, remove any \"-tickrate XXX\" option and restart CS:GO. If you "
         "don't have it, your tick rate is already at 64.\n\n"
 
         "3. If your machine is powerful enough to smoothly run a high tick "
         "rate local DZ server (this can depend on the map), switching to a tick"
         "rate of 128 can actually make the overlay smoother! To do that, add "
-        "the launch option \"-tickrate 128\" and restart CSGO.\n\n"
+        "the launch option \"-tickrate 128\" and restart CS:GO.\n\n"
 
         "4. If the overlay is still too laggy, try some other maps that might "
         "give a smoother overlay, sorry!"
@@ -790,8 +790,8 @@ void MenuWindow::DrawVideoSettings()
         ImGui::SliderFloat("Custom Vertical FOV",
             &_gui_state.video.IN_custom_vert_fov_degrees, 5.0f, 170.0f, "%.1f");
         ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> By default, CSGO's vertical FOV is fixed to 73.7 degrees.\n"
-            "Note: The values of CSGO's console command \"fov_cs_debug\" do\n"
+            ">>>> By default, CS:GO's vertical FOV is fixed to 73.7 degrees.\n"
+            "Note: The values of CS:GO's console command \"fov_cs_debug\" do\n"
             "not correspond to their corresponding vertical FOV value!");
 
         if (!_gui_state.video.IN_use_custom_fov)
