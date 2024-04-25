@@ -46,15 +46,25 @@ void WorldState::DoTimeStep(double step_size_sec,
 
     // Conclusions drawn from player input
     bool tryAttack = false;
+    bool tryJumpFromScrollWheel = false; // If jump input came from scroll wheel
 
     // Parse player input, chronologically
     for (const PlayerInputState& pis : player_input) {
-        for (auto cmd : pis.inputCommands) {
+        for (size_t i = 0; i < pis.inputCommands.size(); i++) {
             // Get counter reference for this input cmd
+            PlayerInputState::Command cmd = pis.inputCommands[i];
             unsigned int& inputCmdActiveCount = this->player.inputCmdActiveCount(cmd);
 
             if (cmd == PlayerInputState::Command::PLUS_ATTACK && inputCmdActiveCount == 0) {
                 tryAttack = true;
+            }
+
+            // Special case: Check if this tick received a +jump and a -jump right after
+            if (cmd == PlayerInputState::Command::MINUS_JUMP &&
+                i > 0 &&
+                pis.inputCommands[i-1] == PlayerInputState::Command::PLUS_JUMP)
+            {
+                tryJumpFromScrollWheel = true;
             }
 
             // Determine if the cmd is a '+cmd' or a '-cmd'
@@ -153,7 +163,7 @@ void WorldState::DoTimeStep(double step_size_sec,
             csgo_mv.m_nButtons |= IN_MOVELEFT;
         if (tryMoveRight)
             csgo_mv.m_nButtons |= IN_MOVERIGHT;
-        if (this->player.inputCmdActiveCount_jump != 0)
+        if (this->player.inputCmdActiveCount_jump != 0 || tryJumpFromScrollWheel)
             csgo_mv.m_nButtons |= IN_JUMP;
         if (this->player.inputCmdActiveCount_speed != 0)
             csgo_mv.m_nButtons |= IN_SPEED;
