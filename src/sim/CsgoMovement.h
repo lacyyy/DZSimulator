@@ -5,6 +5,7 @@
 #include <Magnum/Math/Vector3.h>
 
 #include "coll/Trace.h"
+#include "sim/Entities/Player.h"
 
 namespace sim {
 
@@ -71,6 +72,9 @@ class CsgoMovement {
 public:
     MoveType_t m_MoveType = MOVETYPE_WALK; // why does MOVETYPE_NONE not work as default?
     bool  m_hGroundEntity = false; // Originally, was a pointer to the entity we stand on
+
+    Entities::Player::Loadout m_loadout = // Equipment of player
+        { false, Entities::Player::Loadout::Weapon::XM1014, {} }; // To be overwritten
 
     int   m_fFlags = 0; // Player flags (see macros starting with FL_*)
     
@@ -234,6 +238,8 @@ public:
     // 1st return value: True if ground to stand on was found, false otherwise.
     // 2nd return value: Ground surface. -1 if no ground to stand on was found.
     std::tuple<bool, int16_t> TryTouchGroundInQuadrants(const Magnum::Vector3& start, const Magnum::Vector3& end);
+
+    void ApplyForwardsExoBoost();
 
 };
 // --------- end of source-sdk-2013 code ---------

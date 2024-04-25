@@ -35,9 +35,24 @@ public:
         using WeaponList = Magnum::Math::BitVector<Weapon::TOTAL_COUNT>;
         WeaponList non_active_weapons;
 
-        Loadout(Weapon active, const std::vector<Weapon>& non_active_list)
+        bool has_exojump;
+
+        // --------
+
+        bool operator==(const Loadout& other) const {
+            return this->active_weapon      == other.active_weapon &&
+                   this->non_active_weapons == other.non_active_weapons &&
+                   this->has_exojump        == other.has_exojump;
+        }
+        bool operator!=(const Loadout& other) const {
+            return !operator==(other);
+        }
+
+        Loadout(bool has_exo, Weapon active,
+                const std::vector<Weapon>& non_active_list)
             : active_weapon{ active }
             , non_active_weapons{ Magnum::Math::ZeroInit }
+            , has_exojump{ has_exo }
         {
             for (Weapon non_active_weapon : non_active_list)
                 if (non_active_weapon != active)
@@ -45,7 +60,7 @@ public:
         }
     };
 
-    Loadout loadout = Loadout(Loadout::Weapon::Fists, {});
+    Loadout loadout = Loadout(false, Loadout::Weapon::XM1014, {});
 
 
     // ---- Player input command states

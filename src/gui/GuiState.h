@@ -137,6 +137,7 @@ public:
 
         using Loadout = sim::Entities::Player::Loadout;
         Loadout IN_loadout = Loadout(
+            true, // Exojump equipped?
             Loadout::Weapon::BumpMine, // Active weapon
             {Loadout::Weapon::Fists, Loadout::Weapon::Knife} // Non-active weapons
         );

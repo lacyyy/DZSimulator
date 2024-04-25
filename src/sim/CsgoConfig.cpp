@@ -145,6 +145,8 @@ CsgoConfig::CsgoConfig(InitWithCompDefaults_Tag)
 // Properties of a player with a specific loadout.
 struct LoadoutCharacteristics {
     float max_player_running_speed;
+    float exo_hori_boost; // Horizontal velocity increase of duck-jumping w/ exo
+    float exo_hori_max_speed; // Horizontal velocity limit of duck-jumping w/ exo
 };
 
 static LoadoutCharacteristics GetCharacteristics(const Loadout& lo,
@@ -169,37 +171,72 @@ static LoadoutCharacteristics GetCharacteristics(const Loadout& lo,
     }
     else { // Error: Invalid game mode
         assert(0);
-        return { .max_player_running_speed = 0.0f };
+        return {
+            .max_player_running_speed = 0.0f,
+            .exo_hori_boost = 0.0f,
+            .exo_hori_max_speed = 0.0f
+        };
     }
 
     // -------------------------------------------------------------------------
 
+    // I gave up trying to understand CSGO's player speed mechanics, so here's
+    // a look-up table for different combinations of weapons on a player and
+    // game settings.
+
     if (!encumbrance_enabled)
     {
+        // The following values were obtained from CSGO tests under these
+        // circumstances:
+        // - sv_weapon_encumbrance_scale 0
+        // - sv_exojump_jumpbonus_forward 0.4
+        // - Player equipped the exojump (!)
+        // - Player has full duck speed and stamina
+        // - Player duck-jumps perfectly using duck-jump bind:
+        //   - alias "+djump" "+jump; +duck"
+        //   - alias "-djump" "-jump; -duck"
+        //   - bind "space" "+djump"
+        // CAUTION: All of these influence the following LUT values!
+
         switch (lo.active_weapon) {
             // Note: CSGO's 'scripts/items/items_game.txt' lists fists with a
             //       max speed of 275, but CSGO caps at 260.
-            case Fists:    return { .max_player_running_speed = 260.0f };
-            case Knife:    return { .max_player_running_speed = 250.0f };
-            case BumpMine: return { .max_player_running_speed = 245.0f };
-            case Taser:    return { .max_player_running_speed = 220.0f };
-            case XM1014:   return { .max_player_running_speed = 215.0f };
-            default:       break; // Error
+            case Fists:    return { .max_player_running_speed = 260.0f,
+                                    .exo_hori_boost = 148.218f,
+                                    .exo_hori_max_speed = 395.247f };
+            case Knife:    return { .max_player_running_speed = 250.0f,
+                                    .exo_hori_boost = 142.517f,
+                                    .exo_hori_max_speed = 380.045f };
+            case BumpMine: return { .max_player_running_speed = 245.0f,
+                                    .exo_hori_boost = 139.667f,
+                                    .exo_hori_max_speed = 372.444f };
+            case Taser:    return { .max_player_running_speed = 220.0f,
+                                    .exo_hori_boost = 125.415f,
+                                    .exo_hori_max_speed = 334.44f };
+            case XM1014:   return { .max_player_running_speed = 215.0f,
+                                    .exo_hori_boost = 122.565f,
+                                    .exo_hori_max_speed = 326.839f };
+            default: break; // Error
         }
     }
     else { // encumbrance_enabled
         // In Danger Zone, the max running speed depends on non-active weapons
         // the player carries and whether exojump is equipped.
-        // I gave up trying to understand that mechanic, so here's a look-up
-        // table for different combinations of weapons on a player, assuming the
-        // player has exojump.
+        // Here we're assuming the player has exojump equipped.
 
-        // These values were obtained from CSGO tests under these circumstances:
+        // The following values were obtained from CSGO tests under these
+        // circumstances:
         // - sv_accelerate_use_weapon_speed 1
         // - sv_weapon_encumbrance_per_item 0.85
         // - sv_weapon_encumbrance_scale 0.3
+        // - sv_exojump_jumpbonus_forward 0.4
         // - Player equipped the exojump (!)
-        // CAUTION: All of these influence the LUT values!
+        // - Player has full duck speed and stamina
+        // - Player duck-jumps perfectly using duck-jump bind:
+        //   - alias "+djump" "+jump; +duck"
+        //   - alias "-djump" "-jump; -duck"
+        //   - bind "space" "+djump"
+        // CAUTION: All of these influence the following LUT values!
         //          In CSGO, a player without an exojump is slightly slower in
         //          some cases.
         //          We are not handling non-exojump cases, it'd be too much work.
@@ -211,41 +248,93 @@ static LoadoutCharacteristics GetCharacteristics(const Loadout& lo,
         switch (lo.active_weapon) {
             case Fists: {
                 if (lo.non_active_weapons[XM1014])
-                    return { .max_player_running_speed = 239.018f };
+                    return {
+                        .max_player_running_speed = 239.018f,
+                        .exo_hori_boost = 148.218f,
+                        .exo_hori_max_speed = 387.236f
+                    };
                 if (lo.non_active_weapons[Taser])
-                    return { .max_player_running_speed = 240.344f };
+                    return {
+                        .max_player_running_speed = 240.344f,
+                        .exo_hori_boost = 148.218f,
+                        .exo_hori_max_speed = 388.562f
+                    };
                 if (lo.non_active_weapons[Knife])
-                    return { .max_player_running_speed = 248.3f };
+                    return {
+                        .max_player_running_speed = 248.3f,
+                        .exo_hori_boost = 148.218f,
+                        .exo_hori_max_speed = 395.247f
+                    };
                 // Else, no slowdown
                 // Note: CSGO's 'scripts/items/items_game.txt' lists fists with
                 //       a max speed of 275, but CSGO caps at 260.
-                return { .max_player_running_speed = 260.0f };
+                return {
+                    .max_player_running_speed = 260.0f,
+                    .exo_hori_boost = 148.218f,
+                    .exo_hori_max_speed = 395.247f
+                };
             }
             case Knife: {
                 if (lo.non_active_weapons[XM1014])
-                    return { .max_player_running_speed = 229.825f };
+                    return {
+                        .max_player_running_speed = 229.825f,
+                        .exo_hori_boost = 142.517f,
+                        .exo_hori_max_speed = 372.342f
+                    };
                 if (lo.non_active_weapons[Taser])
-                    return { .max_player_running_speed = 231.1f };
+                    return {
+                        .max_player_running_speed = 231.1f,
+                        .exo_hori_boost = 142.517f,
+                        .exo_hori_max_speed = 373.617f
+                    };
                 // Else, no slowdown
-                return { .max_player_running_speed = 250.0f };
+                return {
+                    .max_player_running_speed = 250.0f,
+                    .exo_hori_boost = 142.517f,
+                    .exo_hori_max_speed = 380.045f
+                };
             }
             case BumpMine: {
                 if (lo.non_active_weapons[XM1014])
-                    return { .max_player_running_speed = 229.825f };
+                    return {
+                        .max_player_running_speed = 229.825f,
+                        .exo_hori_boost = 139.667f,
+                        .exo_hori_max_speed = 369.492f
+                    };
                 if (lo.non_active_weapons[Taser])
-                    return { .max_player_running_speed = 231.1f };
+                    return {
+                        .max_player_running_speed = 231.1f,
+                        .exo_hori_boost = 139.667f,
+                        .exo_hori_max_speed = 370.767f
+                    };
                 if (lo.non_active_weapons[Knife])
-                    return { .max_player_running_speed = 238.75f };
+                    return {
+                        .max_player_running_speed = 238.75f,
+                        .exo_hori_boost = 139.667f,
+                        .exo_hori_max_speed = 372.444f
+                    };
                 // Else, no slowdown
-                return { .max_player_running_speed = 245.0f };
+                return {
+                    .max_player_running_speed = 245.0f,
+                    .exo_hori_boost = 139.667f,
+                    .exo_hori_max_speed = 372.444f
+                };
             }
             case Taser: {
                 // No slowdown, not even with XM1014
-                return { .max_player_running_speed = 220.0f };
+                return {
+                    .max_player_running_speed = 220.0f,
+                    .exo_hori_boost = 125.415f,
+                    .exo_hori_max_speed = 334.44f
+                };
             }
             case XM1014: {
                 // No slowdown
-                return { .max_player_running_speed = 215.0f };
+                return {
+                    .max_player_running_speed = 215.0f,
+                    .exo_hori_boost = 122.565f,
+                    .exo_hori_max_speed = 326.839f
+                };
             }
             default: break; // Error
         }
@@ -253,10 +342,24 @@ static LoadoutCharacteristics GetCharacteristics(const Loadout& lo,
 
     // Error: Missing weapon checks or invalid game mode or invalid loadout
     assert(0);
-    return { .max_player_running_speed = 0.0f };
+    return {
+        .max_player_running_speed = 0.0f,
+        .exo_hori_boost = 0.0f,
+        .exo_hori_max_speed = 0.0f
+    };
 }
 
 float CsgoConfig::GetMaxPlayerRunningSpeed(const Loadout& lo) const
 {
     return GetCharacteristics(lo, *this).max_player_running_speed;
+}
+
+float CsgoConfig::GetExoHoriBoost(const Loadout& lo) const
+{
+    return GetCharacteristics(lo, *this).exo_hori_boost;
+}
+
+float CsgoConfig::GetExoHoriBoostMaxSpeed(const Loadout& lo) const
+{
+    return GetCharacteristics(lo, *this).exo_hori_max_speed;
 }

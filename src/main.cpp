@@ -1044,15 +1044,10 @@ void DZSimApplication::DoUpdate()
     // Update simulation player loadout if user wants to change it
     if (_csgo_game_sim.HasBeenStarted()) {
         const sim::WorldState& sim_worldstate = _csgo_game_sim.GetLatestActualWorldState();
-        using Loadout = sim::Entities::Player::Loadout;
-        const Loadout& sim_loadout = sim_worldstate.player.loadout;
-        const Loadout& gui_loadout = _gui_state.game_cfg.IN_loadout;
-        if (gui_loadout.active_weapon      != sim_loadout.active_weapon ||
-            gui_loadout.non_active_weapons != sim_loadout.non_active_weapons)
+        if (_gui_state.game_cfg.IN_loadout != sim_worldstate.player.loadout)
         {
             sim::WorldState new_worldstate = sim_worldstate; // Intentional copy
-            new_worldstate.player.loadout.active_weapon      = gui_loadout.active_weapon;
-            new_worldstate.player.loadout.non_active_weapons = gui_loadout.non_active_weapons;
+            new_worldstate.player.loadout = _gui_state.game_cfg.IN_loadout;
             // Restart simulation with updated loadout
             _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, new_worldstate);
             Debug{} << "[Sim] Updated player loadout";

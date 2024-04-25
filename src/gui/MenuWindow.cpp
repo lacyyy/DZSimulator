@@ -695,6 +695,8 @@ void MenuWindow::DrawGameConfig()
     ImGui::Text("Simulated player equipment:");
     ImGui::Indent();
 
+    ImGui::Checkbox("Exojump", &loadout.has_exojump);
+
     ImGui::Text("Held weapon:");
     ImGui::SameLine();
     const char* combo_box_preview;

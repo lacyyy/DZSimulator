@@ -175,6 +175,9 @@ void WorldState::DoTimeStep(double step_size_sec,
             csgo_mv.m_vecVelocity += 1400 * forward;
         }
 
+        // Let movement class know about player's equipment
+        csgo_mv.m_loadout = player.loadout;
+
         // -------- start of source-sdk-2013 code --------
         // (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
         // (Original code found in ProcessMovement() function)

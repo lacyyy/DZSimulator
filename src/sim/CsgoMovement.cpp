@@ -371,6 +371,18 @@ void CsgoMovement::StartGravity(float frametime)
     m_vecVelocity.z() += m_vecBaseVelocity.z() * frametime;
     m_vecBaseVelocity.z() = 0;
 
+    // Give player equipped with exo an upwards jump bonus when holding space
+    if (m_loadout.has_exojump
+        && !m_hGroundEntity
+        && (m_nButtons & IN_JUMP)
+        && m_vecVelocity.z() >= CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MIN
+        && m_vecVelocity.z() <= CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MAX)
+    {
+        m_vecVelocity.z() += g_csgo_game_sim_cfg.sv_exojump_jumpbonus_up *
+                             g_csgo_game_sim_cfg.sv_gravity *
+                             frametime;
+    }
+
     CheckVelocity();
 }
 
@@ -1038,6 +1050,9 @@ bool CsgoMovement::CheckJumpButton(float frametime)
     // Initial upward velocity for player jumps; sqrt(2*gravity*height).
     float flMul = g_csgo_game_sim_cfg.sv_jump_impulse;
 
+    if (m_loadout.has_exojump)
+        flMul *= g_csgo_game_sim_cfg.sv_jump_impulse_exojump_multiplier;
+
     // Accelerate upward
     // If we are ducking...
     float startz = m_vecVelocity.z();
@@ -1055,6 +1070,10 @@ bool CsgoMovement::CheckJumpButton(float frametime)
     {
         m_vecVelocity.z() += flMul;  // 2 * gravity * height
     }
+
+    // If duck-jumping with exo, add forwards/horizontal exo boost
+    if (m_loadout.has_exojump && !m_bDucked && m_bDucking)
+        ApplyForwardsExoBoost();
 
     FinishGravity(frametime);
 
@@ -1922,6 +1941,45 @@ void CsgoMovement::Duck(void)
             SetDuckedEyeOffset(0.0f);
         }
     }
+}
+
+void CsgoMovement::ApplyForwardsExoBoost()
+{
+    Vector3 forward;
+    Vector3 right;
+    AngleVectors(m_vecViewAngles, &forward, &right);
+    forward.z() = 0.0f;
+    right.z() = 0.0f;
+    NormalizeInPlace(forward);
+    NormalizeInPlace(right);
+
+    // Get direction of pressed directional movement keys (WASD)
+    // Note: CSGO sometimes gives extra speed when duck-jumping with exo
+    //       _diagonally_ (e.g. pressing W+A).
+    //       It's about 3% extra speed, we don't recreate that quirk here.
+    Vector3 wishdir = { 0.0f, 0.0f, 0.0f };
+    if (m_flForwardMove > 0.0f) wishdir += forward;
+    if (m_flForwardMove < 0.0f) wishdir -= forward;
+    if (m_flSideMove > 0.0f) wishdir += right;
+    if (m_flSideMove < 0.0f) wishdir -= right;
+    NormalizeInPlace(wishdir);
+
+    float cur_hori_speed = m_vecVelocity.xy().length();
+
+    float hori_boost     = g_csgo_game_sim_cfg.GetExoHoriBoost(m_loadout);
+    float max_hori_speed = g_csgo_game_sim_cfg.GetExoHoriBoostMaxSpeed(m_loadout);
+
+    if (cur_hori_speed + hori_boost > max_hori_speed)
+        hori_boost = max_hori_speed - cur_hori_speed;
+
+    if (hori_boost < 0.0f)
+        return;
+
+    // Note: In CSGO, the further the duck progress, the less forwards boost
+    //       is received. This is not considered here, the difference between
+    //       DZSim and CSGO in that regard seems relatively small.
+
+    m_vecVelocity += hori_boost * wishdir;
 }
 
 void CsgoMovement::PlayerMove(float time_delta)

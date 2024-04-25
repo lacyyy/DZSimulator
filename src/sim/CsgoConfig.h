@@ -139,6 +139,13 @@ public:
 
     float GetMaxPlayerRunningSpeed(const Entities::Player::Loadout& lo) const;
 
+    // Horizontal velocity increase of duck-jumping with exojump
+    float GetExoHoriBoost(const Entities::Player::Loadout& lo) const;
+
+    // Horizontal velocity limit of duck-jumping with exojump
+    float GetExoHoriBoostMaxSpeed(const Entities::Player::Loadout& lo) const;
+
+
 };
 
 } // namespace sim
