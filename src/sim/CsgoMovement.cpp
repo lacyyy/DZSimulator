@@ -874,6 +874,8 @@ void CsgoMovement::FullWalkMove(float frametime)
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
 
+    Vector3 velocity_at_move_start = m_vecVelocity;
+
     if (true /*!CheckWater()*/)
     {
         StartGravity(frametime);
@@ -961,7 +963,10 @@ void CsgoMovement::FullWalkMove(float frametime)
         }
 
         // Set final flags.
+        bool was_onground_before = m_hGroundEntity;
         CategorizePosition();
+        bool is_onground_now = m_hGroundEntity;
+        bool landed_onground_just_now = !was_onground_before && is_onground_now;
 
         // Make sure velocity is valid.
         CheckVelocity();
@@ -977,6 +982,30 @@ void CsgoMovement::FullWalkMove(float frametime)
         {
             m_vecVelocity.z() = 0;
         }
+        
+        if (landed_onground_just_now)
+        {
+            const float HIGH_LANDING_SPEED = 1000.0f;
+
+            float hori_speed_limit;
+            if (velocity_at_move_start.length() > HIGH_LANDING_SPEED)
+                // CSGO stops the player hard when landing on ground with high speed
+                hori_speed_limit = 80.0f;
+            else
+                // At lower landing speeds, competitive CSGO seems to cap your
+                // horizontal speed at 286 when touching ground (in order to
+                // limit bunny hopping).
+                // It might be an oversimplification, but it seems good enough.
+                hori_speed_limit = 286.0f;
+
+            // Limit horizontal speed
+            float hori_speed = m_vecVelocity.xy().length();
+            if (hori_speed > hori_speed_limit) {
+                m_vecVelocity.x() *= hori_speed_limit / hori_speed;
+                m_vecVelocity.y() *= hori_speed_limit / hori_speed;
+            }
+        }
+
         CheckFalling();
     }
 
