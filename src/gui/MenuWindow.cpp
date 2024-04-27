@@ -162,6 +162,23 @@ void MenuWindow::Draw()
         ImGui::Text("");
         ImGui::Separator();
 
+        // Horizontal player velocity text
+        ImGui::Checkbox("Show Horizontal Speed Display",
+            &_gui_state.vis.IN_display_hori_vel_text);
+        if (_gui_state.vis.IN_display_hori_vel_text) {
+            ImGui::SliderFloat("Speed Display Size",
+               &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
+            ImGui::ColorEdit3("Speed Display Color",
+              (float*)&cols.IN_col_hori_vel_text, picker_flags);
+            ImGui::SliderFloat("Speed Display X Position",
+               &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
+            ImGui::SliderFloat("Speed Display Y Position",
+               &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
+        }
+
+        ImGui::Text("");
+        ImGui::Separator();
+
         // GLID_AT_SPECIFIC_SPEED and GLID_OF_CSGO_SESSION mode settings
         if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
             || geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
@@ -186,24 +203,6 @@ void MenuWindow::Draw()
 
             ImGui::Text("");
             ImGui::Separator();
-
-            // Horizontal player velocity text
-            ImGui::Checkbox("Show Horizontal Speed Display",
-                &_gui_state.vis.IN_display_hori_vel_text);
-            if (_gui_state.vis.IN_display_hori_vel_text) {
-                ImGui::SliderFloat("Speed Display Size",
-                    &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
-                ImGui::ColorEdit3("Speed Display Color",
-                    (float*)&cols.IN_col_hori_vel_text, picker_flags);
-                ImGui::SliderFloat("Speed Display X Position",
-                    &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
-                ImGui::SliderFloat("Speed Display Y Position",
-                    &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
-            }
-
-            ImGui::Text("");
-            ImGui::Separator();
-
         }
 
         // GLID_AT_SPECIFIC_SPEED vis mode settings

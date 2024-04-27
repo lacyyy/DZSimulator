@@ -1630,22 +1630,15 @@ void DZSimApplication::drawEvent() {
     GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
 
     // Draw prominent horizontal velocity number
-    if (_bsp_map && _gui_state.vis.IN_display_hori_vel_text) {
-        switch (_gui_state.vis.IN_geo_vis_mode) {
-            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GEO_TYPE:
-                break;
-            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GLID_OF_CSGO_SESSION:
-            case gui::GuiState::VisualizationSettings::GeometryVisualizationMode::GLID_AT_SPECIFIC_SPEED:
-                float* imgui_col4 = _gui_state.vis.IN_col_hori_vel_text;
-                Color4 c = { imgui_col4[0], imgui_col4[1], imgui_col4[2], imgui_col4[3]};
-                _big_text_renderer.DrawNumber(
-                    hori_player_speed,
-                    c,
-                    _gui.GetTotalGuiScaling() * _gui_state.vis.IN_hori_vel_text_size,
-                    _gui_state.vis.IN_hori_vel_text_pos
-                );
-                break;
-        }
+    if (_gui_state.vis.IN_display_hori_vel_text) {
+        float* imgui_col4 = _gui_state.vis.IN_col_hori_vel_text;
+        Color4 c = { imgui_col4[0], imgui_col4[1], imgui_col4[2], imgui_col4[3]};
+        _big_text_renderer.DrawNumber(
+            hori_player_speed,
+            c,
+            _gui.GetTotalGuiScaling() * _gui_state.vis.IN_hori_vel_text_size,
+            _gui_state.vis.IN_hori_vel_text_pos
+        );
     }
 
     // Show disclaimer when retrieving CSGO movement
