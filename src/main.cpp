@@ -1572,7 +1572,7 @@ void DZSimApplication::drawEvent() {
         GL::FramebufferClear::Color | GL::FramebufferClear::Depth);
 
     // Set default world rendering values
-    float hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+    float hori_player_speed = 0.0f;
     Vector3 player_feet_pos = { 0.0f, 0.0f, 0.0f };
     Vector3 cam_pos         = { 0.0f, 0.0f, 0.0f };
 
@@ -1588,10 +1588,15 @@ void DZSimApplication::drawEvent() {
     }
     // If we render from our game simulation's POV
     else if (_csgo_game_sim.HasBeenStarted()) {
-        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
+        hori_player_speed = _csgo_game_sim.GetLatestActualWorldState().csgo_mv.m_vecVelocity.xy().length();
         player_feet_pos = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin;
         cam_pos         = _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecAbsOrigin +
                           _csgo_game_sim.GetLatestDrawableWorldState().csgo_mv.m_vecViewOffset;
+    }
+
+    // Overwrite horizontal player speed in specific vis mode
+    if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED) {
+        hori_player_speed = _gui_state.vis.IN_specific_glid_vis_hori_speed;
     }
 
     // If we have a world to render

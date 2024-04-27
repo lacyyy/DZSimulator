@@ -136,6 +136,15 @@ void MenuWindow::Draw()
 
         auto& geo_vis_mode = _gui_state.vis.IN_geo_vis_mode;
 
+        if (ImGui::RadioButton("Glidability for player in simulation",
+            geo_vis_mode == _gui_state.vis.GLID_OF_SIMULATION))
+            geo_vis_mode = _gui_state.vis.GLID_OF_SIMULATION;
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> This mode shows how glidable surfaces are depending on the\n"
+            "player movement inside DZSimulator.\n"
+            "Surface glidability is determined assuming that the player moves\n"
+            "towards each surface with their current horizontal speed.");
+
         if (ImGui::RadioButton("Glidability at specific player speed",
             geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED))
             geo_vis_mode = _gui_state.vis.GLID_AT_SPECIFIC_SPEED;
@@ -179,8 +188,9 @@ void MenuWindow::Draw()
         ImGui::Text("");
         ImGui::Separator();
 
-        // GLID_AT_SPECIFIC_SPEED and GLID_OF_CSGO_SESSION mode settings
-        if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
+        // GLID_* mode settings
+        if (geo_vis_mode == _gui_state.vis.GLID_OF_SIMULATION
+            || geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
             || geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
 
             // Surface slide colors

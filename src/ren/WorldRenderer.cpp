@@ -66,6 +66,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
 #endif
 
     bool glidability_vis_globally_disabled =
+        _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_OF_SIMULATION &&
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_AT_SPECIFIC_SPEED &&
         _gui_state.vis.IN_geo_vis_mode != _gui_state.vis.GLID_OF_CSGO_SESSION;
 

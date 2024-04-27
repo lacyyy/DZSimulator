@@ -83,9 +83,10 @@ public:
 
         enum GeometryVisualizationMode {
             GEO_TYPE,
+            GLID_OF_SIMULATION, // glidability for player in simulated game
             GLID_AT_SPECIFIC_SPEED, // glidability at specific player speed
             GLID_OF_CSGO_SESSION  // glidability for player in local csgo session
-        } IN_geo_vis_mode = GLID_AT_SPECIFIC_SPEED;
+        } IN_geo_vis_mode = GLID_OF_SIMULATION;
 
         bool IN_display_hori_vel_text = true;
         float IN_hori_vel_text_size = 1.0f;
