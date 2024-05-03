@@ -37,10 +37,14 @@ class OnlyGiveMeOpenSSLAndNothingMore_Recipe(ConanFile):
 
         # From all the blocks (settings categories) in conan's toolchain file,
         # select a few and remove the rest.
-        # - Block 'try_compile': Not sure of this is needed.
+        # - Block 'try_compile': Not sure if this is needed.
         # - Block 'find_paths':  Definitely needed, points to OpenSSL installation.
-        # - Block 'pkg_config':  Not sure of this is needed.
+        # - Block 'pkg_config':  Not sure if this is needed.
         tc.blocks.select("try_compile", "find_paths", "pkg_config")
+
+        # Prevent Conan from generating a CMakeUserPresets.json file that messes
+        # up DZSimulator's build setup.
+        tc.user_presets_path = False
 
         # To be honest, I wonder if this OpenSSL installation + manipulation of
         # conan's toolchain file + inclusion of it in DZSimulator's own CMake
