@@ -1,5 +1,7 @@
 #include "sim/WorldState.h"
 
+#include <algorithm>
+
 #include <Tracy.hpp>
 
 #include <Magnum/Magnum.h>
@@ -9,6 +11,7 @@
 #include "GlobalVars.h"
 #include "sim/CsgoConstants.h"
 #include "sim/CsgoMovement.h"
+#include "sim/Sim.h"
 #include "utils_3d.h"
 
 using namespace Magnum;
@@ -17,24 +20,52 @@ using namespace utils_3d;
 using namespace coll;
 using namespace sim;
 
-WorldState WorldState::Interpolate(const WorldState& stateA, const WorldState& stateB, float phase)
+WorldState WorldState::Interpolate(const WorldState& stateA,
+                                   const WorldState& stateB,
+                                   float phase)
 {
     if (phase <= 0.0f) return stateA;
     if (phase >= 1.0f) return stateB;
 
-    WorldState interpState = stateA;
+    // NOTE: Copying stateB is important in order for newly created entities
+    //       (present in stateB, but not in stateA) to be propagated to future
+    //       interpolated world states!
+    WorldState interpState = stateB;
 
     // NOTE: Player movement state is only partially being interpolated.
-    interpState.csgo_mv.m_vecAbsOrigin  += phase * (stateB.csgo_mv.m_vecAbsOrigin  - stateA.csgo_mv.m_vecAbsOrigin);
-    interpState.csgo_mv.m_vecViewOffset += phase * (stateB.csgo_mv.m_vecViewOffset - stateA.csgo_mv.m_vecViewOffset);
+    interpState.csgo_mv.m_vecAbsOrigin  =
+        (1.0f - phase) * stateA.csgo_mv.m_vecAbsOrigin +
+        (       phase) * stateB.csgo_mv.m_vecAbsOrigin;
+    interpState.csgo_mv.m_vecViewOffset =
+        (1.0f - phase) * stateA.csgo_mv.m_vecViewOffset +
+        (       phase) * stateB.csgo_mv.m_vecViewOffset;
 
-    // TODO Interpolate Bumpmines (do we need unique IDs for them?)
+    using BumpmineProjectile = Entities::BumpmineProjectile;
+    for (BumpmineProjectile& bm_from_B : interpState.bumpmine_projectiles)
+    {
+        const auto& same_bm_from_A = std::find_if(
+            stateA.bumpmine_projectiles.begin(),
+            stateA.bumpmine_projectiles.end(),
+            [&bm_from_B](const BumpmineProjectile& bm) {
+                return bm.unique_id == bm_from_B.unique_id;
+            }
+        );
+        if (same_bm_from_A == stateA.bumpmine_projectiles.end())
+            continue;
+
+        bm_from_B.position = (1.0f - phase) * same_bm_from_A->position +
+                             (       phase) * bm_from_B.position;
+
+        // TODO Interpolate rotation here once Bump Mines rotate in the air?
+        // TODO Interpolate other Bump Mine properties?
+    }
 
     return interpState;
 }
 
 void WorldState::DoTimeStep(double step_size_sec,
-                            std::span<const PlayerInputState> player_input)
+                            std::span<const PlayerInputState> player_input,
+                            size_t subsequent_tick_id)
 {
     ZoneScoped;
 
@@ -45,7 +76,6 @@ void WorldState::DoTimeStep(double step_size_sec,
         return;
 
     // Conclusions drawn from player input
-    bool tryAttack = false;
     bool tryJumpFromScrollWheel = false; // If jump input came from scroll wheel
 
     // Parse player input, chronologically
@@ -54,10 +84,6 @@ void WorldState::DoTimeStep(double step_size_sec,
             // Get counter reference for this input cmd
             PlayerInputState::Command cmd = pis.inputCommands[i];
             unsigned int& inputCmdActiveCount = this->player.inputCmdActiveCount(cmd);
-
-            if (cmd == PlayerInputState::Command::PLUS_ATTACK && inputCmdActiveCount == 0) {
-                tryAttack = true;
-            }
 
             // Special case: Check if this tick received a +jump and a -jump right after
             if (cmd == PlayerInputState::Command::MINUS_JUMP &&
@@ -110,6 +136,7 @@ void WorldState::DoTimeStep(double step_size_sec,
     bool tryMoveBack    = this->player.inputCmdActiveCount_back      != 0;
     bool tryMoveLeft    = this->player.inputCmdActiveCount_moveleft  != 0;
     bool tryMoveRight   = this->player.inputCmdActiveCount_moveright != 0;
+    bool tryAttack      = this->player.inputCmdActiveCount_attack    != 0;
 
     // Toggle CSGO and flying movement
     if (this->player.inputCmdActiveCount_attack2 != 0) {
@@ -170,6 +197,7 @@ void WorldState::DoTimeStep(double step_size_sec,
         if (this->player.inputCmdActiveCount_duck != 0)
             csgo_mv.m_nButtons |= IN_DUCK;
 
+
         csgo_mv.m_flForwardMove = 0.0f;
         if (tryMoveForward) csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
         if (tryMoveBack)    csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
@@ -178,13 +206,40 @@ void WorldState::DoTimeStep(double step_size_sec,
         if (tryMoveRight) csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
         if (tryMoveLeft)  csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
 
-        // Temporary: On attack input, boost player in looking direction
-        if (tryAttack) {
-            Vector3 forward;
-            AngleVectors(csgo_mv.m_vecViewAngles, &forward);
-            csgo_mv.m_vecVelocity += 1400 * forward;
-        }
+        // Delete detonated Bump Mine projectiles
+        std::erase_if(bumpmine_projectiles,
+            [](const Entities::BumpmineProjectile& bm) { return bm.has_detonated; });
 
+        // Simulate Bump Mine projectiles
+        for (Entities::BumpmineProjectile& bm : bumpmine_projectiles)
+            bm.DoTimeStep(*this, timeDelta, subsequent_tick_id);
+        
+        // Spawn Bump Mine projectiles on mouseclick
+        if (tryAttack) {
+            // Limit player's attack rate
+            if (player.next_primary_attack <= subsequent_tick_id) {
+                // Decide when next attack is allowed
+                player.next_primary_attack = subsequent_tick_id +
+                    GetTimeIntervalInTicks(CSGO_BUMP_THROW_INTERVAL_SECS,
+                                           step_size_sec);
+
+                // Create Bump Mine projectile
+                Vector3 forward;
+                AnglesToVectors(csgo_mv.m_vecViewAngles, &forward);
+                Entities::BumpmineProjectile bm;
+                bm.unique_id =
+                    Entities::BumpmineProjectile::GenerateNewUniqueID();
+                bm.is_on_surface = false;
+                bm.position =
+                    csgo_mv.m_vecAbsOrigin +
+                    csgo_mv.m_vecViewOffset +
+                    Vector3(0.0f, 0.0f, -CSGO_BUMP_THROW_SPAWN_OFFSET);
+                bm.velocity = csgo_mv.m_vecVelocity + CSGO_BUMP_THROW_SPEED * forward;
+                bm.next_think = 0;
+                bumpmine_projectiles.push_back(bm);
+            }
+        }
+        
         // Let movement class know about player's equipment
         csgo_mv.m_loadout = player.loadout;
 

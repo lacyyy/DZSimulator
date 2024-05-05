@@ -249,6 +249,13 @@ Vector3 CsgoMovement::GetPlayerViewOffset(bool ducked) const
     return ducked ? VEC_DUCK_VIEW : VEC_VIEW;
 }
 
+Vector3 CsgoMovement::GetPlayerCenter(bool ducked) const
+{
+    Vector3 center = m_vecAbsOrigin;
+    center.z() += 0.5f * GetPlayerMaxs(ducked).z();
+    return center;
+}
+
 void CsgoMovement::CategorizeGroundSurface(int16_t surface/*const Trace& pm*/)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
@@ -619,7 +626,7 @@ void CsgoMovement::AirMove(float frametime)
     Vector3 forward, right, up;
 
     // Determine movement angles
-    AngleVectors(m_vecViewAngles, &forward, &right, &up);
+    AnglesToVectors(m_vecViewAngles, &forward, &right, &up);
 
     // Copy movement amounts
     fmove = m_flForwardMove;
@@ -759,7 +766,7 @@ void CsgoMovement::WalkMove(float frametime)
     Vector3 dest;
     Vector3 forward, right, up;
 
-    AngleVectors(m_vecViewAngles, &forward, &right, &up);  // Determine movement angles
+    AnglesToVectors(m_vecViewAngles, &forward, &right, &up);  // Determine movement angles
 
     // Copy movement amounts
     fmove = m_flForwardMove;
@@ -1976,7 +1983,7 @@ void CsgoMovement::ApplyForwardsExoBoost()
 {
     Vector3 forward;
     Vector3 right;
-    AngleVectors(m_vecViewAngles, &forward, &right);
+    AnglesToVectors(m_vecViewAngles, &forward, &right);
     forward.z() = 0.0f;
     right.z() = 0.0f;
     NormalizeInPlace(forward);
@@ -2025,7 +2032,7 @@ void CsgoMovement::PlayerMove(float time_delta)
     ReduceTimers(time_delta);
 
     // Viewing direction vectors are used by ladder code for example
-    //AngleVectors(m_vecViewAngles, &m_vecForward, &m_vecRight, &m_vecUp);  // Determine movement angles
+    //AnglesToVectors(m_vecViewAngles, &m_vecForward, &m_vecRight, &m_vecUp);  // Determine movement angles
 
     //// Always try and unstick us unless we are using a couple of the movement modes
     //if (m_MoveType != MOVETYPE_NOCLIP &&

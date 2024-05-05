@@ -23,6 +23,15 @@ namespace utils_3d {
     // Zero vectors are normalized to zero vectors.
     float NormalizeInPlace(Vector3& vec);
 
+    // Get some vector (of many possible) that is perpendicular to the input
+    // normal. The returned vector isn't normalized!
+    // CAUTION: This is only intended to be used on normalized vectors!
+    Vector3 GetVectorPerpendicularToNormal(const Vector3& normal);
+
+    // obj_ang is pitch, yaw, roll
+    Matrix4 CalcModelTransformationMatrix(const Vector3& obj_pos,
+        const Vector3& obj_ang, const Vector3& obj_scales);
+
     // obj_ang is pitch, yaw, roll
     Matrix4 CalcModelTransformationMatrix(const Vector3& obj_pos,
         const Vector3& obj_ang, float uniform_scale=1.0f);
@@ -41,11 +50,14 @@ namespace utils_3d {
                               const Vector3& v3);
 
     // Calculates direction vectors depending on viewing angles
-    void AngleVectors(const Vector3& angles,
-                      Vector3* forward = nullptr,
-                      Vector3* right   = nullptr,
-                      Vector3* up      = nullptr);
+    void AnglesToVectors(const Vector3& angles,
+                         Vector3* forward = nullptr,
+                         Vector3* right   = nullptr,
+                         Vector3* up      = nullptr);
 
+    Vector3 VectorsToAngles(const Vector3& up,
+                            const Vector3& forward,
+                            const Vector3& left);
 
     // Generic triangle mesh
     struct TriMesh {

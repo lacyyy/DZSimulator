@@ -6,6 +6,7 @@
 
 #include "coll/Trace.h"
 #include "sim/Entities/Player.h"
+#include "sim/Sim.h"
 
 namespace sim {
 
@@ -76,6 +77,8 @@ public:
     Entities::Player::Loadout m_loadout = // Equipment of player
         { false, Entities::Player::Loadout::Weapon::XM1014, {} }; // To be overwritten
 
+    TickID m_nextBumpBoost = 0; // For Bump Mine boost cooldown of player
+
     int   m_fFlags = 0; // Player flags (see macros starting with FL_*)
     
     // FIXME TODO Seems like all these values must be stored inside WorldState!
@@ -121,6 +124,7 @@ public:
     Magnum::Vector3 GetPlayerMins(bool ducked) const;
     Magnum::Vector3 GetPlayerMaxs(bool ducked) const;
     Magnum::Vector3 GetPlayerViewOffset(bool ducked) const;
+    Magnum::Vector3 GetPlayerCenter(bool ducked) const;
 
     coll::Trace TracePlayerBBox(
         const Magnum::Vector3& start, const Magnum::Vector3& end);
@@ -161,6 +165,7 @@ public:
 
     Magnum::Vector3 GetPlayerMins(void) const { return GetPlayerMins(m_bDucked); } // uses local player
     Magnum::Vector3 GetPlayerMaxs(void) const { return GetPlayerMaxs(m_bDucked); } // uses local player
+    Magnum::Vector3 GetPlayerCenter(void) const { return GetPlayerCenter(m_bDucked); };
 
     typedef enum
     {

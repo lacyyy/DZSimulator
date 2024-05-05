@@ -16,6 +16,7 @@
 #include "sim/CsgoConstants.h"
 #include "GlobalVars.h"
 #include "ren/RenderableWorld.h"
+#include "sim/Entities/BumpmineProjectile.h"
 #include "utils_3d.h"
 #include "WorldCreator.h"
 
@@ -47,7 +48,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     const Matrix4& view_proj_transformation,
     const Vector3& player_feet_pos,
     float hori_player_speed,
-    const std::vector<Vector3>& bump_mine_positions)
+    const std::vector<sim::Entities::BumpmineProjectile>& bump_mines)
 {
     ZoneScoped;
 
@@ -124,15 +125,30 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     // Draw bump mines - they're currently the only thing drawn with CCW vertex winding
     // TODO use instancing?
     GL::Renderer::setFrontFace(GL::Renderer::FrontFace::CounterClockWise);
-    for (Vector3 bm_pos : bump_mine_positions) {
-        Matrix4 model_transformation =
-            utils_3d::CalcModelTransformationMatrix(bm_pos,
-                { 0.0f, 0.0f, 0.0f }, 20.0f);
-        Matrix4 mvp_transformation =
-            view_proj_transformation * model_transformation;
+    for (const sim::Entities::BumpmineProjectile& bm : bump_mines) {
+        Matrix4 model_transformation_1 =
+            utils_3d::CalcModelTransformationMatrix(bm.position, bm.angles,
+                Vector3{ 13.0f, 13.0f, 10.0f });
+        Matrix4 model_transformation_2 =
+            utils_3d::CalcModelTransformationMatrix(bm.position, bm.angles,
+                Vector3{ 8.0f, 8.0f, 13.0f });
+        Matrix4 mvp_transformation_1 =
+            view_proj_transformation * model_transformation_1;
+        Matrix4 mvp_transformation_2 =
+            view_proj_transformation * model_transformation_2;
 
+        // Outer cylinder
+        Color3 darkened = 0.7f * CvtImguiCol4(_gui_state.vis.IN_col_bump_mine).rgb();
         _glid_shader_non_instanced
-            .SetFinalTransformationMatrix(mvp_transformation)
+            .SetFinalTransformationMatrix(mvp_transformation_1)
+            .SetOverrideColor(darkened)
+            .SetColorOverrideEnabled(true)
+            .SetDiffuseLightingEnabled(has_world_diffuse_lighting)
+            .draw(_mesh_bump_mine);
+
+        // Inner cylinder
+        _glid_shader_non_instanced
+            .SetFinalTransformationMatrix(mvp_transformation_2)
             .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_bump_mine))
             .SetColorOverrideEnabled(true)
             .SetDiffuseLightingEnabled(has_world_diffuse_lighting)

@@ -1,5 +1,6 @@
 #include "utils_3d.h"
 
+#include <cassert>
 #include <cfloat>
 
 #include <Magnum/Math/Angle.h>
@@ -9,6 +10,7 @@
 #include <Magnum/Math/Vector3.h>
 
 using namespace Magnum;
+using namespace Magnum::Math::Literals;
 
 
 Vector3 utils_3d::GetNormalized(const Vector3& vec)
@@ -39,8 +41,34 @@ float utils_3d::NormalizeInPlace(Vector3& vec)
     // --------- end of source-sdk-2013 code ---------
 }
 
+Vector3 utils_3d::GetVectorPerpendicularToNormal(const Vector3& normal)
+{
+    assert(normal.length() < 1.2f);
+    assert(normal.length() > 0.8f);
+
+    // Step 1: Create a vector that's linearly independent to the input normal.
+    //         Approach: Add 5 to the smallest vector component.
+    //         I can't prove this produces a linearly independent vector, but it
+    //         seems so.
+    int smallest_idx = 0;
+    if (Math::abs(normal[1]) < Math::abs(normal[smallest_idx])) smallest_idx = 1;
+    if (Math::abs(normal[2]) < Math::abs(normal[smallest_idx])) smallest_idx = 2;
+
+    Vector3 linearly_independent_vec = normal;
+    linearly_independent_vec[smallest_idx] += 5.0f;
+
+    // Step 2: Create a vector perpendicular to the input normal.
+    Vector3 perp_vec = Math::cross(normal, linearly_independent_vec);
+
+    if (perp_vec.isZero()) { // Shouldn't happen
+        assert(0);
+        return { 0.0f, 0.0f, 0.0f };
+    }
+    return perp_vec;
+}
+
 Matrix4 utils_3d::CalcModelTransformationMatrix(
-    const Vector3& obj_pos, const Vector3& obj_ang, float uniform_scale)
+    const Vector3& obj_pos, const Vector3& obj_ang, const Vector3& obj_scales)
 {
     // Order of transformations is important!
     //   Step 1: scaling
@@ -54,8 +82,16 @@ Matrix4 utils_3d::CalcModelTransformationMatrix(
         Matrix4::rotationZ(Deg{ obj_ang[1] }) * // yaw
         Matrix4::rotationY(Deg{ obj_ang[0] }) * // pitch
         Matrix4::rotationX(Deg{ obj_ang[2] }) * // roll
-        Matrix4::scaling({ uniform_scale, uniform_scale, uniform_scale });
+        Matrix4::scaling(obj_scales);
+    // @Precision Perform scaling after rotations?
     return model_transformation;
+}
+
+Matrix4 utils_3d::CalcModelTransformationMatrix(
+    const Vector3& obj_pos, const Vector3& obj_ang, float uniform_scale)
+{
+    return CalcModelTransformationMatrix(obj_pos, obj_ang,
+        Vector3{ uniform_scale, uniform_scale, uniform_scale });
 }
 
 Quaternion utils_3d::CalcQuaternion(const Vector3& obj_ang) {
@@ -93,9 +129,13 @@ bool utils_3d::IsCwTriangleFacingUp(
 // (taken and modified from source-sdk-2013/<...>/src/mathlib/mathlib_base.cpp)
 
 // Euler QAngle -> Basis Vectors.  Each vector is optional
-void utils_3d::AngleVectors(const Vector3& angles,
+void utils_3d::AnglesToVectors(const Vector3& angles,
     Vector3* forward, Vector3* right, Vector3* up)
 {
+    // The following code was originally taken from:
+    //     void AngleVectors( const QAngle &angles,
+    //                        Vector *forward, Vector *right, Vector *up )
+
     auto pitch_sincos = Math::sincos(Deg{ angles[0] });
     auto   yaw_sincos = Math::sincos(Deg{ angles[1] });
     auto  roll_sincos = Math::sincos(Deg{ angles[2] });
@@ -133,6 +173,44 @@ void utils_3d::AngleVectors(const Vector3& angles,
             cr * cp
         };
     }
+}
+
+
+Vector3 utils_3d::VectorsToAngles(const Vector3& up,
+                                  const Vector3& forward,
+                                  const Vector3& left)
+{
+    // The following code was originally taken from:
+    //     void MatrixAngles( const matrix3x4_t& matrix, float *angles )
+
+    Rad pitch, yaw, roll;
+
+    float xyDist = forward.xy().length();
+
+    // enough here to get angles?
+    if (xyDist > 0.001f)
+    {
+        // in our space, forward is the X axis
+        yaw   = Rad{ atan2f( forward.y(), forward.x()) };
+        pitch = Rad{ atan2f(-forward.z(), xyDist) };
+        roll  = Rad{ atan2f(left.z(), up.z()) };
+    }
+    else // forward is mostly Z, gimbal lock-
+    {
+        // forward is mostly z, so use right for yaw
+        yaw   = Rad{ atan2f(-left.x(), left.y()) };
+        pitch = Rad{ atan2f(-forward.z(), xyDist) };
+
+        // Assume no roll in this case as one degree of freedom has been lost
+        // (i.e. yaw == roll)
+        roll = 0.0_radf;
+    }
+
+    return {
+        (float)Deg{ pitch },
+        (float)Deg{ yaw },
+        (float)Deg{ roll }
+    };
 }
 // --------- end of source-sdk-2013 code ---------
 

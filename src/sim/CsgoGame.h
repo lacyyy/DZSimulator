@@ -52,7 +52,7 @@ public:
 
 private:
     // Returns realtime time point of a game tick. Game must have been started!
-    sim::Clock::time_point GetTimePointOfGameTick(size_t tick_id);
+    sim::Clock::time_point GetTimePointOfGameTick(TickID tick_id);
 
 private:
     float m_sim_step_size_in_secs; // Simulation step size in seconds
@@ -62,7 +62,7 @@ private:
     sim::Clock::time_point m_game_start;
 
     // The most recently finalized game tick (The current state of the simulation)
-    size_t     m_prev_finalized_game_tick_id; // Incremented each game tick
+    TickID     m_prev_finalized_game_tick_id; // Incremented each game tick
     WorldState m_prev_finalized_game_tick;
 
     // Player inputs since the most recently finalized game tick, in

@@ -11,7 +11,8 @@ CsgoConfig::CsgoConfig(Corrade::NoInitT)
 }
 
 CsgoConfig::CsgoConfig(InitWithDzDefaults_Tag)
-    : game_mode( GameMode::DANGER_ZONE )
+    : enable_consistent_bumpmine_activations( false )
+    , game_mode( GameMode::DANGER_ZONE )
     , sv_accelerate( 5.5f )
     , sv_accelerate_use_weapon_speed( true )
     , cl_forwardspeed( 450.0f )
@@ -75,7 +76,8 @@ CsgoConfig::CsgoConfig(InitWithDzDefaults_Tag)
 }
 
 CsgoConfig::CsgoConfig(InitWithCompDefaults_Tag)
-    : game_mode( GameMode::COMPETITIVE )
+    : enable_consistent_bumpmine_activations( false )
+    , game_mode( GameMode::COMPETITIVE )
     , sv_accelerate( 5.5f )
     , sv_accelerate_use_weapon_speed( true )
     , cl_forwardspeed( 450.0f )

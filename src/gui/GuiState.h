@@ -136,6 +136,8 @@ public:
         sim::CsgoConfig::GameMode IN_game_mode =
             sim::CsgoConfig::GameMode::DANGER_ZONE;
 
+        bool IN_enable_consistent_bumpmine_activations = true;
+
         using Loadout = sim::Entities::Player::Loadout;
         Loadout IN_loadout = Loadout(
             true, // Exojump equipped?

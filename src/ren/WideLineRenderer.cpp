@@ -330,27 +330,8 @@ void WideLineRenderer::DrawDirectionIndicator(
         return;
     }
 
-    // Step 1: Create a vector that's linearly independent to the input normal.
-    //         Approach: Add 5 to the smallest vector component.
-    //         I can't prove this produces a linearly independent vector, but it seems so.
-    int smallest_idx = 0;
-    if (Math::abs(ind_normal[1]) < Math::abs(ind_normal[smallest_idx])) smallest_idx = 1;
-    if (Math::abs(ind_normal[2]) < Math::abs(ind_normal[smallest_idx])) smallest_idx = 2;
-
-    Vector3 linearly_independent_vec = ind_normal;
-    linearly_independent_vec[smallest_idx] += 5.0f;
-
-    // Step 2: Create a vector perpendicular to the input normal.
-    Vector3 perp_vec_1 = Math::cross(ind_normal, linearly_independent_vec);
-
-    if (perp_vec_1.isZero()) { // Shouldn't happen
-        assert(0);
-        return;
-    }
-    perp_vec_1 = perp_vec_1.normalized();
-
-    // Step 3: Create a vector perpendicular to both the previous vector and
-    //         the input normal.
+    // Create 2 vectors perpendicular to the input normal and to each other.
+    Vector3 perp_vec_1 = GetVectorPerpendicularToNormal(ind_normal).normalized();
     Vector3 perp_vec_2 = Math::cross(ind_normal, perp_vec_1);
 
     // At this point, ind_normal, perp_vec_1 and perp_vec_2 are all

@@ -25,9 +25,12 @@ public:
         const WorldState& stateB, float phase);
 
     // Advance this world state with the given player input forward in time by
-    // the given duration
+    // the given duration.
+    // subsequent_tick_id is the ID of the game tick that is reached _after_
+    // performing this time step!
     void DoTimeStep(double step_size_sec,
-                    std::span<const PlayerInputState> player_input);
+                    std::span<const PlayerInputState> player_input,
+                    size_t subsequent_tick_id);
 
 };
 

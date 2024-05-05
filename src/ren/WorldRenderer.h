@@ -14,6 +14,7 @@
 #include "gui/GuiState.h"
 #include "ren/GlidabilityShader3D.h"
 #include "ren/RenderableWorld.h"
+#include "sim/Entities/BumpmineProjectile.h"
 
 namespace ren {
 
@@ -29,7 +30,7 @@ public:
         const Magnum::Matrix4& view_proj_transformation,
         const Magnum::Vector3& player_feet_pos,
         float hori_player_speed,
-        const std::vector<Magnum::Vector3>& bump_mine_positions);
+        const std::vector<sim::Entities::BumpmineProjectile>& bump_mines);
 
 private:
     Magnum::Color4 CvtImguiCol4(float* im_col4);

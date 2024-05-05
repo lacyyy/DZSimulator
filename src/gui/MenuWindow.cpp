@@ -91,6 +91,8 @@ void MenuWindow::Draw()
             ImGuiColorEditFlags_NoDragDrop |
             ImGuiColorEditFlags_PickerHueWheel;
 
+        ImGui::ColorEdit3("Bump Mine Color",
+            (float*)&cols.IN_col_bump_mine, picker_flags);
         ImGui::ColorEdit3("Sky Color",
             (float*)&cols.IN_col_sky, picker_flags);
         ImGui::ColorEdit3("Ladder Color",
@@ -280,12 +282,6 @@ void MenuWindow::Draw()
                 ShowOverlayLagAdvice();
             ImGui::PopStyleColor(1);
 #endif
-
-            ImGui::Separator();
-            ImGui::Text("");
-
-            ImGui::ColorEdit3("Bump Mine Color",
-                (float*)&cols.IN_col_bump_mine, picker_flags);
         }
         // GEO_TYPE vis mode settings
         else if (geo_vis_mode == _gui_state.vis.GEO_TYPE) {
@@ -698,6 +694,17 @@ void MenuWindow::DrawGameConfig()
     bool comp_active = cfg.IN_game_mode == GameMode::COMPETITIVE;
     if (ImGui::RadioButton("CS:GO Competitive", comp_active))
         _gui_state.game_cfg.IN_game_mode = GameMode::COMPETITIVE;
+
+    ImGui::Separator();
+
+    ImGui::Checkbox("Enable consistent Bump Mine activations",
+        &_gui_state.game_cfg.IN_enable_consistent_bumpmine_activations);
+    ImGui::SameLine();
+    _gui.HelpMarker(
+        ">>>> By default in CS:GO, Bump Mines check for player activations\n"
+        "only 10 times per second. This leads to players sometimes failing\n"
+        "to activate them at higher moving speeds.\n"
+        "Enable this to let Bump Mines check for player activations every tick.");
 
     ImGui::Separator();
 

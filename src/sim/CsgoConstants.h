@@ -2,6 +2,7 @@
 #define SIM_CSGOCONSTANTS_H_
 
 #include <Magnum/Math/Angle.h>
+#include <Magnum/Math/Vector3.h>
 
 using namespace Magnum::Math::Literals;
 
@@ -20,6 +21,20 @@ const float CSGO_PLAYER_HEIGHT_CROUCHED = 54.0f;
 const float CSGO_PLAYER_WIDTH = 32.0f; // width and depth
 const float CSGO_PLAYER_EYE_LEVEL_STANDING  = 64.062561f;
 const float CSGO_PLAYER_EYE_LEVEL_CROUCHING = 46.044983f;
+
+const float CSGO_BUMP_BOOST_SPEED = 1200.0f;
+const float CSGO_BUMP_BOOST_COOLDOWN_SECS = 0.4f; // Cooldown per player
+// How many units BELOW THE PLAYER'S EYE the Bump Mine spawns when thrown
+const float CSGO_BUMP_THROW_SPAWN_OFFSET = 7.0625f;
+const float CSGO_BUMP_THROW_SPEED = 500.0f;
+const float CSGO_BUMP_THROW_INTERVAL_SECS = 0.5f; // Min time between bump throws
+const float CSGO_BUMP_THINK_INTERVAL_SECS = 0.1f;
+const float CSGO_BUMP_ELLIPSOID_WIDTH = 93.62f;
+const float CSGO_BUMP_ELLIPSOID_HEIGHT = 138.11f;
+const float CSGO_BUMP_ELLIPSOID_CENTER_Z_OFFSET = 51.415f;
+const Magnum::Math::Vector3 CSGO_BUMP_AABB_MINS = { -81.0f, -81.0f, -81.0f };
+const Magnum::Math::Vector3 CSGO_BUMP_AABB_MAXS = { +81.0f, +81.0f, +81.0f };
+
 
 // Exojump gives player an upwards boost if they are pressing jump and their upwards velocity is in the correct range
 const float CSGO_CONST_EXOJUMP_BOOST_RANGE_VEL_Z_MIN = 100.0f;

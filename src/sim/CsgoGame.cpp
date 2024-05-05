@@ -55,8 +55,10 @@ void CsgoGame::Start(float sim_step_size_in_secs, float game_timescale,
     m_inputs_since_prev_finalized_game_tick.clear();
 
     // Simulate one game tick to get a possible future game tick
+    TickID second_game_tick_id = 1;
     m_prev_predicted_game_tick = initial_worldstate;
-    m_prev_predicted_game_tick.DoTimeStep(sim_step_size_in_secs, {});
+    m_prev_predicted_game_tick.DoTimeStep(sim_step_size_in_secs, {},
+                                          second_game_tick_id);
 
     m_prev_drawable_worldstate = initial_worldstate;
     m_prev_drawable_worldstate_timepoint = current_time;
@@ -87,7 +89,7 @@ void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
     //               to keep up. How does the Source engine do it?
 
     // Step 1: Find ID of game tick that directly precedes the new player input.
-    size_t directly_preceding_game_tick_id = m_prev_finalized_game_tick_id;
+    TickID directly_preceding_game_tick_id = m_prev_finalized_game_tick_id;
     while (GetTimePointOfGameTick(directly_preceding_game_tick_id+1) < cur_time)
         directly_preceding_game_tick_id++;
 
@@ -109,7 +111,8 @@ void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
     // These additional game ticks have passed completely without any calls to
     // ProcessNewPlayerInput(), so they receive no player input.
     while (m_prev_finalized_game_tick_id < directly_preceding_game_tick_id) {
-        m_prev_finalized_game_tick.DoTimeStep(m_sim_step_size_in_secs, {});
+        m_prev_finalized_game_tick.DoTimeStep(m_sim_step_size_in_secs, {},
+                                              m_prev_finalized_game_tick_id + 1);
         m_prev_finalized_game_tick_id++;
     }
     // NOTE: m_prev_predicted_game_tick has now become invalid if we advanced by
@@ -121,7 +124,8 @@ void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
 
     WorldState predicted_next_game_tick = m_prev_finalized_game_tick;
     predicted_next_game_tick.DoTimeStep(m_sim_step_size_in_secs,
-                                        m_inputs_since_prev_finalized_game_tick);
+                                        m_inputs_since_prev_finalized_game_tick,
+                                        m_prev_finalized_game_tick_id + 1);
 
     sim::Clock::time_point next_game_tick_timepoint =
         GetTimePointOfGameTick(m_prev_finalized_game_tick_id + 1);
@@ -169,7 +173,7 @@ const WorldState& CsgoGame::GetLatestDrawableWorldState() {
     return m_prev_drawable_worldstate;
 }
 
-sim::Clock::time_point CsgoGame::GetTimePointOfGameTick(size_t tick_id)
+sim::Clock::time_point CsgoGame::GetTimePointOfGameTick(TickID tick_id)
 {
     assert(HasBeenStarted());
     return m_game_start + tick_id * m_realtime_game_tick_interval;

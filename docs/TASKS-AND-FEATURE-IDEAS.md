@@ -67,6 +67,7 @@
         - Draw them green when they end up in glidable surface
         - Draw post-collision move direction
     - Show predicted Bump Mine projectile trajectory (or just the position it would end up in)
+    - Visualize when Bump Mine is affected by sv_maxvelocity
     - UI option to enable/disable overlay erratically to improve remembering hill geometry
     - Show player's AABB of recent ticks leading up to a collision
     - Save and visualize certain jump lineups/trajectories

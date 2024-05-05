@@ -21,7 +21,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/MeshTools/Compile.h>
-#include <Magnum/Primitives/UVSphere.h>
+#include <Magnum/MeshTools/Transform.h>
+#include <Magnum/Primitives/Cylinder.h>
 #include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/MeshData.h>
 
@@ -170,7 +171,17 @@ static GL::Mesh GenMeshWithVertAttr_Position_Normal(
 
 GL::Mesh WorldCreator::CreateBumpMineMesh()
 {
-    return MeshTools::compile(Primitives::uvSphereSolid(7, 10));
+    // Cylinder along Y axis
+    Trade::MeshData cylinder_along_y =
+        Primitives::cylinderSolid(1, 10, 0.5f, Primitives::CylinderFlag::CapEnds);
+
+    // Rotate to get cylinder along Z axis
+    Trade::MeshData cylinder_along_z = MeshTools::transform3D(
+        std::move(cylinder_along_y),
+        Matrix4::rotationX(Deg{90.0f})
+    );
+
+    return MeshTools::compile(cylinder_along_z);
 }
 
 std::pair<

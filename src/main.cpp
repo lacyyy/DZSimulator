@@ -915,6 +915,21 @@ void DZSimApplication::ConfigureGameKeyBindings() {
     // ----
 
     _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
+        if (_csgo_game_sim.HasBeenStarted()) {
+            sim::WorldState new_worldstate =
+                _csgo_game_sim.GetLatestActualWorldState(); // Intentional copy
+            new_worldstate.bumpmine_projectiles.clear();
+            // Restart simulation with updated worldstate
+            _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, new_worldstate);
+        }
+    });
+
+    // FIXME TODO Overriding world states invalidates tick IDs!!!
+    // Need to find a better way to override/manipulate world states!
+
+    // ----
+
+    _inputs.SetKeyPressedCallback_keyboard("F", [this]() {
         // Start benchmark or ...
 #if COLL_BENCHMARK_ENABLED
         coll::Benchmark::StaticPropHullTracing();
@@ -1040,6 +1055,12 @@ void DZSimApplication::DoUpdate()
                 break;
         }
     }
+    if (_gui_state.game_cfg.IN_enable_consistent_bumpmine_activations !=
+        g_csgo_game_sim_cfg.enable_consistent_bumpmine_activations)
+    {
+        g_csgo_game_sim_cfg.enable_consistent_bumpmine_activations =
+            _gui_state.game_cfg.IN_enable_consistent_bumpmine_activations;
+    }
 
     // Update simulation player loadout if user wants to change it
     if (_csgo_game_sim.HasBeenStarted()) {
@@ -1052,6 +1073,9 @@ void DZSimApplication::DoUpdate()
             _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, new_worldstate);
             Debug{} << "[Sim] Updated player loadout";
         }
+
+        // FIXME TODO Overriding world states invalidates tick IDs!!!
+        // Need to find a better way to override/manipulate world states!
     }
 
     // Communicate with csgo console if connected and process its data
@@ -1549,7 +1573,7 @@ Matrix4 DZSimApplication::CalcViewProjTransformation(const Vector3& cam_pos,
 // Returned vector is normalized
 Vector3 DZSimApplication::GetCameraForwardVector()
 {
-    // TODO Maybe Utilize the new AngleVectors function for this?
+    // TODO Maybe Utilize the new AnglesToVectors function for this?
     auto pitch_sincos = Math::sincos(Deg{ _cam_ang[0] });
     auto yaw_sincos   = Math::sincos(Deg{ _cam_ang[1] });
     return {
@@ -1603,10 +1627,22 @@ void DZSimApplication::drawEvent() {
     if (_bsp_map) {
         GL::Renderer::enable(GL::Renderer::Feature::Blending);
 
-        std::vector<Vector3> bump_mine_positions;
-        bump_mine_positions.reserve(_latest_csgo_server_data.bump_mines.size());
-        for (const auto& [id, bump_mine_data] : _latest_csgo_server_data.bump_mines) {
-            bump_mine_positions.push_back(bump_mine_data.pos);
+        // Collect drawable Bump Mines
+        std::vector<sim::Entities::BumpmineProjectile> bump_mines;
+        if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+            bump_mines.reserve(_latest_csgo_server_data.bump_mines.size());
+            for (const auto& [id, bump_mine_data] : _latest_csgo_server_data.bump_mines) {
+                sim::Entities::BumpmineProjectile bm;
+                bm.position = bump_mine_data.pos;
+                bm.angles   = bump_mine_data.angles;
+                bump_mines.push_back(bm);
+            }
+        }
+        else {
+            if (_csgo_game_sim.HasBeenStarted()) {
+                bump_mines =
+                    _csgo_game_sim.GetLatestDrawableWorldState().bumpmine_projectiles;
+            }
         }
 
         Matrix4 view_proj_transformation =
@@ -1617,7 +1653,7 @@ void DZSimApplication::drawEvent() {
             view_proj_transformation,
             player_feet_pos,
             hori_player_speed,
-            bump_mine_positions);
+            bump_mines);
 
         if (coll::Debugger::IS_ENABLED)
             coll::Debugger::Draw(cam_pos, GetCameraForwardVector(),

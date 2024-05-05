@@ -10,6 +10,7 @@
 
 #include "sim/CsgoConstants.h"
 #include "sim/PlayerInputState.h"
+#include "sim/Sim.h"
 
 namespace sim::Entities {
 
@@ -62,6 +63,7 @@ public:
 
     Loadout loadout = Loadout(false, Loadout::Weapon::XM1014, {});
 
+    TickID next_primary_attack = 0;
 
     // ---- Player input command states
     // inputCmdActiveCount: Each time +cmd is issued, increment the count.

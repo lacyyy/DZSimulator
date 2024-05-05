@@ -355,6 +355,8 @@ target_sources(DZSimulator PRIVATE
     "src/sim/CsgoConfig.cpp"
     "src/sim/CsgoGame.cpp"
     "src/sim/CsgoMovement.cpp"
+    "src/sim/Sim.cpp"
     "src/sim/WorldState.cpp"
+    "src/sim/Entities/BumpmineProjectile.cpp"
 )
 # Add new .cpp files for DZSimulator to the list above to get them compiled in!

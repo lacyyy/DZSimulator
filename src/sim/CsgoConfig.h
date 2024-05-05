@@ -25,6 +25,10 @@ public:
     explicit CsgoConfig(InitWithCompDefaults_Tag);
 
 
+    // ------------- Misc settings -------------
+
+    bool enable_consistent_bumpmine_activations;
+
     // ------------- CSGO ConVars -------------
 
     // Game mode to be played.
