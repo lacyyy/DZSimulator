@@ -918,13 +918,11 @@ void DZSimApplication::ConfigureGameKeyBindings() {
     // ----
 
     _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
-        if (_csgo_game_sim.HasBeenStarted()) {
-            sim::WorldState new_worldstate =
-                _csgo_game_sim.GetLatestActualWorldState(); // Intentional copy
-            new_worldstate.bumpmine_projectiles.clear();
-            // Restart simulation with updated worldstate
-            _csgo_game_sim.Start(SIM_TIME_STEP_SIZE, SIM_TIME_SCALE, new_worldstate);
-        }
+        if (_csgo_game_sim.HasBeenStarted())
+            _csgo_game_sim.ModifyWorldStateHarshly([](sim::WorldState& world){
+                world.bumpmine_projectiles.clear();
+                Debug{} << "[Sim] Removed all Bump Mines from map";
+            });
     });
 
     // ----
@@ -1065,14 +1063,12 @@ void DZSimApplication::DoUpdate()
     // Update simulation player loadout if user wants to change it
     if (_csgo_game_sim.HasBeenStarted()) {
         const sim::WorldState& sim_worldstate = _csgo_game_sim.GetLatestActualWorldState();
-        if (_gui_state.game_cfg.IN_loadout != sim_worldstate.player.loadout)
-        {
-            sim::WorldState new_worldstate = sim_worldstate; // Intentional copy
-            new_worldstate.player.loadout = _gui_state.game_cfg.IN_loadout;
-            // Restart simulation with updated loadout
-            _csgo_game_sim.Start(SIM_TIME_STEP_SIZE, SIM_TIME_SCALE, new_worldstate);
-            Debug{} << "[Sim] Updated player loadout";
-        }
+        const sim::Entities::Player::Loadout& gui_loadout = _gui_state.game_cfg.IN_loadout;
+        if (gui_loadout != sim_worldstate.player.loadout)
+            _csgo_game_sim.ModifyWorldStateHarshly([&gui_loadout](sim::WorldState& world){
+                world.player.loadout = gui_loadout;
+                Debug{} << "[Sim] Updated player loadout";
+            });
     }
 
     // Communicate with csgo console if connected and process its data

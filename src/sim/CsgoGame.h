@@ -1,6 +1,7 @@
 #ifndef SIM_CSGOGAME_H_
 #define SIM_CSGOGAME_H_
 
+#include <functional>
 #include <vector>
 
 #include <Magnum/Math/Time.h>
@@ -31,6 +32,13 @@ public:
     // parameters. The given simulation time step size must be greater than 0 !
     void Start(SimTimeDur simtime_step_size, float simtime_scale,
                const WorldState& initial_worldstate);
+
+    // Modify this game's worldstate in a 'harsh' way, i.e. no interpolation
+    // between the previous worldstate and the new worldstate will occur (Good
+    // for teleporting the player!). This method must be called after this CSGO
+    // game was started! Don't use this often, due to the lack of interpolation.
+    // The passed Callable must not access this CsgoGame instance itself!
+    void ModifyWorldStateHarshly(const std::function<void(WorldState&)>& f);
 
     // Process newly generated player input and possibly advance the game
     // simulation. Given player input must be new (i.e. have a time point that

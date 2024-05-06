@@ -60,11 +60,38 @@ void CsgoGame::Start(SimTimeDur simtime_step_size, float simtime_scale,
     m_inputs_since_prev_finalized_game_tick.clear();
 
     // Simulate one game tick to get a possible future game tick
+    // @Optimization Instead of simulating a tick here, we should instead flag
+    //               m_prev_predicted_game_tick as invalid and only simulate it
+    //               on-demand inside ProcessNewPlayerInput().
     m_prev_predicted_game_tick = initial_worldstate;
     m_prev_predicted_game_tick.AdvanceSimulation(simtime_step_size, {});
 
     m_prev_drawable_worldstate = initial_worldstate;
     m_prev_drawable_worldstate_timepoint = current_realtime;
+}
+
+void CsgoGame::ModifyWorldStateHarshly(const std::function<void(WorldState&)>& f)
+{
+    ZoneScoped;
+
+    if (!HasBeenStarted()) {
+        assert(0);
+        return;
+    }
+
+    // Run user-provided func that modifies this game's worldstate
+    f(m_prev_finalized_game_tick);
+
+    // Simulate one game tick to get a possible future game tick
+    // @Optimization Instead of simulating a tick here, we should instead flag
+    //               m_prev_predicted_game_tick as invalid and only simulate it
+    //               on-demand inside ProcessNewPlayerInput().
+    m_prev_predicted_game_tick = m_prev_finalized_game_tick;
+    m_prev_predicted_game_tick.AdvanceSimulation(m_simtime_step_size, {});
+
+    m_prev_drawable_worldstate = m_prev_finalized_game_tick;
+    m_prev_drawable_worldstate_timepoint =
+        GetGameTickRealTimePoint(m_prev_finalized_game_tick_id);
 }
 
 void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
