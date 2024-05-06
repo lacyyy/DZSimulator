@@ -1,7 +1,6 @@
 #ifndef CSGO_INTEGRATION_HANDLER_H_
 #define CSGO_INTEGRATION_HANDLER_H_
 
-#include <chrono>
 #include <deque>
 #include <map>
 #include <string>
@@ -11,6 +10,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
 
+#include "common.h"
 #include "csgo_integration/RemoteConsole.h"
 #include "gui/GuiState.h"
 
@@ -92,25 +92,22 @@ namespace csgo_integration {
         // Data of next server tick data still being received
         CsgoServerTickData _incomplete_next_server_tick_data;
 
-
-        using Clock = std::chrono::steady_clock;
-
         // The last time we tested if user is hosting a local server
-        Clock::time_point _last_host_server_check_time;
+        WallClock::time_point _last_host_server_check_time;
 
 
         // The last time we tried to set up a data relay that runs inside CSGO
         // and continously prints game data to the console.
-        Clock::time_point _last_data_relay_setup_time;
+        WallClock::time_point _last_data_relay_setup_time;
 
         // The last time we received game data from a data relay
-        Clock::time_point _last_data_relay_receive_time;
+        WallClock::time_point _last_data_relay_receive_time;
 
         // The last time we sent a keep-alive signal to the data relay
-        Clock::time_point _last_data_relay_keep_alive_signal_time;
+        WallClock::time_point _last_data_relay_keep_alive_signal_time;
 
         // The last time we sent a stop signal to the data relay
-        Clock::time_point _last_data_relay_stop_signal_time;
+        WallClock::time_point _last_data_relay_stop_signal_time;
 
     };
 

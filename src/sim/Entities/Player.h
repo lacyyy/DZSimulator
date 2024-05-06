@@ -5,6 +5,8 @@
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/BitVector.h>
+#include <Magnum/Math/Tags.h>
+#include <Magnum/Math/Time.h>
 #include <Magnum/Math/Vector3.h>
 #include <Corrade/Utility/Debug.h>
 
@@ -63,7 +65,8 @@ public:
 
     Loadout loadout = Loadout(false, Loadout::Weapon::XM1014, {});
 
-    TickID next_primary_attack = 0;
+    // Set to simulation time point 0 by default
+    SimTimePoint next_primary_attack{ Magnum::Math::ZeroInit };
 
     // ---- Player input command states
     // inputCmdActiveCount: Each time +cmd is issued, increment the count.

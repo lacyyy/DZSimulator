@@ -2,8 +2,10 @@
 #define SIM_ENTITIES_BUMPMINEPROJECTILE_H_
 
 #include <Magnum/Magnum.h>
-#include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Quaternion.h>
+#include <Magnum/Math/Tags.h>
+#include <Magnum/Math/Time.h>
+#include <Magnum/Math/Vector3.h>
 
 #include "sim/Sim.h"
 
@@ -25,32 +27,24 @@ namespace Entities {
         Magnum::Vector3 velocity;
         Magnum::Vector3 angles; // pitch, yaw, roll
 
-        TickID next_think = 0;
+        // Set to simulation time point 0 by default
+        SimTimePoint next_think{ Magnum::Math::ZeroInit };
 
         bool detonates_on_next_think = false;
         bool has_detonated = false;
 
-        // progress values ranging from 0.0 to 1.0
-        float armProgress; // arm delay
-        float detonateProgress; // detonate delay
-
-        // subsequent_tick_id is the ID of the game tick that is reached _after_
-        // performing this time step!
-        void DoTimeStep(
-            WorldState& world_of_this_bm,
-            double step_size_sec,
-            size_t subsequent_tick_id);
+        // Advance this Bump Mine projectile forward in simulation time by the
+        // given duration.
+        void AdvanceSimulation(SimTimeDur simtime_delta,
+                               WorldState& world_of_this_bm);
 
         BumpmineProjectile() = default;
 
     private:
-        float GetActivationCheckIntervalInSecs();
+        static float GetActivationCheckIntervalInSecs();
 
         // Returns time in seconds until the next Think() occurs.
-        float Think(
-            WorldState& world_of_this_bm,
-            double step_size_sec,
-            size_t cur_tick_id);
+        float Think(SimTimeDur simtime_delta, WorldState& world_of_this_bm);
     };
 
 } // namespace sim::Entities

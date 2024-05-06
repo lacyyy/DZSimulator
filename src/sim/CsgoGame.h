@@ -3,6 +3,9 @@
 
 #include <vector>
 
+#include <Magnum/Math/Time.h>
+
+#include "common.h"
 #include "sim/PlayerInputState.h"
 #include "sim/Sim.h"
 #include "sim/WorldState.h"
@@ -25,13 +28,13 @@ public:
     bool HasBeenStarted();
 
     // (Re-)Starts the game simulation at the given world state with the given
-    // parameters. The given simulation step size must be greater than 0 !
-    void Start(float sim_step_size_in_secs, float game_timescale,
+    // parameters. The given simulation time step size must be greater than 0 !
+    void Start(SimTimeDur simtime_step_size, float simtime_scale,
                const WorldState& initial_worldstate);
 
     // Process newly generated player input and possibly advance the game
-    // simulation. Given player input must have time point that chronologically
-    // comes after all previously passed inputs' time point!
+    // simulation. Given player input must be new (i.e. have a time point that
+    // chronologically comes after all previously passed inputs' time point)!
     // This method must be called after this CSGO game was started!
     void ProcessNewPlayerInput(const PlayerInputState& new_player_input);
 
@@ -52,17 +55,18 @@ public:
 
 private:
     // Returns realtime time point of a game tick. Game must have been started!
-    sim::Clock::time_point GetTimePointOfGameTick(TickID tick_id);
+    WallClock::time_point GetGameTickRealTimePoint(size_t tick_id);
 
 private:
-    float m_sim_step_size_in_secs; // Simulation step size in seconds
-    sim::Clock::duration m_realtime_game_tick_interval;
+    SimTimeDur m_simtime_step_size; // Simulation time increase every game tick
+    WallClock::duration m_realtime_game_tick_interval;
 
-    // When the game was last (re-)started. Time point of tick 0's worldstate.
-    sim::Clock::time_point m_game_start;
+    // When the game was last (re-)started.
+    // Realtime time point of tick 0's worldstate.
+    WallClock::time_point m_realtime_game_start;
 
     // The most recently finalized game tick (The current state of the simulation)
-    TickID     m_prev_finalized_game_tick_id; // Incremented each game tick
+    size_t     m_prev_finalized_game_tick_id; // Incremented each game tick
     WorldState m_prev_finalized_game_tick;
 
     // Player inputs since the most recently finalized game tick, in
@@ -73,9 +77,9 @@ private:
     // m_prev_finalized_game_tick)
     WorldState m_prev_predicted_game_tick;
 
-    // The most recent drawable worldstate, and its time.
-    WorldState             m_prev_drawable_worldstate;
-    sim::Clock::time_point m_prev_drawable_worldstate_timepoint;
+    // The most recent drawable worldstate and its realtime time point.
+    WorldState            m_prev_drawable_worldstate;
+    WallClock::time_point m_prev_drawable_worldstate_timepoint;
 };
 
 } // namespace sim

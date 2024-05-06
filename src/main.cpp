@@ -12,6 +12,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
 #include <Magnum/Math/Functions.h>
+#include <Magnum/Math/Time.h>
 #include <Magnum/Text/AbstractFont.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
@@ -28,6 +29,7 @@
 #include "coll/Benchmark.h"
 #include "coll/CollidableWorld.h"
 #include "coll/Trace.h"
+#include "common.h"
 #include "csgo_integration/Handler.h"
 #include "csgo_integration/RemoteConsole.h"
 #include "csgo_parsing/AssetFinder.h"
@@ -42,6 +44,7 @@
 #include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
 #include "sim/CsgoGame.h"
+#include "sim/Sim.h"
 #include "sim/WorldState.h"
 #include "WorldCreator.h"
 
@@ -63,8 +66,8 @@
 using namespace Magnum;
 using namespace Math::Literals;
 
-const float SIM_STEP_SIZE_IN_SECS = 1.0f / sim::CSGO_TICKRATE;
-const float SIM_TIMESCALE = 1.0f; // Equivalent to CSGO ConVar "host_timescale"
+const sim::SimTimeDur SIM_TIME_STEP_SIZE = 1.0_sec / sim::CSGO_TICKRATE;
+const float SIM_TIME_SCALE = 1.0f; // Equivalent to CSGO ConVar "host_timescale"
 
 class DZSimApplication: public Platform::Application {
     public:
@@ -828,7 +831,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
         initial_worldstate.csgo_mv.m_vecAbsOrigin  = playerSpawn.origin;
         initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
     }
-    _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, initial_worldstate);
+    _csgo_game_sim.Start(SIM_TIME_STEP_SIZE, SIM_TIME_SCALE, initial_worldstate);
 
     Debug{} << "DONE loading bsp map";
     return true;
@@ -920,12 +923,9 @@ void DZSimApplication::ConfigureGameKeyBindings() {
                 _csgo_game_sim.GetLatestActualWorldState(); // Intentional copy
             new_worldstate.bumpmine_projectiles.clear();
             // Restart simulation with updated worldstate
-            _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, new_worldstate);
+            _csgo_game_sim.Start(SIM_TIME_STEP_SIZE, SIM_TIME_SCALE, new_worldstate);
         }
     });
-
-    // FIXME TODO Overriding world states invalidates tick IDs!!!
-    // Need to find a better way to override/manipulate world states!
 
     // ----
 
@@ -995,7 +995,7 @@ void DZSimApplication::DoUpdate()
 
     // All mouse and key events have been processed right before calling
     // tickEvent() -> Save the time point when the game input was sampled
-    auto current_time = sim::Clock::now();
+    WallClock::time_point current_time = WallClock::now();
     _currentGameInput.time = current_time;
 
     if (_gui_state.app_exit_requested) // Exit if user requested it
@@ -1070,12 +1070,9 @@ void DZSimApplication::DoUpdate()
             sim::WorldState new_worldstate = sim_worldstate; // Intentional copy
             new_worldstate.player.loadout = _gui_state.game_cfg.IN_loadout;
             // Restart simulation with updated loadout
-            _csgo_game_sim.Start(SIM_STEP_SIZE_IN_SECS, SIM_TIMESCALE, new_worldstate);
+            _csgo_game_sim.Start(SIM_TIME_STEP_SIZE, SIM_TIME_SCALE, new_worldstate);
             Debug{} << "[Sim] Updated player loadout";
         }
-
-        // FIXME TODO Overriding world states invalidates tick IDs!!!
-        // Need to find a better way to override/manipulate world states!
     }
 
     // Communicate with csgo console if connected and process its data
@@ -1514,7 +1511,7 @@ void DZSimApplication::DoUpdate()
 
     // When in "sparing low latency draw mode", force a frame redraw if the last
     // redraw was too long ago
-    static sim::Clock::time_point s_last_redraw_time = current_time;
+    static WallClock::time_point s_last_redraw_time = current_time;
     if (is_sparing_low_latency_draw_mode_enabled && !redraw_needed) {
         // Caution: Setting the min FPS target above 64 worsens visual delay
         // between CSGO and DZSim when used as an overlay!

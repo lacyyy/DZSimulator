@@ -2,6 +2,8 @@
 #define SIM_CSGOMOVEMENT_H_
 
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Tags.h>
+#include <Magnum/Math/Time.h>
 #include <Magnum/Math/Vector3.h>
 
 #include "coll/Trace.h"
@@ -77,7 +79,8 @@ public:
     Entities::Player::Loadout m_loadout = // Equipment of player
         { false, Entities::Player::Loadout::Weapon::XM1014, {} }; // To be overwritten
 
-    TickID m_nextBumpBoost = 0; // For Bump Mine boost cooldown of player
+    // For Bump Mine boost cooldown of player. Set to time point 0 by default.
+    SimTimePoint m_nextBumpBoost{ Magnum::Math::ZeroInit };
 
     int   m_fFlags = 0; // Player flags (see macros starting with FL_*)
     

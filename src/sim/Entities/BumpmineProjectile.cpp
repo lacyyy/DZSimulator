@@ -10,6 +10,7 @@
 #include "coll/Trace.h"
 #include "GlobalVars.h"
 #include "sim/CsgoConstants.h"
+#include "sim/Sim.h"
 #include "sim/WorldState.h"
 #include "utils_3d.h"
 
@@ -27,19 +28,19 @@ size_t BumpmineProjectile::GenerateNewUniqueID()
     return next_unique_bm_id++;
 }
 
-void BumpmineProjectile::DoTimeStep(WorldState& world_of_this_bm,
-    double step_size_sec, size_t subsequent_tick_id)
+void BumpmineProjectile::AdvanceSimulation(SimTimeDur simtime_delta,
+                                           WorldState& world_of_this_bm)
 {
+    float time_delta_sec = (float)Seconds{ simtime_delta };
+
     if (!is_on_surface) {
-        Vector3 pos_delta = step_size_sec * velocity;
+        Vector3 pos_delta = time_delta_sec * velocity;
         coll::Trace tr{ position, position + pos_delta, BM_MINS, BM_MAXS };
         g_coll_world->DoTrace(&tr); // FIXME Don't trace against player clips!
 
         if (!tr.results.DidHit()) { // If Bump Mine hasn't hit any surface
-            position += step_size_sec * velocity;
-
-            const float bm_gravity = 1.0f;
-            velocity.z() -= bm_gravity * g_csgo_game_sim_cfg.sv_gravity * step_size_sec;
+            position += time_delta_sec * velocity;
+            velocity.z() -= time_delta_sec * g_csgo_game_sim_cfg.sv_gravity;
 
             // Limit Bump Mine velocity on each axis
             for (int i = 0; i < 3; i++) {
@@ -70,17 +71,17 @@ void BumpmineProjectile::DoTimeStep(WorldState& world_of_this_bm,
                 .invertedNormalized();
 
             // Only start checking for activations after some delay.
-            next_think = subsequent_tick_id + GetTimeIntervalInTicks(
-                g_csgo_game_sim_cfg.sv_bumpmine_arm_delay, step_size_sec);
+            next_think = world_of_this_bm.simtime + RoundToNearestSimTimeStep(
+                g_csgo_game_sim_cfg.sv_bumpmine_arm_delay, simtime_delta);
         }
     }
 
     // Handle think function
-    if (next_think <= subsequent_tick_id) {
-        float think_delay_secs =
-            Think(world_of_this_bm, step_size_sec, subsequent_tick_id);
-        next_think = subsequent_tick_id
-            + GetTimeIntervalInTicks(think_delay_secs, step_size_sec);
+    if (world_of_this_bm.simtime >= next_think) {
+        float think_delay_secs = Think(simtime_delta, world_of_this_bm);
+        // Schedule next think
+        next_think = world_of_this_bm.simtime +
+            RoundToNearestSimTimeStep(think_delay_secs, simtime_delta);
     }
 }
 
@@ -92,8 +93,7 @@ float BumpmineProjectile::GetActivationCheckIntervalInSecs()
         return CSGO_BUMP_THINK_INTERVAL_SECS;
 }
 
-float BumpmineProjectile::Think(WorldState& world, double step_size_sec,
-    size_t cur_tick_id)
+float BumpmineProjectile::Think(SimTimeDur simtime_delta, WorldState& world)
 {
     if (!is_on_surface)
         return 0.0f; // Think again next tick
@@ -105,9 +105,10 @@ float BumpmineProjectile::Think(WorldState& world, double step_size_sec,
         //       is touching the Bump Mine AAAB.
 
         // If player isn't on Bump Mine boost cooldown
-        if (world.csgo_mv.m_nextBumpBoost <= cur_tick_id) {
-            world.csgo_mv.m_nextBumpBoost = cur_tick_id +
-                GetTimeIntervalInTicks(CSGO_BUMP_BOOST_COOLDOWN_SECS, step_size_sec);
+        if (world.simtime >= world.csgo_mv.m_nextBumpBoost) {
+            world.csgo_mv.m_nextBumpBoost = world.simtime +
+                RoundToNearestSimTimeStep(CSGO_BUMP_BOOST_COOLDOWN_SECS,
+                                          simtime_delta);
 
             Vector3 player_boost_point =
                 world.csgo_mv.GetPlayerCenter() + Vector3(0.0f, 0.0f, 8.0f);
@@ -125,7 +126,7 @@ float BumpmineProjectile::Think(WorldState& world, double step_size_sec,
         }
 
         has_detonated = true; // Mark this Bump Mine for deletion
-        return 9999.0f; // We shouldn't ever think again
+        return 9999.0; // We shouldn't ever think again
     }
 
     Vector3 player_mins = world.csgo_mv.GetPlayerMins();

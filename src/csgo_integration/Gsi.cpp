@@ -19,6 +19,8 @@
 #include <json.hpp>
 #include <Magnum/Magnum.h>
 
+#include "common.h"
+
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace Magnum;
@@ -78,7 +80,7 @@ bool Gsi::Start(const std::string& host, int port, const std::string& auth_token
     Debug{} << ("[GSI] Starting http server on " + host + ":"
         + std::to_string(port) + " ...").c_str();
 
-    auto thread_start_time = steady_clock::now();
+    WallClock::time_point thread_start_time = WallClock::now();
 
     _pImpl->thread = std::thread([this, host, port] {
         _pImpl->server.listen(host.c_str(), port);
@@ -97,7 +99,7 @@ bool Gsi::Start(const std::string& host, int port, const std::string& auth_token
             return false; // return failure
 
         long long millis_since_thread_start = duration_cast<milliseconds>(
-            steady_clock::now() - thread_start_time).count();
+            WallClock::now() - thread_start_time).count();
 
         if (millis_since_thread_start > MAX_STARTUP_TIME_MILLIS) {
             // Why we throw in this scenario: The http server is currently
@@ -117,7 +119,7 @@ bool Gsi::Start(const std::string& host, int port, const std::string& auth_token
     }
 
     Debug{} << "[GSI] Http server started within" << duration_cast<milliseconds>(
-        steady_clock::now() - thread_start_time).count() / 1000.0f << "seconds";
+        WallClock::now() - thread_start_time).count() / 1000.0f << "seconds";
     return true; // return success
 }
 

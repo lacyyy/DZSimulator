@@ -2,12 +2,21 @@
 
 #include <cassert>
 
-using namespace sim;
+#include <Magnum/Math/Time.h>
 
-size_t sim::GetTimeIntervalInTicks(float interval_secs,
-                                   float sim_step_size_secs)
+using namespace sim;
+using namespace Magnum;
+using namespace Magnum::Math::Literals;
+
+SimTimeDur sim::RoundToNearestSimTimeStep(float unrounded_duration_secs,
+                                          SimTimeDur simtime_step_size)
 {
-    assert(interval_secs >= 0.0f);
-    assert(sim_step_size_secs > 0.0f);
-    return (size_t)(interval_secs / sim_step_size_secs + 0.5f);
+    assert(unrounded_duration_secs >= 0.0f);
+    assert(simtime_step_size > 0.0_sec);
+
+    int nearest_step_cnt = (int)(
+        unrounded_duration_secs / (float)Seconds{ simtime_step_size } + 0.5f
+    );
+    SimTimeDur rounded_duration = nearest_step_cnt * simtime_step_size;
+    return rounded_duration;
 }

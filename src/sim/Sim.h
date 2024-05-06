@@ -3,18 +3,24 @@
 
 #include <chrono>
 
+#include <Magnum/Magnum.h>
+
 namespace sim {
 
-    // Namespace alias, so all game code can agree on timings
-    // Used clock must be monotonic, i.e. time never decreases
-    using Clock = std::chrono::steady_clock;
+    // ---- Terminology: "Simulation Time" ---
+    // Simulation time refers to the virtual time that progresses inside a
+    // simulated Counter-Strike game. Simulation time only progresses in
+    // discrete steps as game ticks are computed.
+    // Simulation time is separate from physical, wall-clock time.
+    // Not computing game ticks results in a halt of simulation time.
 
-    // Unique identifier of a game tick
-    using TickID = size_t;
+    using SimTimePoint = Magnum::Nanoseconds; // A time point in simulation time
+    using SimTimeDur   = Magnum::Nanoseconds; // A duration in simulation time
 
-    
-    size_t GetTimeIntervalInTicks(float interval_secs, float sim_step_size_secs);
-
+    // Round a duration in simulation time to the nearest multiple of the
+    // given simulation time step size.
+    SimTimeDur RoundToNearestSimTimeStep(float unrounded_duration_secs,
+                                         SimTimeDur simtime_step_size);
 
 }
 

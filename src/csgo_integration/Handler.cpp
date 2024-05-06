@@ -7,6 +7,7 @@
 #include <Corrade/Utility/Debug.h>
 #include <Magnum/Magnum.h>
 
+#include "common.h"
 #include "csgo_parsing/utils.h"
 
 using namespace Magnum;
@@ -82,7 +83,7 @@ Handler::Handler(Corrade::Utility::Resource& res, RemoteConsole& con,
 
 void Handler::Update()
 {
-    auto time_now = Clock::now();
+    WallClock::time_point time_now = WallClock::now();
 
     // Parse received CSGO console output
     size_t pre_parse_server_q_len = _new_server_ticks_data_q.size();

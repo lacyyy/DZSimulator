@@ -1,12 +1,14 @@
 #include "sim/WorldState.h"
 
 #include <algorithm>
+#include <cassert>
 
 #include <Tracy.hpp>
 
 #include <Magnum/Magnum.h>
-#include <Magnum/Math/Vector3.h>
 #include <Magnum/Math/Functions.h>
+#include <Magnum/Math/Time.h>
+#include <Magnum/Math/Vector3.h>
 
 #include "GlobalVars.h"
 #include "sim/CsgoConstants.h"
@@ -24,13 +26,21 @@ WorldState WorldState::Interpolate(const WorldState& stateA,
                                    const WorldState& stateB,
                                    float phase)
 {
+    // We are assuming B comes after A, chronologically.
+    assert(stateA.simtime <= stateB.simtime);
+
     if (phase <= 0.0f) return stateA;
     if (phase >= 1.0f) return stateB;
 
     // NOTE: Copying stateB is important in order for newly created entities
     //       (present in stateB, but not in stateA) to be propagated to future
-    //       interpolated world states!
+    //       interpolated world states inside CsgoGame!
     WorldState interpState = stateB;
+
+    interpState.is_interpolated = true;
+
+    interpState.simtime = (1.0f - phase) * stateA.simtime +
+                          (       phase) * stateB.simtime;
 
     // NOTE: Player movement state is only partially being interpolated.
     interpState.csgo_mv.m_vecAbsOrigin  =
@@ -63,13 +73,18 @@ WorldState WorldState::Interpolate(const WorldState& stateA,
     return interpState;
 }
 
-void WorldState::DoTimeStep(double step_size_sec,
-                            std::span<const PlayerInputState> player_input,
-                            size_t subsequent_tick_id)
+void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
+                                   std::span<const PlayerInputState> player_input)
 {
     ZoneScoped;
 
-    double& timeDelta = step_size_sec; // in seconds
+    assert(!is_interpolated); // We shouldn't simulate interpolated world states
+
+    // Advance this worldstate's simulation time point. This must happen early
+    // to let the following simulation code know at what point in time we are.
+    simtime += simtime_delta;
+
+    float time_delta_sec = (float)Seconds{ simtime_delta };
 
     // Abort if no map is loaded
     if (!g_coll_world)
@@ -176,7 +191,7 @@ void WorldState::DoTimeStep(double step_size_sec,
             csgo_mv.m_vecVelocity.z() = 0.0f;
         }
 
-        csgo_mv.m_vecAbsOrigin += timeDelta * csgo_mv.m_vecVelocity;
+        csgo_mv.m_vecAbsOrigin += time_delta_sec * csgo_mv.m_vecVelocity;
     }
     else {
         // ---- CSGO MOVEMENT ----
@@ -212,16 +227,16 @@ void WorldState::DoTimeStep(double step_size_sec,
 
         // Simulate Bump Mine projectiles
         for (Entities::BumpmineProjectile& bm : bumpmine_projectiles)
-            bm.DoTimeStep(*this, timeDelta, subsequent_tick_id);
+            bm.AdvanceSimulation(simtime_delta, *this);
         
         // Spawn Bump Mine projectiles on mouseclick
         if (tryAttack) {
-            // Limit player's attack rate
-            if (player.next_primary_attack <= subsequent_tick_id) {
-                // Decide when next attack is allowed
-                player.next_primary_attack = subsequent_tick_id +
-                    GetTimeIntervalInTicks(CSGO_BUMP_THROW_INTERVAL_SECS,
-                                           step_size_sec);
+            // If player is allowed to attack
+            if (simtime >= player.next_primary_attack) {
+                // When the next attack will be allowed again
+                player.next_primary_attack = simtime +
+                    RoundToNearestSimTimeStep(CSGO_BUMP_THROW_INTERVAL_SECS,
+                                              simtime_delta);
 
                 // Create Bump Mine projectile
                 Vector3 forward;
@@ -229,13 +244,11 @@ void WorldState::DoTimeStep(double step_size_sec,
                 Entities::BumpmineProjectile bm;
                 bm.unique_id =
                     Entities::BumpmineProjectile::GenerateNewUniqueID();
-                bm.is_on_surface = false;
                 bm.position =
                     csgo_mv.m_vecAbsOrigin +
                     csgo_mv.m_vecViewOffset +
                     Vector3(0.0f, 0.0f, -CSGO_BUMP_THROW_SPAWN_OFFSET);
                 bm.velocity = csgo_mv.m_vecVelocity + CSGO_BUMP_THROW_SPEED * forward;
-                bm.next_think = 0;
                 bumpmine_projectiles.push_back(bm);
             }
         }
@@ -263,7 +276,7 @@ void WorldState::DoTimeStep(double step_size_sec,
         //Debug{} << "m_vecAbsOrigin  = " << csgo_mv.m_vecAbsOrigin;
         //Debug{} << "m_vecVelocity   = " << csgo_mv.m_vecVelocity;
 
-        csgo_mv.PlayerMove(timeDelta);
+        csgo_mv.PlayerMove(time_delta_sec);
         csgo_mv.FinishMove();
         // --------- end of source-sdk-2013 code ---------
     }

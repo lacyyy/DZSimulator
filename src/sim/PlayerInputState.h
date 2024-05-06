@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "sim/Sim.h"
+#include "common.h"
 
 namespace sim {
 
@@ -36,7 +36,7 @@ public:
 
     // ----------------------------------------------------------------
 
-    sim::Clock::time_point time; // When this input was created
+    WallClock::time_point time; // Real-time sampling time point of this input
 
     std::vector<Command> inputCommands;
     unsigned int weaponSlot = 0; // = WEAPON_BUMPMINE; // TODO default init this
