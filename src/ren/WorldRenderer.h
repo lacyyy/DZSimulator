@@ -33,8 +33,6 @@ public:
         const std::vector<sim::Entities::BumpmineProjectile>& bump_mines);
 
 private:
-    Magnum::Color4 CvtImguiCol4(float* im_col4);
-
     const Corrade::Utility::Resource& _resources; // Used to load shader source code
     gui::GuiState& _gui_state;
 

@@ -7,6 +7,7 @@
 
 #include <Corrade/Containers/String.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/Vector2.h>
 
 #include "sim/CsgoConfig.h"
@@ -14,6 +15,11 @@
 #include "sim/CsgoMovement.h"
 
 namespace gui {
+
+// Small helper
+inline Magnum::Color4 CvtImguiCol4(float* im_col4) {
+    return { im_col4[0], im_col4[1], im_col4[2], im_col4[3] };
+}
 
 // Important interface between the GUI and the rest of the application.
 // GUI state can neatly be read or set.
@@ -84,6 +90,12 @@ public:
         float IN_hori_vel_text_size = 1.0f;
         float IN_col_hori_vel_text[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
         Magnum::Vector2 IN_hori_vel_text_pos = { 0.0f, -0.05f };
+
+        float IN_crosshair_col[4]    = { 1.0f, 1.0f, 1.0f, 1.0f };
+        float IN_crosshair_scale     =  1.0f;
+        float IN_crosshair_length    = 13.0f;
+        float IN_crosshair_thickness =  2.0f;
+        float IN_crosshair_gap       =  0.0f;
 
         enum GeometryVisualizationMode {
             GEO_TYPE,

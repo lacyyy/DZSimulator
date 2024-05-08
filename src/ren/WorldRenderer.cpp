@@ -86,9 +86,9 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
             .SetLightDirection(light_dir)
             .SetPlayerPosition(player_feet_pos)
             .SetHorizontalPlayerSpeed(hori_player_speed)
-            .SetSlideSuccessColor   (CvtImguiCol4(_gui_state.vis.IN_col_slide_success))
-            .SetSlideAlmostFailColor(CvtImguiCol4(_gui_state.vis.IN_col_slide_almost_fail))
-            .SetSlideFailColor      (CvtImguiCol4(_gui_state.vis.IN_col_slide_fail));
+            .SetSlideSuccessColor   (gui::CvtImguiCol4(_gui_state.vis.IN_col_slide_success))
+            .SetSlideAlmostFailColor(gui::CvtImguiCol4(_gui_state.vis.IN_col_slide_almost_fail))
+            .SetSlideFailColor      (gui::CvtImguiCol4(_gui_state.vis.IN_col_slide_fail));
 
         // Game settings
         glid_shader
@@ -110,7 +110,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     _glid_shader_non_instanced
         .SetFinalTransformationMatrix(view_proj_transformation)
         // gray-yellow-orange
-        .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_displacements))
+        .SetOverrideColor(gui::CvtImguiCol4(_gui_state.vis.IN_col_solid_displacements))
         .SetColorOverrideEnabled(glidability_vis_globally_disabled)
         .SetDiffuseLightingEnabled(has_world_diffuse_lighting)
         .draw(ren_world->mesh_displacements);
@@ -119,7 +119,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     if (_gui_state.vis.IN_draw_displacement_edges)
         _flat_shader
             .setTransformationProjectionMatrix(view_proj_transformation)
-            .setColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_disp_boundary))
+            .setColor(gui::CvtImguiCol4(_gui_state.vis.IN_col_solid_disp_boundary))
             .draw(ren_world->mesh_displacement_boundaries);
 
     // Draw bump mines - they're currently the only thing drawn with CCW vertex winding
@@ -138,7 +138,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
             view_proj_transformation * model_transformation_2;
 
         // Outer cylinder
-        Color3 darkened = 0.7f * CvtImguiCol4(_gui_state.vis.IN_col_bump_mine).rgb();
+        Color3 darkened = 0.7f * gui::CvtImguiCol4(_gui_state.vis.IN_col_bump_mine).rgb();
         _glid_shader_non_instanced
             .SetFinalTransformationMatrix(mvp_transformation_1)
             .SetOverrideColor(darkened)
@@ -149,7 +149,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
         // Inner cylinder
         _glid_shader_non_instanced
             .SetFinalTransformationMatrix(mvp_transformation_2)
-            .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_bump_mine))
+            .SetOverrideColor(gui::CvtImguiCol4(_gui_state.vis.IN_col_bump_mine))
             .SetColorOverrideEnabled(true)
             .SetDiffuseLightingEnabled(has_world_diffuse_lighting)
             .draw(_mesh_bump_mine);
@@ -160,7 +160,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     _glid_shader_instanced
         .SetFinalTransformationMatrix(view_proj_transformation)
         .SetColorOverrideEnabled(glidability_vis_globally_disabled)
-        .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_solid_xprops))
+        .SetOverrideColor(gui::CvtImguiCol4(_gui_state.vis.IN_col_solid_xprops))
         .SetDiffuseLightingEnabled(has_world_diffuse_lighting);
     for (GL::Mesh& instanced_xprop_mesh : ren_world->instanced_xprop_meshes) {
         _glid_shader_instanced.draw(instanced_xprop_mesh);
@@ -225,7 +225,7 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
 
         _glid_shader_non_instanced
             .SetFinalTransformationMatrix(view_proj_transformation)
-            .SetOverrideColor(CvtImguiCol4(b_col))
+            .SetOverrideColor(gui::CvtImguiCol4(b_col))
             .SetColorOverrideEnabled(visualize_glidability == false)
             .SetDiffuseLightingEnabled(has_brush_mesh_diffuse_lighting)
             .draw(ren_world->brush_category_meshes[b_cat]);
@@ -241,14 +241,9 @@ void WorldRenderer::Draw(std::shared_ptr<RenderableWorld> ren_world,
     if(_gui_state.vis.IN_col_trigger_push[3] != 0.0f)
         _glid_shader_non_instanced
             .SetFinalTransformationMatrix(view_proj_transformation)
-            .SetOverrideColor(CvtImguiCol4(_gui_state.vis.IN_col_trigger_push))
+            .SetOverrideColor(gui::CvtImguiCol4(_gui_state.vis.IN_col_trigger_push))
             .SetColorOverrideEnabled(true)
             .SetDiffuseLightingEnabled(true)
             .draw(ren_world->trigger_push_meshes);
 
-}
-
-Magnum::Color4 WorldRenderer::CvtImguiCol4(float* im_col4)
-{
-    return Magnum::Color4(im_col4[0], im_col4[1], im_col4[2], im_col4[3]);
 }

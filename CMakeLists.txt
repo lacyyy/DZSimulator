@@ -347,6 +347,7 @@ target_sources(DZSimulator PRIVATE
 
     "src/ren/_unused_VertBufUpdateDemo.cpp"
     "src/ren/BigTextRenderer.cpp"
+    "src/ren/Crosshair.cpp"
     "src/ren/GlidabilityShader3D.cpp"
     "src/ren/RenderableWorld.cpp"
     "src/ren/WideLineRenderer.cpp"

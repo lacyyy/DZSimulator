@@ -24,7 +24,6 @@
 - [ ] Add "Effective Steepness" visualization mode (that only takes horizontal impact from player to surface into account)
 - [ ] Add "Effective Rampslide POV" visualization mode (where all surfaces, incl. bevel planes(!), are pushed outwards by half the player's AABB. Maybe shift the world down by half player height to make it feel more natural)
     - NOTE: Standable ground for the player is detected once any of the 4 AABB quadrant traces hits a shallow surface (TODO test this)! This fact might ruin this new vis mode if not accounted for!
-- [ ] Add crosshair (changeable size?)
 - [ ] Visualize push direction, power, type and activation of trigger_push
 - [ ] Visualize when space gives boost and when not (use same color as full exo boost trajectory color)
     - confirm with vscript again!

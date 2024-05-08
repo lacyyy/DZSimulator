@@ -133,7 +133,7 @@ void MenuWindow::Draw()
 
         ImGui::Text("");
         ImGui::Separator();
-        
+
         // Horizontal player velocity text
         ImGui::Checkbox("Show Horizontal Speed Display",
                         &_gui_state.vis.IN_display_hori_vel_text);
@@ -147,6 +147,21 @@ void MenuWindow::Draw()
             ImGui::SliderFloat("Speed Display Y Position",
                                &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
         }
+
+        ImGui::Text("");
+        ImGui::Separator();
+
+        // Crosshair
+        ImGui::ColorEdit4("Crosshair Color", (float*)&cols.IN_crosshair_col, picker_flags);
+        ImGui::SameLine(); _gui.HelpMarker(">>>> Set alpha to 0 to hide the crosshair.");
+        ImGui::SliderFloat("Crosshair Size",      &_gui_state.vis.IN_crosshair_scale,
+                           0.1f, 10.0f, "%.2f",  ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderFloat("Crosshair Length",    &_gui_state.vis.IN_crosshair_length,
+                           0.5f, 150.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderFloat("Crosshair Thickness", &_gui_state.vis.IN_crosshair_thickness,
+                           0.5f, 20.0f, "%.1f",  ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderFloat("Crosshair Gap",       &_gui_state.vis.IN_crosshair_gap,
+                           0.0f, 200.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
 
         ImGui::Text("");
         ImGui::Separator();

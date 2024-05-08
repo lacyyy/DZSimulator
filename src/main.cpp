@@ -40,6 +40,7 @@
 #include "gui/Gui.h"
 #include "InputHandler.h"
 #include "ren/BigTextRenderer.h"
+#include "ren/Crosshair.h"
 #include "ren/WorldRenderer.h"
 #include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
@@ -88,7 +89,8 @@ class DZSimApplication: public Platform::Application {
         gui::Gui _gui;
 
         InputHandler _inputs;
-        
+
+        ren::Crosshair _crosshair;
         ren::BigTextRenderer _big_text_renderer;
         ren::WideLineRenderer _wide_line_renderer;
 
@@ -243,6 +245,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     , _resources{ RESOURCE_GROUP_NAME }
     , _gui_state{ SavedUserDataHandler::LoadUserSettingsFromFile() }
     , _gui{ *this , _resources, _gui_state }
+    , _crosshair{ _gui_state }
     , _big_text_renderer { *this,  _font_plugin_mgr }
     , _csgo_handler { _resources, _csgo_rcon, _gui_state }
     , _world_renderer { _resources, _gui_state }
@@ -468,9 +471,14 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _gui.Init(font_data_disp, font_data_mono);
 
     // Initialization of members that require a GL context to be active
+    _crosshair         .InitWithOpenGLContext();
     _big_text_renderer .InitWithOpenGLContext(font_data_disp);
     _wide_line_renderer.InitWithOpenGLContext();
     _world_renderer    .InitWithOpenGLContext();
+
+    // Let UI components know about window size and DPI scaling
+    _crosshair.HandleViewportEvent(windowSize(), dpiScaling());
+
 
     const UnsignedInt MAGNUM_PROFILER_MAX_FRAME_COUNT = 100;
     DebugTools::FrameProfilerGL::Values prof_vals =
@@ -980,8 +988,9 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
 
     // Pass new framebuffer size to apis handling user events or scale UI
     // elements
-    _gui.HandleViewportEvent(event);
-    _big_text_renderer.HandleViewportEvent(event);
+    _gui               .HandleViewportEvent(event);
+    _crosshair         .HandleViewportEvent(windowSize(), dpiScaling());
+    _big_text_renderer .HandleViewportEvent(event);
     _wide_line_renderer.HandleViewportEvent(event);
 
     redraw();
@@ -1662,6 +1671,9 @@ void DZSimApplication::drawEvent() {
     GL::Renderer::enable(GL::Renderer::Feature::ScissorTest);
     GL::Renderer::disable(GL::Renderer::Feature::DepthTest);
     GL::Renderer::disable(GL::Renderer::Feature::FaceCulling);
+
+    // Draw crosshair (requires GL::Renderer::Feature::Blending to be enabled)
+    _crosshair.Draw();
 
     // Draw prominent horizontal velocity number
     if (_gui_state.vis.IN_display_hori_vel_text) {
