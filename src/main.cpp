@@ -976,7 +976,7 @@ void DZSimApplication::viewportEvent(ViewportEvent& event)
         << ", dpi scaling="
         << "(" << dpiScaling().x() << "," << dpiScaling().y() << ")";
 
-    GL::defaultFramebuffer.setViewport({{}, windowSize()});
+    GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
 
     // Pass new framebuffer size to apis handling user events or scale UI
     // elements
