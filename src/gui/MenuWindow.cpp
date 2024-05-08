@@ -133,6 +133,23 @@ void MenuWindow::Draw()
 
         ImGui::Text("");
         ImGui::Separator();
+        
+        // Horizontal player velocity text
+        ImGui::Checkbox("Show Horizontal Speed Display",
+                        &_gui_state.vis.IN_display_hori_vel_text);
+        if (_gui_state.vis.IN_display_hori_vel_text) {
+            ImGui::SliderFloat("Speed Display Size",
+                               &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
+            ImGui::ColorEdit3("Speed Display Color",
+                              (float*)&cols.IN_col_hori_vel_text, picker_flags);
+            ImGui::SliderFloat("Speed Display X Position",
+                               &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
+            ImGui::SliderFloat("Speed Display Y Position",
+                               &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
+        }
+
+        ImGui::Text("");
+        ImGui::Separator();
 
         ImGui::Text("Geometry Visualization Mode:");
 
@@ -169,23 +186,6 @@ void MenuWindow::Draw()
             geo_vis_mode = _gui_state.vis.GEO_TYPE;
         ImGui::SameLine(); _gui.HelpMarker(
             ">>>> Draws surfaces with different colors depending on their object's type.");
-
-        ImGui::Text("");
-        ImGui::Separator();
-
-        // Horizontal player velocity text
-        ImGui::Checkbox("Show Horizontal Speed Display",
-            &_gui_state.vis.IN_display_hori_vel_text);
-        if (_gui_state.vis.IN_display_hori_vel_text) {
-            ImGui::SliderFloat("Speed Display Size",
-               &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
-            ImGui::ColorEdit3("Speed Display Color",
-              (float*)&cols.IN_col_hori_vel_text, picker_flags);
-            ImGui::SliderFloat("Speed Display X Position",
-               &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
-            ImGui::SliderFloat("Speed Display Y Position",
-               &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
-        }
 
         ImGui::Text("");
         ImGui::Separator();

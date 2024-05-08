@@ -80,6 +80,10 @@ public:
         float IN_col_slide_almost_fail  [4] = { 0.800f, 0.400f, 0.150f, 1.000f };
         float IN_col_slide_fail         [4] = { 0.400f, 0.400f, 0.400f, 1.000f };
 
+        bool IN_display_hori_vel_text = true;
+        float IN_hori_vel_text_size = 1.0f;
+        float IN_col_hori_vel_text[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        Magnum::Vector2 IN_hori_vel_text_pos = { 0.0f, -0.05f };
 
         enum GeometryVisualizationMode {
             GEO_TYPE,
@@ -87,11 +91,6 @@ public:
             GLID_AT_SPECIFIC_SPEED, // glidability at specific player speed
             GLID_OF_CSGO_SESSION  // glidability for player in local csgo session
         } IN_geo_vis_mode = GLID_OF_SIMULATION;
-
-        bool IN_display_hori_vel_text = true;
-        float IN_hori_vel_text_size = 1.0f;
-        float IN_col_hori_vel_text[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        Magnum::Vector2 IN_hori_vel_text_pos = { 0.0f, -0.05f };
 
         // Only used in GLID_AT_SPECIFIC_SPEED mode
         int IN_specific_glid_vis_hori_speed = 1150; // Horizontal speed of common single bump mine jump
