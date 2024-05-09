@@ -81,10 +81,10 @@ public:
         float IN_col_solid_xprops       [4] = { 0.796f, 0.551f, 0.194f, 1.000f };
         float IN_col_solid_other_brushes[4] = { 1.000f, 0.929f, 0.000f, 1.000f }; // solid, non-sky, non-water, non-ladder
         float IN_col_solid_disp_boundary[4] = { 0.000f, 1.000f, 0.750f, 1.000f };
-        float IN_col_bump_mine          [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
+        float IN_col_bump_mine          [4] = { 0.282f, 0.943f, 1.000f, 1.000f };
         float IN_col_slide_success      [4] = { 0.000f, 1.000f, 0.000f, 1.000f };
         float IN_col_slide_almost_fail  [4] = { 0.800f, 0.400f, 0.150f, 1.000f };
-        float IN_col_slide_fail         [4] = { 0.400f, 0.400f, 0.400f, 1.000f };
+        float IN_col_slide_fail         [4] = { 0.700f, 0.700f, 0.700f, 1.000f };
 
         bool IN_display_hori_vel_text = true;
         float IN_hori_vel_text_size = 1.0f;
