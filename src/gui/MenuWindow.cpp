@@ -80,238 +80,7 @@ void MenuWindow::Draw()
 
     if (ImGui::CollapsingHeader("Visualizations"))
     {
-        ImGui::Text("Click on the color square to open a color picker.\n"
-            "CTRL+click on an individual component to input a value.");
-
-        auto& cols = _gui_state.vis;
-        ImGuiColorEditFlags picker_flags =
-            ImGuiColorEditFlags_AlphaBar |
-            ImGuiColorEditFlags_AlphaPreviewHalf |
-            ImGuiColorEditFlags_Float |
-            ImGuiColorEditFlags_NoDragDrop |
-            ImGuiColorEditFlags_PickerHueWheel;
-
-        ImGui::ColorEdit3("Bump Mine Color",
-            (float*)&cols.IN_col_bump_mine, picker_flags);
-        ImGui::ColorEdit3("Sky Color",
-            (float*)&cols.IN_col_sky, picker_flags);
-        ImGui::ColorEdit3("Ladder Color",
-            (float*)&cols.IN_col_ladders, picker_flags);
-        ImGui::ColorEdit4("Push Trigger Color",
-            (float*)&cols.IN_col_trigger_push, picker_flags);
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> This settings sets the color of all trigger_push entities "
-            "that can\n"
-            "push players. Some always push players, some only when you "
-            "fall into\n"
-            "them while NOT pressing jump!");
-        ImGui::ColorEdit4("Water Color",
-            (float*)&cols.IN_col_water, picker_flags);
-        ImGui::ColorEdit4("Grenade Clip Color",
-            (float*)&cols.IN_col_grenade_clip, picker_flags);
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> Grenade clips are solid to thrown Bump Mines, but not to players!\n"
-            "They are rarely present in Danger Zone maps though.");
-
-        // Light angle
-        ImGui::SliderFloat("Sunlight Direction",
-            &_gui_state.vis.IN_hori_light_angle, 0.0f, 360.0f, "%.1f");
-
-        // Displacement edges
-        ImGui::Checkbox("Show Displacement Edges", &_gui_state.vis.IN_draw_displacement_edges);
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> Many hilly surfaces and sometimes even roofs and walls are made of displacements.\n"
-            "They come in different sizes and connect seamlessly to each other.\n"
-            "The problem with them: Players that rampslide over their boundary edges can\n"
-            "easily collide with them, making it appear like the player hit a wall.  :(\n"
-            "By knowing where these dangerous edges are, you might be able to avoid them.\n"
-            );
-        if (_gui_state.vis.IN_draw_displacement_edges) {
-            ImGui::ColorEdit3("Displacement Edge Color",
-                (float*)&cols.IN_col_solid_disp_boundary, picker_flags);
-        }
-
-        ImGui::Text("");
-        ImGui::Separator();
-
-        // Horizontal player velocity text
-        ImGui::Checkbox("Show Horizontal Speed Display",
-                        &_gui_state.vis.IN_display_hori_vel_text);
-        if (_gui_state.vis.IN_display_hori_vel_text) {
-            ImGui::SliderFloat("Speed Display Size",
-                               &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
-            ImGui::ColorEdit3("Speed Display Color",
-                              (float*)&cols.IN_col_hori_vel_text, picker_flags);
-            ImGui::SliderFloat("Speed Display X Position",
-                               &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
-            ImGui::SliderFloat("Speed Display Y Position",
-                               &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
-        }
-
-        ImGui::Text("");
-        ImGui::Separator();
-
-        // Crosshair
-        ImGui::ColorEdit4("Crosshair Color", (float*)&cols.IN_crosshair_col, picker_flags);
-        ImGui::SameLine(); _gui.HelpMarker(">>>> Set alpha to 0 to hide the crosshair.");
-        ImGui::SliderFloat("Crosshair Size",      &_gui_state.vis.IN_crosshair_scale,
-                           0.1f, 10.0f, "%.2f",  ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SliderFloat("Crosshair Length",    &_gui_state.vis.IN_crosshair_length,
-                           0.5f, 150.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SliderFloat("Crosshair Thickness", &_gui_state.vis.IN_crosshair_thickness,
-                           0.5f, 20.0f, "%.1f",  ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SliderFloat("Crosshair Gap",       &_gui_state.vis.IN_crosshair_gap,
-                           0.0f, 200.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
-
-        ImGui::Text("");
-        ImGui::Separator();
-
-        ImGui::Text("Geometry Visualization Mode:");
-
-        auto& geo_vis_mode = _gui_state.vis.IN_geo_vis_mode;
-
-        if (ImGui::RadioButton("Glidability for player in simulation",
-            geo_vis_mode == _gui_state.vis.GLID_OF_SIMULATION))
-            geo_vis_mode = _gui_state.vis.GLID_OF_SIMULATION;
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> This mode shows how glidable surfaces are depending on the\n"
-            "player movement inside DZSimulator.\n"
-            "Surface glidability is determined assuming that the player moves\n"
-            "towards each surface with their current horizontal speed.");
-
-        if (ImGui::RadioButton("Glidability at specific player speed",
-            geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED))
-            geo_vis_mode = _gui_state.vis.GLID_AT_SPECIFIC_SPEED;
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> Show how glidable every surface is under the assumption that\n"
-            "the player moves directly towards that surface with the given\n"
-            "horizontal speed.");
-
-        if (ImGui::RadioButton("Glidability for player in local CS:GO session",
-            geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION))
-            geo_vis_mode = _gui_state.vis.GLID_OF_CSGO_SESSION;
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> This mode uses the player's position and speed from a local\n"
-            "CS:GO session. It shows how glidable surfaces are under the assumption\n"
-            "that the player moves towards each surface with the current horizontal\n"
-            "speed of the player.");
-
-        if (ImGui::RadioButton("Geometry type",
-            geo_vis_mode == _gui_state.vis.GEO_TYPE))
-            geo_vis_mode = _gui_state.vis.GEO_TYPE;
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> Draws surfaces with different colors depending on their object's type.");
-
-        ImGui::Text("");
-        ImGui::Separator();
-
-        // GLID_* mode settings
-        if (geo_vis_mode == _gui_state.vis.GLID_OF_SIMULATION
-            || geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
-            || geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
-
-            // Surface slide colors
-            ImGui::ColorEdit3("Slide Success Color",
-                (float*)&cols.IN_col_slide_success, picker_flags);
-            ImGui::SameLine(); _gui.HelpMarker(
-                ">>>> Under current conditions, rampsliding is possible on\n"
-                "surfaces with this color.");
-            ImGui::ColorEdit3("Slide Almost-Fail Color",
-                (float*)&cols.IN_col_slide_almost_fail, picker_flags);
-            ImGui::SameLine(); _gui.HelpMarker(
-                ">>>> Under current conditions, rampsliding is possible on\n"
-                "surfaces with this color, but the slightest change in speed\n"
-                "and impact angle might cause you to fail the rampslide.");
-            ImGui::ColorEdit3("Slide Fail Color",
-                (float*)&cols.IN_col_slide_fail, picker_flags);
-            ImGui::SameLine(); _gui.HelpMarker(
-                ">>>> Under current conditions, rampsliding isn't possible\n"
-                "on surfaces with this color.");
-
-            ImGui::Text("");
-            ImGui::Separator();
-        }
-
-        // GLID_AT_SPECIFIC_SPEED vis mode settings
-        if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED) {
-            ImGui::SliderInt("Specific Horizontal Speed",
-                &_gui_state.vis.IN_specific_glid_vis_hori_speed, 100, 5000, "%d");
-            ImGui::SameLine(); _gui.HelpMarker(
-                ">>>> Depending on the player's speed, surfaces change their glidability.\n"
-                "Enter the player's horizontal speed to see glidable surfaces with it.\n"
-                "Don't know the value? In CS:GO, run \"cl_showpos 1\" in an offline game\n"
-                "and read the \"vel\" value in the top left screen corner. That's the\n"
-                "current in-game horizontal player speed.");
-            if (_gui_state.vis.IN_specific_glid_vis_hori_speed < 1) // Avoid division by 0
-                _gui_state.vis.IN_specific_glid_vis_hori_speed = 1;
-        }
-        // GLID_OF_CSGO_SESSION vis mode settings
-        else if (geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
-            ImGui::Text(
-                "This visualization mode only works if you connect to a local CS:GO\n"
-                "session that has the same map loaded and was started with the\n"
-                "launch option:   -netconport 34755");
-
-            bool connect_allowed =
-                (!_gui_state.rcon.OUT_is_connecting && !_gui_state.rcon.OUT_is_connected)
-                || _gui_state.rcon.OUT_is_disconnecting;
-            bool disconnect_allowed = !connect_allowed;
-            // ----
-            if (!connect_allowed) ImGui::BeginDisabled();
-            if (ImGui::Button("CONNECT"))
-                _gui_state.rcon.IN_start_connect = true;
-            if (!connect_allowed) ImGui::EndDisabled();
-            // ----
-            if (!disconnect_allowed) ImGui::BeginDisabled();
-            ImGui::SameLine();
-            if (ImGui::Button("DISCONNECT"))
-                _gui_state.rcon.IN_disconnect = true;
-            if (!disconnect_allowed) ImGui::EndDisabled();
-            // ----
-            ImGui::SameLine();
-            if (_gui_state.rcon.OUT_is_connecting)
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
-                    "Connecting...");
-            else if (_gui_state.rcon.OUT_is_disconnecting)
-                ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f),
-                    "Disconnecting...");
-            else if (_gui_state.rcon.OUT_is_connected)
-                ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f),
-                    "Connected!");
-            else if (_gui_state.rcon.OUT_has_connect_failed)
-                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                    "Failed to connect!");
-            else if (!_gui_state.rcon.OUT_is_connected)
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
-                    "Not connected!");
-            // ----
-            if (_gui_state.rcon.OUT_fail_msg.length() > 0)
-                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                    "%s", _gui_state.rcon.OUT_fail_msg.c_str());
-
-            ImGui::Text("");
-
-#ifndef DZSIM_WEB_PORT
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f,0.86f,0.46f,0.4f));
-            if (ImGui::Button("How to fix lag when used as CS:GO overlay"))
-                ShowOverlayLagAdvice();
-            ImGui::PopStyleColor(1);
-#endif
-        }
-        // GEO_TYPE vis mode settings
-        else if (geo_vis_mode == _gui_state.vis.GEO_TYPE) {
-            ImGui::Text("Further color settings:");
-            ImGui::ColorEdit3("Solid Displacement Color",
-                (float*)&cols.IN_col_solid_displacements, picker_flags);
-            ImGui::ColorEdit3("Solid Prop Color",
-                (float*)&cols.IN_col_solid_xprops, picker_flags);
-            ImGui::ColorEdit3("Other Solid Brush Color",
-                (float*)&cols.IN_col_solid_other_brushes, picker_flags);
-            ImGui::ColorEdit4("Player Clip Color",
-                (float*)&cols.IN_col_player_clip, picker_flags);
-            ImGui::SameLine(); _gui.HelpMarker(
-                ">>>> Player clips are solid to players, but not to thrown Bump Mines!");
-        }
+        DrawVisualizations();
     }
 
     if (ImGui::CollapsingHeader("Game Configuration"))
@@ -685,6 +454,242 @@ void MenuWindow::DrawMapSelection()
     if (is_map_load_box_open && !s_prev_is_map_load_box_open)
         _gui_state.map_select.IN_box_opened = true; // -> user just opened box
     s_prev_is_map_load_box_open = is_map_load_box_open; // save for next frame
+}
+
+void MenuWindow::DrawVisualizations()
+{
+    ImGui::Text("Click on the color square to open a color picker.\n"
+                "CTRL+click on an individual component to input a value.");
+
+    auto& cols = _gui_state.vis;
+    ImGuiColorEditFlags picker_flags =
+        ImGuiColorEditFlags_AlphaBar |
+        ImGuiColorEditFlags_AlphaPreviewHalf |
+        ImGuiColorEditFlags_Float |
+        ImGuiColorEditFlags_NoDragDrop |
+        ImGuiColorEditFlags_PickerHueWheel;
+
+    ImGui::ColorEdit3("Bump Mine Color",
+                      (float*)&cols.IN_col_bump_mine, picker_flags);
+    ImGui::ColorEdit3("Sky Color",
+                      (float*)&cols.IN_col_sky, picker_flags);
+    ImGui::ColorEdit3("Ladder Color",
+                      (float*)&cols.IN_col_ladders, picker_flags);
+    ImGui::ColorEdit4("Push Trigger Color",
+                      (float*)&cols.IN_col_trigger_push, picker_flags);
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> This settings sets the color of all trigger_push entities "
+        "that can\n"
+        "push players. Some always push players, some only when you "
+        "fall into\n"
+        "them while NOT pressing jump!");
+    ImGui::ColorEdit4("Water Color",
+                      (float*)&cols.IN_col_water, picker_flags);
+    ImGui::ColorEdit4("Grenade Clip Color",
+                      (float*)&cols.IN_col_grenade_clip, picker_flags);
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> Grenade clips are solid to thrown Bump Mines, but not to players!\n"
+        "They are rarely present in Danger Zone maps though.");
+
+    // Light angle
+    ImGui::SliderFloat("Sunlight Direction",
+                       &_gui_state.vis.IN_hori_light_angle, 0.0f, 360.0f, "%.1f");
+
+    // Displacement edges
+    ImGui::Checkbox("Show Displacement Edges", &_gui_state.vis.IN_draw_displacement_edges);
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> Many hilly surfaces and sometimes even roofs and walls are made of displacements.\n"
+        "They come in different sizes and connect seamlessly to each other.\n"
+        "The problem with them: Players that rampslide over their boundary edges can\n"
+        "easily collide with them, making it appear like the player hit a wall.  :(\n"
+        "By knowing where these dangerous edges are, you might be able to avoid them.\n"
+    );
+    if (_gui_state.vis.IN_draw_displacement_edges) {
+        ImGui::ColorEdit3("Displacement Edge Color",
+                          (float*)&cols.IN_col_solid_disp_boundary, picker_flags);
+    }
+
+    ImGui::Text("");
+    ImGui::Separator();
+
+    // Horizontal player velocity text
+    ImGui::Checkbox("Show Horizontal Speed Display",
+                    &_gui_state.vis.IN_display_hori_vel_text);
+    if (_gui_state.vis.IN_display_hori_vel_text) {
+        ImGui::SliderFloat("Speed Display Size",
+                           &_gui_state.vis.IN_hori_vel_text_size, 0.1f, 4.0f, "%.1f");
+        ImGui::ColorEdit3("Speed Display Color",
+                          (float*)&cols.IN_col_hori_vel_text, picker_flags);
+        ImGui::SliderFloat("Speed Display X Position",
+                           &_gui_state.vis.IN_hori_vel_text_pos.x(), -0.5f, 0.5f, "%.3f");
+        ImGui::SliderFloat("Speed Display Y Position",
+                           &_gui_state.vis.IN_hori_vel_text_pos.y(), -0.5f, 0.5f, "%.3f");
+    }
+
+    ImGui::Text("");
+    ImGui::Separator();
+
+    // Crosshair
+    ImGui::ColorEdit4("Crosshair Color", (float*)&cols.IN_crosshair_col, picker_flags);
+    ImGui::SameLine(); _gui.HelpMarker(">>>> Set alpha to 0 to hide the crosshair.");
+    ImGui::SliderFloat("Crosshair Size",      &_gui_state.vis.IN_crosshair_scale,
+                       0.1f, 10.0f, "%.2f",  ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat("Crosshair Length",    &_gui_state.vis.IN_crosshair_length,
+                       0.5f, 150.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat("Crosshair Thickness", &_gui_state.vis.IN_crosshair_thickness,
+                       0.5f, 20.0f, "%.1f",  ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat("Crosshair Gap",       &_gui_state.vis.IN_crosshair_gap,
+                       0.0f, 200.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+
+    ImGui::Text("");
+    ImGui::Separator();
+
+    ImGui::Text("Geometry Visualization Mode:");
+
+    auto& geo_vis_mode = _gui_state.vis.IN_geo_vis_mode;
+
+    if (ImGui::RadioButton("Glidability for player in simulation",
+                           geo_vis_mode == _gui_state.vis.GLID_OF_SIMULATION))
+        geo_vis_mode = _gui_state.vis.GLID_OF_SIMULATION;
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> This mode shows how glidable surfaces are depending on the\n"
+        "player movement inside DZSimulator.\n"
+        "Surface glidability is determined assuming that the player moves\n"
+        "towards each surface with their current horizontal speed.");
+
+    if (ImGui::RadioButton("Glidability at specific player speed",
+                           geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED))
+        geo_vis_mode = _gui_state.vis.GLID_AT_SPECIFIC_SPEED;
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> Show how glidable every surface is under the assumption that\n"
+        "the player moves directly towards that surface with the given\n"
+        "horizontal speed.");
+
+    if (ImGui::RadioButton("Glidability for player in local CS:GO session",
+                           geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION))
+        geo_vis_mode = _gui_state.vis.GLID_OF_CSGO_SESSION;
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> This mode uses the player's position and speed from a local\n"
+        "CS:GO session. It shows how glidable surfaces are under the assumption\n"
+        "that the player moves towards each surface with the current horizontal\n"
+        "speed of the player.");
+
+    if (ImGui::RadioButton("Geometry type",
+                           geo_vis_mode == _gui_state.vis.GEO_TYPE))
+        geo_vis_mode = _gui_state.vis.GEO_TYPE;
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> Draws surfaces with different colors depending on their object's type.");
+
+    ImGui::Text("");
+    ImGui::Separator();
+
+    // GLID_* mode settings
+    if (geo_vis_mode == _gui_state.vis.GLID_OF_SIMULATION
+        || geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED
+        || geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+
+        // Surface slide colors
+        ImGui::ColorEdit3("Slide Success Color",
+                          (float*)&cols.IN_col_slide_success, picker_flags);
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> Under current conditions, rampsliding is possible on\n"
+            "surfaces with this color.");
+        ImGui::ColorEdit3("Slide Almost-Fail Color",
+                          (float*)&cols.IN_col_slide_almost_fail, picker_flags);
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> Under current conditions, rampsliding is possible on\n"
+            "surfaces with this color, but the slightest change in speed\n"
+            "and impact angle might cause you to fail the rampslide.");
+        ImGui::ColorEdit3("Slide Fail Color",
+                          (float*)&cols.IN_col_slide_fail, picker_flags);
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> Under current conditions, rampsliding isn't possible\n"
+            "on surfaces with this color.");
+
+        ImGui::Text("");
+        ImGui::Separator();
+    }
+
+    // GLID_AT_SPECIFIC_SPEED vis mode settings
+    if (geo_vis_mode == _gui_state.vis.GLID_AT_SPECIFIC_SPEED) {
+        ImGui::SliderInt("Specific Horizontal Speed",
+                         &_gui_state.vis.IN_specific_glid_vis_hori_speed, 100, 5000, "%d");
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> Depending on the player's speed, surfaces change their glidability.\n"
+            "Enter the player's horizontal speed to see glidable surfaces with it.\n"
+            "Don't know the value? In CS:GO, run \"cl_showpos 1\" in an offline game\n"
+            "and read the \"vel\" value in the top left screen corner. That's the\n"
+            "current in-game horizontal player speed.");
+        if (_gui_state.vis.IN_specific_glid_vis_hori_speed < 1) // Avoid division by 0
+            _gui_state.vis.IN_specific_glid_vis_hori_speed = 1;
+    }
+        // GLID_OF_CSGO_SESSION vis mode settings
+    else if (geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+        ImGui::Text(
+            "This visualization mode only works if you connect to a local CS:GO\n"
+            "session that has the same map loaded and was started with the\n"
+            "launch option:   -netconport 34755");
+
+        bool connect_allowed =
+            (!_gui_state.rcon.OUT_is_connecting && !_gui_state.rcon.OUT_is_connected)
+            || _gui_state.rcon.OUT_is_disconnecting;
+        bool disconnect_allowed = !connect_allowed;
+        // ----
+        if (!connect_allowed) ImGui::BeginDisabled();
+        if (ImGui::Button("CONNECT"))
+            _gui_state.rcon.IN_start_connect = true;
+        if (!connect_allowed) ImGui::EndDisabled();
+        // ----
+        if (!disconnect_allowed) ImGui::BeginDisabled();
+        ImGui::SameLine();
+        if (ImGui::Button("DISCONNECT"))
+            _gui_state.rcon.IN_disconnect = true;
+        if (!disconnect_allowed) ImGui::EndDisabled();
+        // ----
+        ImGui::SameLine();
+        if (_gui_state.rcon.OUT_is_connecting)
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
+                               "Connecting...");
+        else if (_gui_state.rcon.OUT_is_disconnecting)
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.0f),
+                               "Disconnecting...");
+        else if (_gui_state.rcon.OUT_is_connected)
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f),
+                               "Connected!");
+        else if (_gui_state.rcon.OUT_has_connect_failed)
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+                               "Failed to connect!");
+        else if (!_gui_state.rcon.OUT_is_connected)
+            ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
+                               "Not connected!");
+        // ----
+        if (_gui_state.rcon.OUT_fail_msg.length() > 0)
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+                               "%s", _gui_state.rcon.OUT_fail_msg.c_str());
+
+        ImGui::Text("");
+
+#ifndef DZSIM_WEB_PORT
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f,0.86f,0.46f,0.4f));
+        if (ImGui::Button("How to fix lag when used as CS:GO overlay"))
+            ShowOverlayLagAdvice();
+        ImGui::PopStyleColor(1);
+#endif
+    }
+        // GEO_TYPE vis mode settings
+    else if (geo_vis_mode == _gui_state.vis.GEO_TYPE) {
+        ImGui::Text("Further color settings:");
+        ImGui::ColorEdit3("Solid Displacement Color",
+                          (float*)&cols.IN_col_solid_displacements, picker_flags);
+        ImGui::ColorEdit3("Solid Prop Color",
+                          (float*)&cols.IN_col_solid_xprops, picker_flags);
+        ImGui::ColorEdit3("Other Solid Brush Color",
+                          (float*)&cols.IN_col_solid_other_brushes, picker_flags);
+        ImGui::ColorEdit4("Player Clip Color",
+                          (float*)&cols.IN_col_player_clip, picker_flags);
+        ImGui::SameLine(); _gui.HelpMarker(
+            ">>>> Player clips are solid to players, but not to thrown Bump Mines!");
+    }
 }
 
 void MenuWindow::DrawGameConfig()
