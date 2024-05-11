@@ -56,6 +56,7 @@ public:
 
     struct ControlHelp {
         bool OUT_first_person_control_active = false;
+        bool OUT_noclip_active = false;
     } ctrl_help;
 
     struct MapSelection {

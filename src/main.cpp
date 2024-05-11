@@ -1112,9 +1112,16 @@ void DZSimApplication::DoUpdate()
         }
     }
 
-    // Let GUI know about the current input mode
+    // Let GUI know about the current input mode and noclip mode
     _gui_state.ctrl_help.OUT_first_person_control_active =
-        _user_input_mode == UserInputMode::FIRST_PERSON;
+        (_user_input_mode == UserInputMode::FIRST_PERSON);
+    _gui_state.ctrl_help.OUT_noclip_active = false;
+    if (_csgo_game_sim.HasBeenStarted()) {
+        sim::MoveType_t sim_cur_move_type =
+            _csgo_game_sim.GetLatestActualWorldState().csgo_mv.m_MoveType;
+        _gui_state.ctrl_help.OUT_noclip_active =
+            (sim_cur_move_type == sim::MOVETYPE_NOCLIP);
+    }
 
     // Handle DZSimulator GitHub update checking
     if (_gui_state.IN_open_downloads_page_in_browser) {

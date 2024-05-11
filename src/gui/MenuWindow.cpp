@@ -78,9 +78,9 @@ void MenuWindow::Draw()
     const ImVec4 MENU_ELEM_COLOR = ImVec4(0.145f, 0.667f, 0.757f, 0.584f);
     ImGui::PushStyleColor(ImGuiCol_Header, MENU_ELEM_COLOR);
 
-    if (ImGui::CollapsingHeader("Controls"))
+    if (ImGui::CollapsingHeader("First Person Controls"))
     {
-        DrawControls();
+        DrawFirstPersonControls();
     }
 
     if (ImGui::CollapsingHeader("Visualizations"))
@@ -461,8 +461,43 @@ void MenuWindow::DrawMapSelection()
     s_prev_is_map_load_box_open = is_map_load_box_open; // save for next frame
 }
 
-void MenuWindow::DrawControls()
+void MenuWindow::DrawFirstPersonControls()
 {
+#define CTRL_TABLE_ROW(cell1, cell2) do { \
+        ImGui::TableNextColumn(); ImGui::Text((cell1)); \
+        ImGui::TableNextColumn(); ImGui::Text((cell2)); \
+    } while(0)
+
+    if (ImGui::BeginTable("ctrls_table", 2, ImGuiTableFlags_BordersInner))
+    {
+        CTRL_TABLE_ROW("ESC",                 "Toggle first person control");
+        ImGui::SameLine(); _gui.HelpMarker(
+            "Press the ESC key to start moving in the loaded map.\n"
+            "Press the ESC key again to navigate the menu.\n"
+            "All of the following controls only work in first person control mode!");
+        CTRL_TABLE_ROW("W",                   "Move forwards");
+        CTRL_TABLE_ROW("A",                   "Move left");
+        CTRL_TABLE_ROW("S",                   "Move backwards");
+        CTRL_TABLE_ROW("D",                   "Move right");
+        CTRL_TABLE_ROW("Space",               "Jump");
+        CTRL_TABLE_ROW("Scroll Wheel",        "Jump");
+        CTRL_TABLE_ROW("Left Shift",          "Walk");
+        CTRL_TABLE_ROW("Left Ctrl",           "Crouch");
+        CTRL_TABLE_ROW("Left Mouse Button",   "Throw Bump Mine");
+        CTRL_TABLE_ROW("Middle Mouse Button", "Save current state of the world");
+        ImGui::SameLine(); _gui.HelpMarker(
+            "This remembers your current position and speed,\n"
+            "as well as that of every Bump Mine on the map!\n"
+            "Later you can recreate this exact state of the world.\n"
+            "Useful for practicing the same jump over and over.");
+        CTRL_TABLE_ROW("Right Mouse Button",  "Load state of the world that was saved earlier");
+        CTRL_TABLE_ROW("F",                   "Toggle noclip/flying mode");
+        CTRL_TABLE_ROW("C",                   "Clear all Bump Mines from the map");
+        ImGui::EndTable();
+    }
+
+    ImGui::Text("");
+
     ImGui::SliderFloat("Mouse Sensitivity", &_gui_state.ctrls.IN_mouse_sensitivity,
                        0.001f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SameLine(); _gui.HelpMarker(

@@ -328,6 +328,13 @@ void Gui::DrawCtrlHelpWindow()
     }
     ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
     if (ImGui::Begin("[HIDDENTITLE] Ctrl Help Window", NULL, window_flags)) {
+        if (state.ctrl_help.OUT_noclip_active) {
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Noclip ON");
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "(Toggle with F)");
+            ImGui::Separator();
+        }
+
         if (state.ctrl_help.OUT_first_person_control_active) {
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
                 "First Person Control ON");
