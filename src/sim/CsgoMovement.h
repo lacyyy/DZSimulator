@@ -149,6 +149,9 @@ public:
     // Handle MOVETYPE_WALK.
     void FullWalkMove(float frametime);
 
+    // Handle movement in noclip mode.
+    void FullNoClipMove(float frametime);
+
     // allow overridden versions to respond to jumping
     void OnJump(float fImpulse)  { /* ... Respond to jumping ... */ }
     void OnLand(float fVelocity) { /* ... Respond to landing ... */ }

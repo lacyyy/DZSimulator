@@ -72,7 +72,7 @@ bool PlayerInput::HandleMousePressEvent(Application::MouseEvent& event)
         event.setAccepted();
     }
     if (event.button() == Application::MouseEvent::Button::Right) {
-        cur_frame.nButtons |= IN_ATTACK2;
+        cur_frame.nButtons |= IN_TOGGLE_NOCLIP;
         event.setAccepted();
     }
     return event.isAccepted();
@@ -85,7 +85,7 @@ bool PlayerInput::HandleMouseReleaseEvent(Application::MouseEvent& event)
         event.setAccepted();
     }
     if (event.button() == Application::MouseEvent::Button::Right) {
-        cur_frame.nButtons &= ~IN_ATTACK2;
+        cur_frame.nButtons &= ~IN_TOGGLE_NOCLIP;
         event.setAccepted();
     }
     return event.isAccepted();

@@ -123,125 +123,89 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
     // Apply button input
     csgo_mv.m_nButtons = used_input.nButtons;
 
-    // Toggle CSGO and flying movement
-    if (csgo_mv.m_nButtons & IN_ATTACK2) {
-        // ---- FLYING MOVEMENT ----
-        Vector3 forward_dir_xy  { Math::cos(Deg{csgo_mv.m_vecViewAngles.y()        }), Math::sin(Deg{csgo_mv.m_vecViewAngles.y()        }), 0.0f };
-        Vector3 moveright_dir_xy{ Math::cos(Deg{csgo_mv.m_vecViewAngles.y() - 90.0f}), Math::sin(Deg{csgo_mv.m_vecViewAngles.y() - 90.0f}), 0.0f };
+    // -----------------------------------------------
 
-        Vector3 wish_dir_xy = { 0.0f, 0.0f, 0.0f };
-        if      ((csgo_mv.m_nButtons & IN_FORWARD  ) && !(csgo_mv.m_nButtons & IN_BACK     )) wish_dir_xy += forward_dir_xy;
-        else if ((csgo_mv.m_nButtons & IN_BACK     ) && !(csgo_mv.m_nButtons & IN_FORWARD  )) wish_dir_xy -= forward_dir_xy;
-        if      ((csgo_mv.m_nButtons & IN_MOVERIGHT) && !(csgo_mv.m_nButtons & IN_MOVELEFT )) wish_dir_xy += moveright_dir_xy;
-        else if ((csgo_mv.m_nButtons & IN_MOVELEFT ) && !(csgo_mv.m_nButtons & IN_MOVERIGHT)) wish_dir_xy -= moveright_dir_xy;
-        if (wish_dir_xy.x() == 0.0f && wish_dir_xy.y() == 0.0f) {
-            csgo_mv.m_vecVelocity.x() = 0.0f;
-            csgo_mv.m_vecVelocity.y() = 0.0f;
-        }
-        else {
-            NormalizeInPlace(wish_dir_xy);
-
-            float WALK_SPEED = 250.0f;
-            if (csgo_mv.m_nButtons & IN_SPEED) WALK_SPEED *= 12;
-
-            csgo_mv.m_vecVelocity.x() = WALK_SPEED * wish_dir_xy.x();
-            csgo_mv.m_vecVelocity.y() = WALK_SPEED * wish_dir_xy.y();
-        }
-
-        if (csgo_mv.m_nButtons & IN_JUMP) {
-            if (csgo_mv.m_nButtons & IN_SPEED)
-                csgo_mv.m_vecVelocity.z() = 6 * 300.0f;
-            else
-                csgo_mv.m_vecVelocity.z() = 300.0f;
-        }
-        else if (csgo_mv.m_nButtons & IN_DUCK) {
-            csgo_mv.m_vecVelocity.z() = 6 * -300.0f;
-        }
-        else {
-            csgo_mv.m_vecVelocity.z() = 0.0f;
-        }
-
-        csgo_mv.m_vecAbsOrigin += time_delta_sec * csgo_mv.m_vecVelocity;
+    // If user pressed the toggle-noclip button
+    if (!(csgo_mv.m_nOldButtons & IN_TOGGLE_NOCLIP) &&
+        (csgo_mv.m_nButtons & IN_TOGGLE_NOCLIP))
+    {
+        if (csgo_mv.m_MoveType != MOVETYPE_NOCLIP)
+            csgo_mv.m_MoveType = MOVETYPE_NOCLIP;
+        else
+            csgo_mv.m_MoveType = MOVETYPE_WALK;
     }
-    else {
-        // ---- CSGO MOVEMENT ----
 
-        // If the user scrollwheel jumped, set the jump input for _this_
-        // advancement of player movement simulation.
-        if (used_input.scrollwheel_jumped)
-            csgo_mv.m_nButtons |= IN_JUMP;
+    // If the user scrollwheel jumped, set the jump input for _this_
+    // advancement of player movement simulation.
+    if (used_input.scrollwheel_jumped && csgo_mv.m_MoveType != MOVETYPE_NOCLIP)
+        csgo_mv.m_nButtons |= IN_JUMP;
 
-        csgo_mv.m_flForwardMove = 0.0f;
-        if (csgo_mv.m_nButtons & IN_FORWARD)
-            csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
-        if (csgo_mv.m_nButtons & IN_BACK)
-            csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
 
-        csgo_mv.m_flSideMove = 0.0f;
-        if (csgo_mv.m_nButtons & IN_MOVERIGHT)
-            csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
-        if (csgo_mv.m_nButtons & IN_MOVELEFT)
-            csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
+    // ---- SIMULATE CS:GO GAME ----
 
-        // Delete detonated Bump Mine projectiles
-        std::erase_if(bumpmine_projectiles,
-            [](const Entities::BumpmineProjectile& bm) { return bm.has_detonated; });
+    csgo_mv.m_flForwardMove = 0.0f;
+    if (csgo_mv.m_nButtons & IN_FORWARD)
+        csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
+    if (csgo_mv.m_nButtons & IN_BACK)
+        csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
 
-        // Simulate Bump Mine projectiles
-        for (Entities::BumpmineProjectile& bm : bumpmine_projectiles)
-            bm.AdvanceSimulation(simtime_delta, *this);
-        
-        // Spawn Bump Mine projectiles on mouseclick
-        if (csgo_mv.m_nButtons & IN_ATTACK) {
-            // If player is allowed to attack
-            if (simtime >= player.next_primary_attack) {
-                // When the next attack will be allowed again
-                player.next_primary_attack = simtime +
-                    RoundToNearestSimTimeStep(CSGO_BUMP_THROW_INTERVAL_SECS,
-                                              simtime_delta);
+    csgo_mv.m_flSideMove = 0.0f;
+    if (csgo_mv.m_nButtons & IN_MOVERIGHT)
+        csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
+    if (csgo_mv.m_nButtons & IN_MOVELEFT)
+        csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
 
-                // Create Bump Mine projectile
-                Vector3 forward;
-                AnglesToVectors(csgo_mv.m_vecViewAngles, &forward);
-                Entities::BumpmineProjectile bm;
-                bm.unique_id =
-                    Entities::BumpmineProjectile::GenerateNewUniqueID();
-                bm.position =
-                    csgo_mv.m_vecAbsOrigin +
-                    csgo_mv.m_vecViewOffset +
-                    Vector3(0.0f, 0.0f, -CSGO_BUMP_THROW_SPAWN_OFFSET);
-                bm.velocity = csgo_mv.m_vecVelocity + CSGO_BUMP_THROW_SPEED * forward;
-                bumpmine_projectiles.push_back(bm);
-            }
+    // Delete detonated Bump Mine projectiles
+    std::erase_if(bumpmine_projectiles,
+        [](const Entities::BumpmineProjectile& bm) { return bm.has_detonated; });
+
+    // Simulate Bump Mine projectiles
+    for (Entities::BumpmineProjectile& bm : bumpmine_projectiles)
+        bm.AdvanceSimulation(simtime_delta, *this);
+
+    // Spawn Bump Mine projectiles on mouse click
+    if (csgo_mv.m_nButtons & IN_ATTACK) {
+        // If player is allowed to attack
+        if (simtime >= player.next_primary_attack) {
+            // When the next attack will be allowed again
+            player.next_primary_attack = simtime +
+                RoundToNearestSimTimeStep(CSGO_BUMP_THROW_INTERVAL_SECS,
+                                          simtime_delta);
+
+            // Create Bump Mine projectile
+            Vector3 forward;
+            AnglesToVectors(csgo_mv.m_vecViewAngles, &forward);
+            Entities::BumpmineProjectile bm;
+            bm.unique_id =
+                Entities::BumpmineProjectile::GenerateNewUniqueID();
+            bm.position =
+                csgo_mv.m_vecAbsOrigin +
+                csgo_mv.m_vecViewOffset +
+                Vector3(0.0f, 0.0f, -CSGO_BUMP_THROW_SPAWN_OFFSET);
+            bm.velocity = csgo_mv.m_vecVelocity + CSGO_BUMP_THROW_SPEED * forward;
+            bumpmine_projectiles.push_back(bm);
         }
-        
-        // Let movement class know about player's equipment
-        csgo_mv.m_loadout = player.loadout;
-
-        // -------- start of source-sdk-2013 code --------
-        // (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
-        // (Original code found in ProcessMovement() function)
-
-        // Cropping movement speed scales mv->m_fForwardSpeed etc. globally
-        // Once we crop, we don't want to recursively crop again, so we set the crop
-        //  flag globally here once per usercmd cycle.
-        csgo_mv.m_iSpeedCropped = SPEED_CROPPED_RESET;
-
-        // Init max speed depending on weapons equipped by player
-        csgo_mv.m_flMaxSpeed =
-            g_csgo_game_sim_cfg.GetMaxPlayerRunningSpeed(player.loadout);
-
-        //Debug{} << "m_nButtons = " << csgo_mv.m_nButtons;
-        //Debug{} << "m_flForwardMove = " << csgo_mv.m_flForwardMove;
-        //Debug{} << "m_flSideMove    = " << csgo_mv.m_flSideMove;
-        //Debug{} << "m_vecViewAngles = " << csgo_mv.m_vecViewAngles;
-        //Debug{} << "m_vecAbsOrigin  = " << csgo_mv.m_vecAbsOrigin;
-        //Debug{} << "m_vecVelocity   = " << csgo_mv.m_vecVelocity;
-
-        csgo_mv.PlayerMove(time_delta_sec);
-        csgo_mv.FinishMove();
-        // --------- end of source-sdk-2013 code ---------
     }
+
+    // Let movement class know about player's equipment
+    csgo_mv.m_loadout = player.loadout;
+
+    // -------- start of source-sdk-2013 code --------
+    // (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
+    // (Original code found in ProcessMovement() function)
+
+    // Cropping movement speed scales mv->m_fForwardSpeed etc. globally
+    // Once we crop, we don't want to recursively crop again, so we set the crop
+    //  flag globally here once per usercmd cycle.
+    csgo_mv.m_iSpeedCropped = SPEED_CROPPED_RESET;
+
+    // Init max speed depending on weapons equipped by player
+    csgo_mv.m_flMaxSpeed =
+        g_csgo_game_sim_cfg.GetMaxPlayerRunningSpeed(player.loadout);
+
+    csgo_mv.PlayerMove(time_delta_sec);
+    csgo_mv.FinishMove();
+    // --------- end of source-sdk-2013 code ---------
 
     // For the next call of AdvanceSimulation(), remember what player inputs we
     // used in the current simulation advancement.

@@ -14,16 +14,17 @@
 
 // -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/game/shared/in_buttons.h)
-const unsigned int IN_ATTACK    = 1 <<  0;
-const unsigned int IN_JUMP      = 1 <<  1;
-const unsigned int IN_DUCK      = 1 <<  2;
-const unsigned int IN_FORWARD   = 1 <<  3;
-const unsigned int IN_BACK      = 1 <<  4;
-const unsigned int IN_USE       = 1 <<  5;
-const unsigned int IN_MOVELEFT  = 1 <<  9;
-const unsigned int IN_MOVERIGHT = 1 << 10;
-const unsigned int IN_ATTACK2   = 1 << 11;
-const unsigned int IN_SPEED     = 1 << 17; // Player is holding the speed key
+const unsigned int IN_ATTACK        = 1 <<  0;
+const unsigned int IN_JUMP          = 1 <<  1;
+const unsigned int IN_DUCK          = 1 <<  2;
+const unsigned int IN_FORWARD       = 1 <<  3;
+const unsigned int IN_BACK          = 1 <<  4;
+const unsigned int IN_USE           = 1 <<  5;
+const unsigned int IN_MOVELEFT      = 1 <<  9;
+const unsigned int IN_MOVERIGHT     = 1 << 10;
+const unsigned int IN_ATTACK2       = 1 << 11;
+const unsigned int IN_SPEED         = 1 << 17; // Player is holding the speed key
+const unsigned int IN_TOGGLE_NOCLIP = 1 << 18;
 // --------- end of source-sdk-2013 code ---------
 
 // Handles key and mouse events on a per-frame basis and produces

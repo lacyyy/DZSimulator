@@ -1556,6 +1556,9 @@ void CsgoMovement::CategorizePosition(void)
     // Reset this each time we-recategorize, otherwise we have bogus friction when we jump into water and plunge downward really quickly
     m_surfaceFriction = 1.0f;
 
+    if (m_MoveType == MOVETYPE_NOCLIP)
+        return;
+
     // if the player hull point one unit down is solid, the player
     // is on ground
 
@@ -1838,6 +1841,9 @@ void CsgoMovement::HandleDuckingSpeedCrop(void)
 // Purpose: See if duck button is pressed and do the appropriate things
 void CsgoMovement::Duck(void)
 {
+    if (m_MoveType == MOVETYPE_NOCLIP)
+        return;
+
     unsigned int buttonsChanged  = m_nOldButtons ^ m_nButtons;     // These buttons have changed this frame
     unsigned int buttonsPressed  = buttonsChanged & m_nButtons;    // The changed ones still down are "pressed"
     unsigned int buttonsReleased = buttonsChanged & m_nOldButtons; // The changed ones which were previously down are "released"
@@ -2080,14 +2086,17 @@ void CsgoMovement::PlayerMove(float time_delta)
     bool walkBtnPressed = m_nButtons & IN_SPEED;
     if (walkBtnPressed && !(m_iSpeedCropped & SPEED_CROPPED_DUCK))
     {
-        // NOTE: CSGO's speed factor when walking is precisely 0.52 .
-        //       CSGO running speed with knife (outside DZ): 250
-        //       CSGO walking speed with knife (outside DZ): 130
-        //       -> Walking speed factor = 130 / 250 = 0.52
-        float frac = 0.52f;
-        m_flForwardMove *= frac;
-        m_flSideMove    *= frac;
-        //m_flUpMove      *= frac;
+        if (m_MoveType != MOVETYPE_NOCLIP)
+        {
+            // NOTE: CSGO's speed factor when walking is precisely 0.52 .
+            //       CSGO running speed with knife (outside DZ): 250
+            //       CSGO walking speed with knife (outside DZ): 130
+            //       -> Walking speed factor = 130 / 250 = 0.52
+            float frac = 0.52f;
+            m_flForwardMove *= frac;
+            m_flSideMove    *= frac;
+            //m_flUpMove      *= frac;
+        }
     }
 
     // If was not on a ladder now, but was on one before, 
@@ -2107,8 +2116,6 @@ void CsgoMovement::PlayerMove(float time_delta)
     ////    }
     ////}
 
-    const float NOCLIPSPEED = 5.0f;
-    const float NOCLIPACCELERATE = 5.0f;
 
     // Handle movement modes.
     switch (m_MoveType)
@@ -2117,7 +2124,7 @@ void CsgoMovement::PlayerMove(float time_delta)
         break;
 
     case MOVETYPE_NOCLIP:
-        //FullNoClipMove(NOCLIPSPEED, NOCLIPACCELERATE);
+        FullNoClipMove(time_delta);
         break;
 
     case MOVETYPE_FLY:
@@ -2145,6 +2152,75 @@ void CsgoMovement::PlayerMove(float time_delta)
         assert(0);
         break;
     }
+}
+
+void CsgoMovement::FullNoClipMove(float frametime)
+{
+    bool slow_noclip = m_nButtons & IN_SPEED;
+    float NOCLIP_SPEED      = slow_noclip ?   5.0f :    7.0f;
+    float NOCLIP_ACCELERATE = slow_noclip ?   5.0f :    5.0f;
+    float NOCLIP_MAXSPEED   = slow_noclip ? 400.0f : 3000.0f;
+
+    // Determine movement angles
+    Vector3 forward, right;
+    AnglesToVectors(m_vecViewAngles, &forward, &right);
+    NormalizeInPlace(forward);
+    NormalizeInPlace(right);
+
+    float fmove = m_flForwardMove * NOCLIP_SPEED;
+    float smove = m_flSideMove    * NOCLIP_SPEED;
+    Vector3 wishvel = fmove * forward + smove * right;
+    if (m_nButtons & IN_JUMP) wishvel.z() += 450.0f * NOCLIP_SPEED;
+    if (m_nButtons & IN_DUCK) wishvel.z() -= 450.0f * NOCLIP_SPEED;
+
+    // Determine magnitude of speed of move
+    Vector3 wishdir = wishvel;
+    float wishspeed = NormalizeInPlace(wishdir);
+
+    // Clamp to max noclip speed
+    if (wishspeed > NOCLIP_MAXSPEED)
+    {
+        wishvel *= NOCLIP_MAXSPEED / wishspeed;
+        wishspeed = NOCLIP_MAXSPEED;
+    }
+
+    if (NOCLIP_ACCELERATE > 0.0f)
+    {
+        // Set pmove velocity
+        Accelerate(wishdir, wishspeed, NOCLIP_ACCELERATE, frametime);
+
+        float spd = m_vecVelocity.length();
+        if (spd < 1.0f) {
+            m_vecVelocity = { 0.0f, 0.0f, 0.0f };
+            return;
+        }
+
+        // Bleed off some speed, but if we have less than the bleed threshold,
+        // bleed the threshold amount.
+        float BLEED_THRESHOLD = 0.55f * NOCLIP_MAXSPEED;
+        float control = (spd < BLEED_THRESHOLD) ? BLEED_THRESHOLD : spd;
+
+        float friction = g_csgo_game_sim_cfg.sv_friction * m_surfaceFriction;
+
+        // Add the amount to the drop amount.
+        float drop = control * friction * frametime;
+
+        // Scale the velocity
+        float newspeed = spd - drop;
+        if (newspeed < 0.0f)
+            newspeed = 0.0f;
+
+        // Determine proportion of old speed we are using.
+        newspeed /= spd;
+        m_vecVelocity *= newspeed;
+    }
+    else
+    {
+        m_vecVelocity = wishvel;
+    }
+
+    // Just move ( don't clip or anything )
+    m_vecAbsOrigin += frametime * m_vecVelocity;
 }
 
 // Purpose: Traces player movement + position
