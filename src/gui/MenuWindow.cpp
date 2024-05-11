@@ -78,6 +78,11 @@ void MenuWindow::Draw()
     const ImVec4 MENU_ELEM_COLOR = ImVec4(0.145f, 0.667f, 0.757f, 0.584f);
     ImGui::PushStyleColor(ImGuiCol_Header, MENU_ELEM_COLOR);
 
+    if (ImGui::CollapsingHeader("Controls"))
+    {
+        DrawControls();
+    }
+
     if (ImGui::CollapsingHeader("Visualizations"))
     {
         DrawVisualizations();
@@ -454,6 +459,14 @@ void MenuWindow::DrawMapSelection()
     if (is_map_load_box_open && !s_prev_is_map_load_box_open)
         _gui_state.map_select.IN_box_opened = true; // -> user just opened box
     s_prev_is_map_load_box_open = is_map_load_box_open; // save for next frame
+}
+
+void MenuWindow::DrawControls()
+{
+    ImGui::SliderFloat("Mouse Sensitivity", &_gui_state.ctrls.IN_mouse_sensitivity,
+                       0.001f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> This sensitivity is identical to CS:GO's and CS2's sensitivity.");
 }
 
 void MenuWindow::DrawVisualizations()

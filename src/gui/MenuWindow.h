@@ -24,6 +24,8 @@ namespace gui {
 
         void DrawMapSelection();
 
+        void DrawControls();
+
         void DrawVisualizations();
 
         void DrawGameConfig();

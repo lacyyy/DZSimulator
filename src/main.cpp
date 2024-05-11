@@ -202,7 +202,9 @@ class DZSimApplication: public Platform::Application {
             if (_user_input_mode == UserInputMode::MENU)
                 if (_gui._context.handleMouseMoveEvent(event)) return;
             if (_user_input_mode == UserInputMode::FIRST_PERSON)
-                if (sim::PlayerInput::HandleMouseMoveEvent(event)) return;
+                if (sim::PlayerInput::HandleMouseMoveEvent(event,
+                                         _gui_state.ctrls.IN_mouse_sensitivity))
+                    return;
             _inputs.HandleMouseMoveEvent(event);
         }
         void mouseScrollEvent (MouseScrollEvent& event) override

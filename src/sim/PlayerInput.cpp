@@ -88,10 +88,12 @@ bool PlayerInput::HandleMouseReleaseEvent(Application::MouseEvent& event)
     return event.isAccepted();
 }
 
-bool PlayerInput::HandleMouseMoveEvent(Application::MouseMoveEvent& event)
+bool PlayerInput::HandleMouseMoveEvent(Application::MouseMoveEvent& event,
+                                       float mouse_sensitivity)
 {
-    const float AIM_SENSITIVITY = 0.03f;
-    Vector2 delta = AIM_SENSITIVITY * Vector2{ event.relativePosition() };
+    const float CSGO_DEGREES_PER_MOUSE_CHANGE = 0.022f;
+    Vector2 delta = CSGO_DEGREES_PER_MOUSE_CHANGE * mouse_sensitivity
+                    * Vector2{ event.relativePosition() };
 
     cur_frame.viewing_angles[0] += delta.y(); // Pitch
     cur_frame.viewing_angles[1] -= delta.x(); // Yaw

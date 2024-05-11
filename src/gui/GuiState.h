@@ -66,6 +66,10 @@ public:
         size_t OUT_num_highlighted_maps = 0; // Color first N map entries
     } map_select;
 
+    struct Controls {
+        float IN_mouse_sensitivity = 2.5f; // Same as CSGO ConVar "sensitivity"
+    } ctrls;
+
     struct VisualizationSettings {
         float IN_hori_light_angle = 292.5f; // in degrees, 0.0 to 360.0
         bool IN_draw_displacement_edges = false;

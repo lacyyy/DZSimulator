@@ -46,7 +46,8 @@ namespace sim::PlayerInput {
     bool HandleKeyReleaseEvent  (Application::KeyEvent& event);
     bool HandleMousePressEvent  (Application::MouseEvent& event);
     bool HandleMouseReleaseEvent(Application::MouseEvent& event);
-    bool HandleMouseMoveEvent   (Application::MouseMoveEvent& event);
+    bool HandleMouseMoveEvent   (Application::MouseMoveEvent& event,
+                                 float mouse_sensitivity);
     bool HandleMouseScrollEvent (Application::MouseScrollEvent& event);
 
     // Set all buttons to be unpressed.
