@@ -13,6 +13,7 @@
 #include "GlobalVars.h"
 #include "sim/CsgoConstants.h"
 #include "sim/CsgoMovement.h"
+#include "sim/PlayerInput.h"
 #include "sim/Sim.h"
 #include "utils_3d.h"
 
@@ -74,7 +75,7 @@ WorldState WorldState::Interpolate(const WorldState& stateA,
 }
 
 void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
-                                   std::span<const PlayerInputState> player_input)
+                                   std::span<const PlayerInput::State> chro_input)
 {
     ZoneScoped;
 
@@ -90,80 +91,49 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
     if (!g_coll_world)
         return;
 
-    // Conclusions drawn from player input
-    bool tryJumpFromScrollWheel = false; // If jump input came from scroll wheel
+    // Determine what player input we're going to simulate with
+    PlayerInput::State used_input;
+    if (chro_input.empty()) {
+        // If there is no player input, we assume that inputs remain unchanged
+        // from the last simulation advancement.
+        used_input = prev_input; // Note: Its real-time sample time is old by now
+        // Scrollwheel jump inputs don't persist across simulation advancements
+        used_input.scrollwheel_jumped = false;
+    }
+    else {
+        // If there is player input, use the latest one and check whether the
+        // user scrollwheel-jumped at any point.
+        used_input = chro_input.back(); // Use latest input
 
-    // Parse player input, chronologically
-    for (const PlayerInputState& pis : player_input) {
-        for (size_t i = 0; i < pis.inputCommands.size(); i++) {
-            // Get counter reference for this input cmd
-            PlayerInputState::Command cmd = pis.inputCommands[i];
-            unsigned int& inputCmdActiveCount = this->player.inputCmdActiveCount(cmd);
+        bool scrollwheel_jumped_at_any_point = false;
+        for (const PlayerInput::State& entry : chro_input)
+            if (entry.scrollwheel_jumped)
+                scrollwheel_jumped_at_any_point = true;
 
-            // Special case: Check if this tick received a +jump and a -jump right after
-            if (cmd == PlayerInputState::Command::MINUS_JUMP &&
-                i > 0 &&
-                pis.inputCommands[i-1] == PlayerInputState::Command::PLUS_JUMP)
-            {
-                tryJumpFromScrollWheel = true;
-            }
-
-            // Determine if the cmd is a '+cmd' or a '-cmd'
-            bool is_plus_cmd;
-            switch (cmd) {
-            case PlayerInputState::Command::PLUS_FORWARD:
-            case PlayerInputState::Command::PLUS_BACK:
-            case PlayerInputState::Command::PLUS_MOVELEFT:
-            case PlayerInputState::Command::PLUS_MOVERIGHT:
-            case PlayerInputState::Command::PLUS_USE:
-            case PlayerInputState::Command::PLUS_JUMP:
-            case PlayerInputState::Command::PLUS_DUCK:
-            case PlayerInputState::Command::PLUS_SPEED:
-            case PlayerInputState::Command::PLUS_ATTACK:
-            case PlayerInputState::Command::PLUS_ATTACK2:
-                is_plus_cmd = true; break;
-            default:
-                is_plus_cmd = false; break;
-            }
-
-            // Increment or decrement input cmd counter
-            if (is_plus_cmd) {
-                ++inputCmdActiveCount;
-            }
-            else if (inputCmdActiveCount != 0) { // Only decrement if counter is greater than zero
-                --inputCmdActiveCount;
-            }
-        }
+        used_input.scrollwheel_jumped = scrollwheel_jumped_at_any_point;
     }
 
-    // FIXME we want the angles when the bumpmine was thrown, exactly! Confirm that's in CSGO the same way.
-    if (!player_input.empty()) {
-        // The latest input decides the new viewing angle
-        csgo_mv.m_vecViewAngles = {
-            player_input.back().viewingAnglePitch,
-            player_input.back().viewingAngleYaw,
-            0.0f
-        };
-    }
+    // Apply viewing angle input
+    csgo_mv.m_vecViewAngles = {
+        used_input.viewing_angles[0], // Pitch
+        used_input.viewing_angles[1], // Yaw
+        0.0f
+    };
 
-    // W,A,S,D inputs only take effect if their state was 'pressed' at the start of the tick (i.e. at the end of this tick's input queue)
-    bool tryMoveForward = this->player.inputCmdActiveCount_forward   != 0;
-    bool tryMoveBack    = this->player.inputCmdActiveCount_back      != 0;
-    bool tryMoveLeft    = this->player.inputCmdActiveCount_moveleft  != 0;
-    bool tryMoveRight   = this->player.inputCmdActiveCount_moveright != 0;
-    bool tryAttack      = this->player.inputCmdActiveCount_attack    != 0;
+    // Apply button input
+    csgo_mv.m_nButtons = used_input.nButtons;
 
     // Toggle CSGO and flying movement
-    if (this->player.inputCmdActiveCount_attack2 != 0) {
+    if (csgo_mv.m_nButtons & IN_ATTACK2) {
         // ---- FLYING MOVEMENT ----
         Vector3 forward_dir_xy  { Math::cos(Deg{csgo_mv.m_vecViewAngles.y()        }), Math::sin(Deg{csgo_mv.m_vecViewAngles.y()        }), 0.0f };
         Vector3 moveright_dir_xy{ Math::cos(Deg{csgo_mv.m_vecViewAngles.y() - 90.0f}), Math::sin(Deg{csgo_mv.m_vecViewAngles.y() - 90.0f}), 0.0f };
 
         Vector3 wish_dir_xy = { 0.0f, 0.0f, 0.0f };
-        if      (tryMoveForward && !tryMoveBack   ) wish_dir_xy += forward_dir_xy;
-        else if (tryMoveBack    && !tryMoveForward) wish_dir_xy -= forward_dir_xy;
-        if      (tryMoveRight   && !tryMoveLeft   ) wish_dir_xy += moveright_dir_xy;
-        else if (tryMoveLeft    && !tryMoveRight  ) wish_dir_xy -= moveright_dir_xy;
+        if      ((csgo_mv.m_nButtons & IN_FORWARD  ) && !(csgo_mv.m_nButtons & IN_BACK     )) wish_dir_xy += forward_dir_xy;
+        else if ((csgo_mv.m_nButtons & IN_BACK     ) && !(csgo_mv.m_nButtons & IN_FORWARD  )) wish_dir_xy -= forward_dir_xy;
+        if      ((csgo_mv.m_nButtons & IN_MOVERIGHT) && !(csgo_mv.m_nButtons & IN_MOVELEFT )) wish_dir_xy += moveright_dir_xy;
+        else if ((csgo_mv.m_nButtons & IN_MOVELEFT ) && !(csgo_mv.m_nButtons & IN_MOVERIGHT)) wish_dir_xy -= moveright_dir_xy;
         if (wish_dir_xy.x() == 0.0f && wish_dir_xy.y() == 0.0f) {
             csgo_mv.m_vecVelocity.x() = 0.0f;
             csgo_mv.m_vecVelocity.y() = 0.0f;
@@ -172,19 +142,19 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
             NormalizeInPlace(wish_dir_xy);
 
             float WALK_SPEED = 250.0f;
-            if (this->player.inputCmdActiveCount_speed) WALK_SPEED *= 12;
+            if (csgo_mv.m_nButtons & IN_SPEED) WALK_SPEED *= 12;
 
             csgo_mv.m_vecVelocity.x() = WALK_SPEED * wish_dir_xy.x();
             csgo_mv.m_vecVelocity.y() = WALK_SPEED * wish_dir_xy.y();
         }
 
-        if (this->player.inputCmdActiveCount_jump != 0) {
-            if (this->player.inputCmdActiveCount_speed)
+        if (csgo_mv.m_nButtons & IN_JUMP) {
+            if (csgo_mv.m_nButtons & IN_SPEED)
                 csgo_mv.m_vecVelocity.z() = 6 * 300.0f;
             else
                 csgo_mv.m_vecVelocity.z() = 300.0f;
         }
-        else if (this->player.inputCmdActiveCount_duck != 0) {
+        else if (csgo_mv.m_nButtons & IN_DUCK) {
             csgo_mv.m_vecVelocity.z() = 6 * -300.0f;
         }
         else {
@@ -196,30 +166,22 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
     else {
         // ---- CSGO MOVEMENT ----
 
-        csgo_mv.m_nButtons = 0;
-        if (tryMoveForward)
-            csgo_mv.m_nButtons |= IN_FORWARD;
-        if (tryMoveBack)
-            csgo_mv.m_nButtons |= IN_BACK;
-        if (tryMoveLeft)
-            csgo_mv.m_nButtons |= IN_MOVELEFT;
-        if (tryMoveRight)
-            csgo_mv.m_nButtons |= IN_MOVERIGHT;
-        if (this->player.inputCmdActiveCount_jump != 0 || tryJumpFromScrollWheel)
+        // If the user scrollwheel jumped, set the jump input for _this_
+        // advancement of player movement simulation.
+        if (used_input.scrollwheel_jumped)
             csgo_mv.m_nButtons |= IN_JUMP;
-        if (this->player.inputCmdActiveCount_speed != 0)
-            csgo_mv.m_nButtons |= IN_SPEED;
-        if (this->player.inputCmdActiveCount_duck != 0)
-            csgo_mv.m_nButtons |= IN_DUCK;
-
 
         csgo_mv.m_flForwardMove = 0.0f;
-        if (tryMoveForward) csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
-        if (tryMoveBack)    csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
+        if (csgo_mv.m_nButtons & IN_FORWARD)
+            csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
+        if (csgo_mv.m_nButtons & IN_BACK)
+            csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
 
         csgo_mv.m_flSideMove = 0.0f;
-        if (tryMoveRight) csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
-        if (tryMoveLeft)  csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
+        if (csgo_mv.m_nButtons & IN_MOVERIGHT)
+            csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
+        if (csgo_mv.m_nButtons & IN_MOVELEFT)
+            csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
 
         // Delete detonated Bump Mine projectiles
         std::erase_if(bumpmine_projectiles,
@@ -230,7 +192,7 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
             bm.AdvanceSimulation(simtime_delta, *this);
         
         // Spawn Bump Mine projectiles on mouseclick
-        if (tryAttack) {
+        if (csgo_mv.m_nButtons & IN_ATTACK) {
             // If player is allowed to attack
             if (simtime >= player.next_primary_attack) {
                 // When the next attack will be allowed again
@@ -280,4 +242,8 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
         csgo_mv.FinishMove();
         // --------- end of source-sdk-2013 code ---------
     }
+
+    // For the next call of AdvanceSimulation(), remember what player inputs we
+    // used in the current simulation advancement.
+    prev_input = used_input;
 }

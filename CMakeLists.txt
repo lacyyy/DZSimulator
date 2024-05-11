@@ -356,6 +356,7 @@ target_sources(DZSimulator PRIVATE
     "src/sim/CsgoConfig.cpp"
     "src/sim/CsgoGame.cpp"
     "src/sim/CsgoMovement.cpp"
+    "src/sim/PlayerInput.cpp"
     "src/sim/Sim.cpp"
     "src/sim/WorldState.cpp"
     "src/sim/Entities/BumpmineProjectile.cpp"

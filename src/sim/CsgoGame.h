@@ -7,7 +7,7 @@
 #include <Magnum/Math/Time.h>
 
 #include "common.h"
-#include "sim/PlayerInputState.h"
+#include "sim/PlayerInput.h"
 #include "sim/Sim.h"
 #include "sim/WorldState.h"
 
@@ -44,7 +44,7 @@ public:
     // simulation. Given player input must be new (i.e. have a time point that
     // chronologically comes after all previously passed inputs' time point)!
     // This method must be called after this CSGO game was started!
-    void ProcessNewPlayerInput(const PlayerInputState& new_player_input);
+    void ProcessNewPlayerInput(const PlayerInput::State& new_player_input);
 
     // Returns the current actual (non-interpolated) state of the game
     // simulation, computed by a recent call to ProcessNewPlayerInput().
@@ -79,7 +79,7 @@ private:
 
     // Player inputs since the most recently finalized game tick, in
     // chronological order.
-    std::vector<PlayerInputState> m_inputs_since_prev_finalized_game_tick;
+    std::vector<PlayerInput::State> m_inputs_since_prev_finalized_game_tick;
 
     // The most recent prediction of the next game tick (that comes after
     // m_prev_finalized_game_tick)

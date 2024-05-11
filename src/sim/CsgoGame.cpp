@@ -9,7 +9,7 @@
 #include <Tracy.hpp>
 
 #include "common.h"
-#include "sim/PlayerInputState.h"
+#include "sim/PlayerInput.h"
 #include "sim/Sim.h"
 #include "sim/WorldState.h"
 
@@ -94,7 +94,7 @@ void CsgoGame::ModifyWorldStateHarshly(const std::function<void(WorldState&)>& f
         GetGameTickRealTimePoint(m_prev_finalized_game_tick_id);
 }
 
-void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
+void CsgoGame::ProcessNewPlayerInput(const PlayerInput::State& new_input)
 {
     ZoneScoped;
 
@@ -109,11 +109,11 @@ void CsgoGame::ProcessNewPlayerInput(const PlayerInputState& new_input)
 #ifndef NDEBUG
     // New input must have been sampled after all previously passed inputs.
     // New input is allowed to have been sampled at identical timepoints.
-    for (const PlayerInputState& other : m_inputs_since_prev_finalized_game_tick)
-        assert(new_input.time >= other.time);
+    for (const PlayerInput::State& other : m_inputs_since_prev_finalized_game_tick)
+        assert(new_input.sample_time >= other.sample_time);
 #endif
 
-    WallClock::time_point cur_time = new_input.time;
+    WallClock::time_point cur_time = new_input.sample_time;
 
     // @Optimization We should drop game ticks if the user's machine struggles
     //               to keep up. How does the Source engine do it?

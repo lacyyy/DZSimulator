@@ -19,19 +19,6 @@ const bool ENABLE_MOVEMENT_DEBUGGING = true;
 #endif
 
 // -------- start of source-sdk-2013 code --------
-// (taken and modified from source-sdk-2013/<...>/src/game/shared/in_buttons.h)
-// TODO rename / move these defines
-#define IN_JUMP      (1 <<  1)
-#define IN_DUCK      (1 <<  2)
-#define IN_FORWARD   (1 <<  3)
-#define IN_BACK      (1 <<  4)
-#define IN_MOVELEFT  (1 <<  9)
-#define IN_MOVERIGHT (1 << 10)
-#define IN_SPEED     (1 << 17) // Player is holding the speed key
-// --------- end of source-sdk-2013 code ---------
-
-
-// -------- start of source-sdk-2013 code --------
 // (taken and modified from source-sdk-2013/<...>/src/public/const.h)
 // edict->movetype values
 enum MoveType_t
@@ -95,8 +82,8 @@ public:
     float m_flMaxSpeed    = 0.0f;
     float m_flForwardMove = 0.0f;
     float m_flSideMove    = 0.0f;
-    int   m_nButtons    = 0;
-    int   m_nOldButtons = 0;
+    unsigned int m_nButtons    = 0;
+    unsigned int m_nOldButtons = 0;
     Magnum::Vector3 m_vecViewOffset   = { 0.0f, 0.0f, 0.0f }; // Object eye position
     Magnum::Vector3 m_vecViewAngles   = { 0.0f, 0.0f, 0.0f }; // Command view angles (local space)
     Magnum::Vector3 m_vecAbsOrigin    = { 0.0f, 0.0f, 0.0f };

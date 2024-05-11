@@ -10,7 +10,7 @@
 #include "sim/CsgoMovement.h"
 #include "sim/Entities/BumpmineProjectile.h"
 #include "sim/Entities/Player.h"
-#include "sim/PlayerInputState.h"
+#include "sim/PlayerInput.h"
 #include "sim/Sim.h"
 
 namespace sim {
@@ -30,6 +30,7 @@ public:
     bool is_interpolated = false;
 
     // Actual world state
+    PlayerInput::State prev_input; // Last input this worldstate was advanced with
     CsgoMovement csgo_mv;
     Entities::Player player;
     std::vector<Entities::BumpmineProjectile> bumpmine_projectiles;
@@ -40,11 +41,11 @@ public:
     static WorldState Interpolate(const WorldState& stateA,
         const WorldState& stateB, float phase);
 
-    // Advance this world state with the given player input forward in
-    // simulation time by the given duration.
+    // Advance this world state with the given chronological player input
+    // forward in simulation time by the given duration.
     // CAUTION: Must not be called on an interpolated worldstate!
     void AdvanceSimulation(SimTimeDur simtime_delta,
-                           std::span<const PlayerInputState> player_input);
+                           std::span<const PlayerInput::State> chro_input);
 
 };
 

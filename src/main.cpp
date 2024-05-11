@@ -45,6 +45,7 @@
 #include "ren/WideLineRenderer.h"
 #include "SavedUserDataHandler.h"
 #include "sim/CsgoGame.h"
+#include "sim/PlayerInput.h"
 #include "sim/Sim.h"
 #include "sim/WorldState.h"
 #include "WorldCreator.h"
@@ -96,9 +97,6 @@ class DZSimApplication: public Platform::Application {
 
         // Note: g_csgo_game_sim_cfg should probably be a part of _csgo_game_sim
         sim::CsgoGame _csgo_game_sim;
-
-        // Game inputs of current frame
-        sim::PlayerInputState _currentGameInput;
 
         csgo_integration::RemoteConsole _csgo_rcon; // Needs to be declared before _csgo_handler
         csgo_integration::Handler _csgo_handler;
@@ -159,7 +157,9 @@ class DZSimApplication: public Platform::Application {
         // For debugging purposes. Loads every map found in CSGO's maps folder.
         void _debug_LoadEveryMap();
 
-        void ConfigureGameKeyBindings();
+        // Set extra keybindings that are checked _after_ the GUI and simulation
+        // keybindings.
+        void ConfigureExtraKeyBindings();
 
         void ShootTestTraceOutFromCamera();
 
@@ -183,18 +183,24 @@ class DZSimApplication: public Platform::Application {
         {
             if (_user_input_mode == UserInputMode::MENU)
                 if (_gui._context.handleMousePressEvent(event)) return;
+            if (_user_input_mode == UserInputMode::FIRST_PERSON)
+                if (sim::PlayerInput::HandleMousePressEvent(event)) return;
             _inputs.HandleMousePressEvent(event);
         }
         void mouseReleaseEvent(MouseEvent& event)       override
         {
             if (_user_input_mode == UserInputMode::MENU)
                 if (_gui._context.handleMouseReleaseEvent(event)) return;
+            if (_user_input_mode == UserInputMode::FIRST_PERSON)
+                if (sim::PlayerInput::HandleMouseReleaseEvent(event)) return;
             _inputs.HandleMouseReleaseEvent(event);
         }
         void mouseMoveEvent   (MouseMoveEvent& event)   override
         {
             if (_user_input_mode == UserInputMode::MENU)
                 if (_gui._context.handleMouseMoveEvent(event)) return;
+            if (_user_input_mode == UserInputMode::FIRST_PERSON)
+                if (sim::PlayerInput::HandleMouseMoveEvent(event)) return;
             _inputs.HandleMouseMoveEvent(event);
         }
         void mouseScrollEvent (MouseScrollEvent& event) override
@@ -204,6 +210,8 @@ class DZSimApplication: public Platform::Application {
                     event.setAccepted(); // Prevent scrolling the page
                     return;
                 }
+            if (_user_input_mode == UserInputMode::FIRST_PERSON)
+                if (sim::PlayerInput::HandleMouseScrollEvent(event)) return;
             _inputs.HandleMouseScrollEvent(event);
         }
         void keyPressEvent    (KeyEvent& event) override
@@ -231,11 +239,15 @@ class DZSimApplication: public Platform::Application {
                 if (_gui._context.handleKeyPressEvent(event))
                     return;
             }
+            if (_user_input_mode == UserInputMode::FIRST_PERSON)
+                if (sim::PlayerInput::HandleKeyPressEvent(event)) return;
             _inputs.HandleKeyPressEvent(event);
         }
         void keyReleaseEvent  (KeyEvent& event) override {
             if (_user_input_mode == UserInputMode::MENU)
                 if (_gui._context.handleKeyReleaseEvent(event)) return;
+            if (_user_input_mode == UserInputMode::FIRST_PERSON)
+                if (sim::PlayerInput::HandleKeyReleaseEvent(event)) return;
             _inputs.HandleKeyReleaseEvent(event);
         }
 };
@@ -533,7 +545,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     _gui_state.video.IN_vsync_enabled = cur_vsync_enabled; // Update GUI
 #endif
 
-    ConfigureGameKeyBindings();
+    ConfigureExtraKeyBindings();
 
 #ifndef DZSIM_WEB_PORT
     _update_checker.StartAsyncUpdateAndMotdCheck();
@@ -835,7 +847,7 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     sim::WorldState initial_worldstate;
     if (_bsp_map->player_spawns.size() > 0) {
         csgo_parsing::BspMap::PlayerSpawn& playerSpawn = _bsp_map->player_spawns[0];
-        _cam_ang = playerSpawn.angles;
+        sim::PlayerInput::SetViewingAngles(playerSpawn.angles);
         initial_worldstate.csgo_mv.m_vecAbsOrigin  = playerSpawn.origin;
         initial_worldstate.csgo_mv.m_vecViewAngles = playerSpawn.angles;
     }
@@ -860,71 +872,8 @@ void DZSimApplication::_debug_LoadEveryMap() {
     }
 }
 
-void DZSimApplication::ConfigureGameKeyBindings() {
-    _inputs.SetKeyPressedCallback_keyboard("W", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_FORWARD); });
-    _inputs.SetKeyReleasedCallback_keyboard("W", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_FORWARD); });
-  
-    _inputs.SetKeyPressedCallback_keyboard("S", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_BACK); });
-    _inputs.SetKeyReleasedCallback_keyboard("S", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_BACK); });
-
-    _inputs.SetKeyPressedCallback_keyboard("A", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_MOVELEFT); });
-    _inputs.SetKeyReleasedCallback_keyboard("A", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_MOVELEFT); });
-
-    _inputs.SetKeyPressedCallback_keyboard("D", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_MOVERIGHT); });
-    _inputs.SetKeyReleasedCallback_keyboard("D", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_MOVERIGHT); });
-
-    _inputs.SetKeyPressedCallback_keyboard("E", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_USE); });
-    _inputs.SetKeyReleasedCallback_keyboard("E", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_USE); });
-
-    _inputs.SetKeyPressedCallback_keyboard("Space", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_JUMP); });
-    _inputs.SetKeyReleasedCallback_keyboard("Space", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_JUMP); });
-
-    _inputs.SetKeyPressedCallback_keyboard("Left Ctrl", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_DUCK); });
-    _inputs.SetKeyReleasedCallback_keyboard("Left Ctrl", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_DUCK); });
-
-    _inputs.SetKeyPressedCallback_keyboard("Left Shift", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_SPEED); });
-    _inputs.SetKeyReleasedCallback_keyboard("Left Shift", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_SPEED); });
-
-    _inputs.SetKeyPressedCallback_mouse("MButtonLeft", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_ATTACK); });
-    _inputs.SetKeyReleasedCallback_mouse("MButtonLeft", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_ATTACK); });
-
-    _inputs.SetKeyPressedCallback_mouse("MButtonRight", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_ATTACK2); });
-    _inputs.SetKeyReleasedCallback_mouse("MButtonRight", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_ATTACK2); });
-
-    // ----
-
-    _inputs.SetKeyPressedCallback_mouse("MWheelDown", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_JUMP); });
-    _inputs.SetKeyReleasedCallback_mouse("MWheelDown", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_JUMP); });
-
-    _inputs.SetKeyPressedCallback_mouse("MWheelUp", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::PLUS_JUMP); });
-    _inputs.SetKeyReleasedCallback_mouse("MWheelUp", [this]() {
-        this->_currentGameInput.inputCommands.push_back(sim::PlayerInputState::Command::MINUS_JUMP); });
-
-    // ----
-
+void DZSimApplication::ConfigureExtraKeyBindings()
+{
     _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
         if (_csgo_game_sim.HasBeenStarted())
             _csgo_game_sim.ModifyWorldStateHarshly([](sim::WorldState& world){
@@ -946,7 +895,6 @@ void DZSimApplication::ConfigureGameKeyBindings() {
         // ... do a test trace
         ShootTestTraceOutFromCamera();
     });
-
 }
 
 void DZSimApplication::ShootTestTraceOutFromCamera()
@@ -1000,10 +948,18 @@ void DZSimApplication::DoUpdate()
 {
     ZoneScoped;
 
-    // All mouse and key events have been processed right before calling
-    // tickEvent() -> Save the time point when the game input was sampled
     WallClock::time_point current_time = WallClock::now();
-    _currentGameInput.time = current_time;
+
+    // Make sure simulation inputs are cleared if user is not controlling the
+    // simulated player. Otherwise, e.g. the simulated player could keep running.
+    if (_user_input_mode != UserInputMode::FIRST_PERSON)
+        sim::PlayerInput::ClearAllButtons();
+    if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION)
+        sim::PlayerInput::ClearAllButtons();
+
+    // All mouse and key events have been processed right before calling
+    // tickEvent() -> Finish player input collection of the current frame.
+    sim::PlayerInput::State player_inputs = sim::PlayerInput::FinishFrame();
 
     if (_gui_state.app_exit_requested) // Exit if user requested it
         this->exit(); // CAUTION: This way, exitEvent() doesn't get called!
@@ -1103,12 +1059,9 @@ void DZSimApplication::DoUpdate()
     }
 
     bool esc_pressed = _inputs.GetKeyPressCountAndReset_keyboard("Escape");
-    bool leaving_first_person_mode = false;
     // If GUI popup appeared, allow cursor to directly close -> enter menu mode
     if (_gui_state.popup.IN_visible) {
         if (_user_input_mode != UserInputMode::MENU) {
-            if (_user_input_mode == UserInputMode::FIRST_PERSON)
-                leaving_first_person_mode = true;
             _user_input_mode = UserInputMode::MENU;
             setCursor(Cursor::Arrow);
         }
@@ -1116,7 +1069,6 @@ void DZSimApplication::DoUpdate()
     else if (esc_pressed) { // Toggle modes with ESC key
         if (_user_input_mode == UserInputMode::MENU) {
             _user_input_mode = UserInputMode::FIRST_PERSON;
-            // If you update these cursor types, also update them were they're read
 #ifdef DZSIM_WEB_PORT
             setCursor(Cursor::Hidden);
 #else
@@ -1126,20 +1078,9 @@ void DZSimApplication::DoUpdate()
         else if (_user_input_mode == UserInputMode::FIRST_PERSON) {
             _user_input_mode = UserInputMode::MENU;
             setCursor(Cursor::Arrow);
-            leaving_first_person_mode = true;
         }
     }
-    // Delete input commands if we haven't been in first person mode
-    if (_user_input_mode != UserInputMode::FIRST_PERSON ||
-        _gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION)
-        _currentGameInput.inputCommands.clear();
-    // Send all possible MINUS_* player input commands to stop ingame input
-    // after leaving first person control
-    if (leaving_first_person_mode) {
-        auto minus_cmd_list = sim::PlayerInputState::AllMinusCommands();
-        for (sim::PlayerInputState::Command c : minus_cmd_list)
-            _currentGameInput.inputCommands.push_back(c);
-    }
+
     // Let GUI know about the current input mode
     _gui_state.ctrl_help.OUT_first_person_control_active =
         _user_input_mode == UserInputMode::FIRST_PERSON;
@@ -1446,56 +1387,19 @@ void DZSimApplication::DoUpdate()
         }
     }
 
-    // Get mouse movement
-    Vector2i mouse_pos_change = _inputs.GetMousePosChangeAndReset();
-
-    // Override with CSGO camera angles if we're connected to CSGO's console
-    if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION) {
+    // Use camera angles from local CSGO session
+    if (_gui_state.vis.IN_geo_vis_mode == _gui_state.vis.GLID_OF_CSGO_SESSION)
         _cam_ang = _latest_csgo_client_data.player_angles;
-    }
-    else if (_user_input_mode == UserInputMode::FIRST_PERSON) {
-        const Float AIM_SENSITIVITY = 0.03f;
-
-        // If you update these cursor types, also update them were they're set
-#ifdef DZSIM_WEB_PORT
-        const auto fp_cursor_type = Cursor::Hidden;
-#else
-        const auto fp_cursor_type = Cursor::HiddenLocked;
-#endif
-        if (cursor() == fp_cursor_type) {
-            Vector2 delta = AIM_SENSITIVITY * Vector2{ mouse_pos_change };
-            _cam_ang.x() += delta.y(); // cam pitch
-            _cam_ang.y() -= delta.x(); // cam yaw
-        }
-
-        // Clamp camera angles
-        if (_cam_ang.x() >  89.0f) _cam_ang.x() =  89.0f;
-        if (_cam_ang.x() < -89.0f) _cam_ang.x() = -89.0f;
-        // Let yaw wrap around from -180 to +180 and vice versa
-        if (_cam_ang.y() > 180.0f || _cam_ang.y() < -180.0f) {
-            Float overturn;
-            if (_cam_ang.y() > 180.0f)
-                overturn = _cam_ang.y() - 180.0f;
-            else
-                overturn = _cam_ang.y() + 180.0f;
-            Long full_360s = overturn / 360.0f;
-            overturn -= full_360s * 360.0f;
-
-            if (_cam_ang.y() > 180.0f) _cam_ang.y() = -180 + overturn;
-            else                       _cam_ang.y() =  180 + overturn;
-        }
-    }
-
-    // Update viewing angles of game input for game simulation
-    _currentGameInput.viewingAnglePitch = _cam_ang.x();
-    _currentGameInput.viewingAngleYaw   = _cam_ang.y();
+    // Use camera angles from simulation player input
+    else
+        _cam_ang = player_inputs.viewing_angles;
 
     // @Optimization Don't perform game simulation when DZSimulator is
     //               replicating player movement from a local CSGO session.
     if (_csgo_game_sim.HasBeenStarted()) {
         // Send game input to simulation
         auto game_sim_start_time = std::chrono::high_resolution_clock::now();
-        _csgo_game_sim.ProcessNewPlayerInput(_currentGameInput);
+        _csgo_game_sim.ProcessNewPlayerInput(player_inputs);
         auto game_sim_end_time = std::chrono::high_resolution_clock::now();
 
         // Maybe add # of simulated ticks to perf stats?
@@ -1509,10 +1413,6 @@ void DZSimApplication::DoUpdate()
                 _csgo_game_sim.GetLatestActualWorldState().csgo_mv;
         }
     }
-
-    // Clear game commands for next frame's commands.
-    // We keep the remaining game input values.
-    _currentGameInput.inputCommands.clear();
 
     // When in "sparing low latency draw mode", force a frame redraw if the last
     // redraw was too long ago

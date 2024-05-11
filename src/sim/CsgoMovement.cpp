@@ -10,6 +10,7 @@
 #include "coll/Trace.h"
 #include "GlobalVars.h"
 #include "sim/CsgoConstants.h"
+#include "sim/PlayerInput.h"
 #include "utils_3d.h"
 
 using namespace sim;
@@ -1837,9 +1838,9 @@ void CsgoMovement::HandleDuckingSpeedCrop(void)
 // Purpose: See if duck button is pressed and do the appropriate things
 void CsgoMovement::Duck(void)
 {
-    int buttonsChanged  = m_nOldButtons ^ m_nButtons;     // These buttons have changed this frame
-    int buttonsPressed  = buttonsChanged & m_nButtons;    // The changed ones still down are "pressed"
-    int buttonsReleased = buttonsChanged & m_nOldButtons; // The changed ones which were previously down are "released"
+    unsigned int buttonsChanged  = m_nOldButtons ^ m_nButtons;     // These buttons have changed this frame
+    unsigned int buttonsPressed  = buttonsChanged & m_nButtons;    // The changed ones still down are "pressed"
+    unsigned int buttonsReleased = buttonsChanged & m_nOldButtons; // The changed ones which were previously down are "released"
 
     // Check to see if we are in the air.
     bool bInAir  = !m_hGroundEntity;
