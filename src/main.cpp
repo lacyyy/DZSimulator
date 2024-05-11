@@ -136,6 +136,8 @@ class DZSimApplication: public Platform::Application {
         HWND win_handle = nullptr; // Windows API window handle
 #endif
 
+        // Worldstate the user can reset back to when practicing in the simulation
+        sim::WorldState _sim_prac_reset_worldstate;
 
     private:
 #ifndef DZSIM_WEB_PORT
@@ -853,6 +855,9 @@ bool DZSimApplication::LoadBspMap(std::string file_path,
     }
     _csgo_game_sim.Start(SIM_TIME_STEP_SIZE, SIM_TIME_SCALE, initial_worldstate);
 
+    // Init practice reset worldstate with map spawn position
+    _sim_prac_reset_worldstate = initial_worldstate;
+
     Debug{} << "DONE loading bsp map";
     return true;
 }
@@ -874,15 +879,39 @@ void DZSimApplication::_debug_LoadEveryMap() {
 
 void DZSimApplication::ConfigureExtraKeyBindings()
 {
+    // Remove Bump Mines from map
     _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
-        if (_csgo_game_sim.HasBeenStarted())
-            _csgo_game_sim.ModifyWorldStateHarshly([](sim::WorldState& world){
-                world.bumpmine_projectiles.clear();
-                Debug{} << "[Sim] Removed all Bump Mines from map";
-            });
+        if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
+        if (!_csgo_game_sim.HasBeenStarted()) return;
+        _csgo_game_sim.ModifyWorldStateHarshly([](sim::WorldState& world) {
+            world.bumpmine_projectiles.clear();
+            Debug{} << "[Sim] Removed all Bump Mines from map";
+        });
     });
 
-    // ----
+    // Save current world state to allow user to reset to it later
+    _inputs.SetKeyPressedCallback_mouse("MButtonMiddle", [this]() {
+        if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
+        if (!_csgo_game_sim.HasBeenStarted()) return;
+        _sim_prac_reset_worldstate = _csgo_game_sim.GetLatestActualWorldState();
+        Debug{} << "[Prac] Saved world state";
+    });
+
+    // Reset worldstate back to the saved worldstate
+    _inputs.SetKeyPressedCallback_mouse("MButtonRight", [this]() {
+        if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
+        if (!_csgo_game_sim.HasBeenStarted()) return;
+        _csgo_game_sim.ModifyWorldStateHarshly([&](sim::WorldState& world) {
+            world = _sim_prac_reset_worldstate;
+            // Reset viewing angles
+            sim::PlayerInput::SetViewingAngles({
+                _sim_prac_reset_worldstate.csgo_mv.m_vecViewAngles[0],
+                _sim_prac_reset_worldstate.csgo_mv.m_vecViewAngles[1],
+                0.0f
+            });
+            Debug{} << "[Prac] Reset world state";
+        });
+    });
 
     _inputs.SetKeyPressedCallback_keyboard("R", [this]() {
         // Start benchmark or ...

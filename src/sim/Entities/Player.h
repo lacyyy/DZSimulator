@@ -15,6 +15,8 @@ namespace sim::Entities {
 
 class Player {
 public:
+
+    // FIXME TODO Move loadout out of WorldState! Make it a global setting!
     class Loadout {
     public:
         enum Weapon {
@@ -60,6 +62,7 @@ public:
         }
     };
 
+    // FIXME TODO Move loadout out of WorldState! Make it a global setting!
     Loadout loadout = Loadout(false, Loadout::Weapon::XM1014, {});
 
     // Set to simulation time point 0 by default
