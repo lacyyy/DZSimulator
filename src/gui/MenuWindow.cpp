@@ -2,6 +2,11 @@
 
 #include <cstdio>
 
+#ifndef DZSIM_WEB_PORT
+#include <Windows.h>
+#include <shellapi.h>
+#endif
+
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StringView.h>
 #include <Corrade/Utility/Path.h>
@@ -196,16 +201,30 @@ void MenuWindow::Draw()
 
         ImGui::Text("");
 
-        ImGui::Text("made by lacyyy");
-        ImGui::BulletText("https://github.com/lacyyy");
-        ImGui::BulletText("https://twitter.com/lacyyycs");
-        ImGui::BulletText("https://twitch.tv/lacyyycs");
-        ImGui::BulletText("https://steamcommunity.com/profiles/76561198162669616");
+        // @PORTING: Make this work not just on Windows
+        auto open_webpage = [](const char* url){
+#ifdef DZSIM_WEB_PORT
+            return; // TODO: Is opening a webpage possible on Emscripten?
+#else
+            // Open a website in the default browser (Windows-only)
+            ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
+#endif
+        };
+
+        ImGui::Text("Made by lacyyy:  ");
+        ImGui::SameLine(); if (ImGui::Button("GitHub"))
+            open_webpage("https://github.com/lacyyy");
+        ImGui::SameLine(); if (ImGui::Button("Twitter/X"))
+            open_webpage("https://twitter.com/lacyyycs");
+        ImGui::SameLine(); if (ImGui::Button("Twitch"))
+            open_webpage("https://twitch.tv/lacyyycs");
+        ImGui::SameLine(); if (ImGui::Button("Steam"))
+            open_webpage("https://steamcommunity.com/profiles/76561198162669616");
 
         ImGui::Separator();
         ImGui::Text("");
 
-        if (ImGui::TreeNode("Build information (Technical)"))
+        if (ImGui::TreeNode("Build information"))
         {
             ImGui::Text("- %s Build", build_info::GetBuildTypeStr());
             
