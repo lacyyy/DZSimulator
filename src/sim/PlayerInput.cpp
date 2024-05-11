@@ -13,14 +13,15 @@ using namespace sim;
 using namespace sim::PlayerInput;
 
 // Game key bindings
-constexpr StringView KEYNAME_FORWARD   = "W"_s;
-constexpr StringView KEYNAME_BACK      = "S"_s;
-constexpr StringView KEYNAME_MOVELEFT  = "A"_s;
-constexpr StringView KEYNAME_MOVERIGHT = "D"_s;
-constexpr StringView KEYNAME_USE       = "E"_s;
-constexpr StringView KEYNAME_JUMP      = "Space"_s;
-constexpr StringView KEYNAME_DUCK      = "Left Ctrl"_s;
-constexpr StringView KEYNAME_SPEED     = "Left Shift"_s;
+constexpr StringView KEYNAME_FORWARD       = "W"_s;
+constexpr StringView KEYNAME_BACK          = "S"_s;
+constexpr StringView KEYNAME_MOVELEFT      = "A"_s;
+constexpr StringView KEYNAME_MOVERIGHT     = "D"_s;
+constexpr StringView KEYNAME_USE           = "E"_s;
+constexpr StringView KEYNAME_JUMP          = "Space"_s;
+constexpr StringView KEYNAME_DUCK          = "Left Ctrl"_s;
+constexpr StringView KEYNAME_SPEED         = "Left Shift"_s;
+constexpr StringView KEYNAME_TOGGLE_NOCLIP = "F"_s;
 
 // Player input state of the current frame
 static State cur_frame;
@@ -35,14 +36,16 @@ bool PlayerInput::HandleKeyPressEvent(Application::KeyEvent& event)
 {
     StringView name = event.keyName();
     bool m = false; // Did we match the keyname?
-    if (name == KEYNAME_FORWARD  ) { m = true; cur_frame.nButtons |= IN_FORWARD;   }
-    if (name == KEYNAME_BACK     ) { m = true; cur_frame.nButtons |= IN_BACK;      }
-    if (name == KEYNAME_MOVELEFT ) { m = true; cur_frame.nButtons |= IN_MOVELEFT;  }
-    if (name == KEYNAME_MOVERIGHT) { m = true; cur_frame.nButtons |= IN_MOVERIGHT; }
-    if (name == KEYNAME_USE      ) { m = true; cur_frame.nButtons |= IN_USE;       }
-    if (name == KEYNAME_JUMP     ) { m = true; cur_frame.nButtons |= IN_JUMP;      }
-    if (name == KEYNAME_DUCK     ) { m = true; cur_frame.nButtons |= IN_DUCK;      }
-    if (name == KEYNAME_SPEED    ) { m = true; cur_frame.nButtons |= IN_SPEED;     }
+    auto& nButtons = cur_frame.nButtons;
+    if (name == KEYNAME_FORWARD      ) { m = true; nButtons |= IN_FORWARD;       }
+    if (name == KEYNAME_BACK         ) { m = true; nButtons |= IN_BACK;          }
+    if (name == KEYNAME_MOVELEFT     ) { m = true; nButtons |= IN_MOVELEFT;      }
+    if (name == KEYNAME_MOVERIGHT    ) { m = true; nButtons |= IN_MOVERIGHT;     }
+    if (name == KEYNAME_USE          ) { m = true; nButtons |= IN_USE;           }
+    if (name == KEYNAME_JUMP         ) { m = true; nButtons |= IN_JUMP;          }
+    if (name == KEYNAME_DUCK         ) { m = true; nButtons |= IN_DUCK;          }
+    if (name == KEYNAME_SPEED        ) { m = true; nButtons |= IN_SPEED;         }
+    if (name == KEYNAME_TOGGLE_NOCLIP) { m = true; nButtons |= IN_TOGGLE_NOCLIP; }
     if (m)
         event.setAccepted();
     return event.isAccepted();
@@ -52,14 +55,16 @@ bool PlayerInput::HandleKeyReleaseEvent(Application::KeyEvent& event)
 {
     StringView name = event.keyName();
     bool m = false; // Did we match the keyname?
-    if (name == KEYNAME_FORWARD  ) { m = true; cur_frame.nButtons &= ~IN_FORWARD;   }
-    if (name == KEYNAME_BACK     ) { m = true; cur_frame.nButtons &= ~IN_BACK;      }
-    if (name == KEYNAME_MOVELEFT ) { m = true; cur_frame.nButtons &= ~IN_MOVELEFT;  }
-    if (name == KEYNAME_MOVERIGHT) { m = true; cur_frame.nButtons &= ~IN_MOVERIGHT; }
-    if (name == KEYNAME_USE      ) { m = true; cur_frame.nButtons &= ~IN_USE;       }
-    if (name == KEYNAME_JUMP     ) { m = true; cur_frame.nButtons &= ~IN_JUMP;      }
-    if (name == KEYNAME_DUCK     ) { m = true; cur_frame.nButtons &= ~IN_DUCK;      }
-    if (name == KEYNAME_SPEED    ) { m = true; cur_frame.nButtons &= ~IN_SPEED;     }
+    auto& nButtons = cur_frame.nButtons;
+    if (name == KEYNAME_FORWARD      ) { m = true; nButtons &= ~IN_FORWARD;       }
+    if (name == KEYNAME_BACK         ) { m = true; nButtons &= ~IN_BACK;          }
+    if (name == KEYNAME_MOVELEFT     ) { m = true; nButtons &= ~IN_MOVELEFT;      }
+    if (name == KEYNAME_MOVERIGHT    ) { m = true; nButtons &= ~IN_MOVERIGHT;     }
+    if (name == KEYNAME_USE          ) { m = true; nButtons &= ~IN_USE;           }
+    if (name == KEYNAME_JUMP         ) { m = true; nButtons &= ~IN_JUMP;          }
+    if (name == KEYNAME_DUCK         ) { m = true; nButtons &= ~IN_DUCK;          }
+    if (name == KEYNAME_SPEED        ) { m = true; nButtons &= ~IN_SPEED;         }
+    if (name == KEYNAME_TOGGLE_NOCLIP) { m = true; nButtons &= ~IN_TOGGLE_NOCLIP; }
     if (m)
         event.setAccepted();
     return event.isAccepted();
@@ -71,10 +76,6 @@ bool PlayerInput::HandleMousePressEvent(Application::MouseEvent& event)
         cur_frame.nButtons |= IN_ATTACK;
         event.setAccepted();
     }
-    if (event.button() == Application::MouseEvent::Button::Right) {
-        cur_frame.nButtons |= IN_TOGGLE_NOCLIP;
-        event.setAccepted();
-    }
     return event.isAccepted();
 }
 
@@ -82,10 +83,6 @@ bool PlayerInput::HandleMouseReleaseEvent(Application::MouseEvent& event)
 {
     if (event.button() == Application::MouseEvent::Button::Left) {
         cur_frame.nButtons &= ~IN_ATTACK;
-        event.setAccepted();
-    }
-    if (event.button() == Application::MouseEvent::Button::Right) {
-        cur_frame.nButtons &= ~IN_TOGGLE_NOCLIP;
         event.setAccepted();
     }
     return event.isAccepted();

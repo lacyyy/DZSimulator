@@ -884,7 +884,7 @@ void DZSimApplication::ConfigureExtraKeyBindings()
 
     // ----
 
-    _inputs.SetKeyPressedCallback_keyboard("F", [this]() {
+    _inputs.SetKeyPressedCallback_keyboard("R", [this]() {
         // Start benchmark or ...
 #if COLL_BENCHMARK_ENABLED
         coll::Benchmark::StaticPropHullTracing();
