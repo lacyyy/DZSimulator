@@ -18,7 +18,7 @@ namespace gui {
         void ShowTechnicalities();
         void ShowMovementRecreationDetails();
         void ShowKnownIssues();
-        void ShowPlannedFeatures();
+        void ShowFeatureIdeas();
 
         void ShowOverlayLagAdvice();
 

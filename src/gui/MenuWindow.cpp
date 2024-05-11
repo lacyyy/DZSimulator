@@ -180,11 +180,11 @@ void MenuWindow::Draw()
         if (ImGui::Button("How accurately is CS:GO movement simulated?"))
             ShowMovementRecreationDetails();
 
-        if (ImGui::Button("Show known issues/bugs"))
+        if (ImGui::Button("Show known bugs"))
             ShowKnownIssues();
 
-        if (ImGui::Button("Show planned features"))
-            ShowPlannedFeatures();
+        if (ImGui::Button("Show new feature ideas"))
+            ShowFeatureIdeas();
 
         ImGui::Text("");
 
@@ -354,27 +354,30 @@ void MenuWindow::ShowMovementRecreationDetails()
 void MenuWindow::ShowKnownIssues()
 {
     _gui_state.popup.QueueMsgWarn(
-        "Known issues that will hopefully be addressed in the future:\n\n"
+        "Known issues that might be addressed in the future:\n\n"
         "  - Some transparent objects disappear when looking through certain "
         "other transparent objects\n"
+        "  - Some objects flicker a lot, especially in the visualization mode "
+        "'Geometry type'\n"
     );
 }
 
-void MenuWindow::ShowPlannedFeatures()
+void MenuWindow::ShowFeatureIdeas()
 {
     _gui_state.popup.QueueMsgInfo(
-        "While developing this, I had a ton of neat feature ideas that could "
-        "turn out very useful. Here is an excerpt from that long list:\n\n"
+        "Some ideas for features I had (No promises they'll happen!):\n\n"
         "  - Option to rebind input keys (yes I know this is kind of needed)\n"
-        "  - Show player's predicted trajectory\n"
+        "  - Show Bump Mine's arming process/progress\n"
+        "  - Show Bump Mine's activation area\n"
+        "  - Show player's predicted trajectory/impact point\n"
+        "  - Show Bump Mine's predicted trajectory/impact point\n"
+        "  - Improve algorithm for coloring glidable surfaces\n"
         "  - Rewind time! Skip your jump back a few seconds to continue from "
         "earlier again\n"
+        "  - Slow down time\n"
         "  - Show player how to optimally strafe at their current speed\n"
-        "  - Entirely reproduce CS:GO's player movement in this app to be able "
-        "to practice jumps while CS:GO is running, e.g. during warmup or "
-        "queuing (This feature is probably A LOT of work)\n"
-        "  - Show Bump Mine's arming process/progress\n"
-        "  - Load and view CS:GO demo recordings"
+        "  - Add textures to surfaces\n"
+        "  - Maybe (maybe maybe) loading Counter-Strike 2 maps"
     );
 }
 
