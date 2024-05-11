@@ -880,7 +880,7 @@ void DZSimApplication::_debug_LoadEveryMap() {
 void DZSimApplication::ConfigureExtraKeyBindings()
 {
     // Remove Bump Mines from map
-    _inputs.SetKeyPressedCallback_keyboard("Q", [this]() {
+    _inputs.SetKeyPressedCallback_keyboard("C", [this]() {
         if (_user_input_mode != UserInputMode::FIRST_PERSON) return;
         if (!_csgo_game_sim.HasBeenStarted()) return;
         _csgo_game_sim.ModifyWorldStateHarshly([](sim::WorldState& world) {
