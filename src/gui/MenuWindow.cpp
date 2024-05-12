@@ -306,9 +306,9 @@ void MenuWindow::Draw()
 void MenuWindow::ShowAppExplanation()
 {
     _gui_state.popup.QueueMsgInfo(
-        "This is a very early version of the \"Danger Zone Simulator\", a "
-        "tool for practicing \"Bump Mine\" jumps in the battle-royale game "
-        "mode \"Danger Zone\" of Counter-Strike: Global Offensive.\n\n"
+        "This is the \"Danger Zone Simulator\", a tool for practicing "
+        "\"Bump Mine\" jumps in the battle-royale game mode \"Danger Zone\""
+        " of Counter-Strike: Global Offensive.\n\n"
         "Due to bugs in the video game engine, players can satisfyingly "
         "slide up sloped surfaces if they have enough speed. (Check out "
         "\"Speed in Excess\" by \"catfjsh?\" on YouTube: "
@@ -317,7 +317,7 @@ void MenuWindow::ShowAppExplanation()
         "parts of surfaces are suitable for rampsliding. That's what this "
         "app tries to make easy.\n\n"
         "NOTE: This is NOT a CS:GO cheat and can't get your account VAC-banned."
-        " The CS:GO-movement tracking feature only works on servers where "
+        " The CS:GO-movement-tracking feature only works on servers where "
         "\"sv_cheats\" can be set to 1. For technical details, see the "
         "\"About\" section in the menu.\n\n"
         "You must have CS:GO installed, because this app works by simply "
@@ -325,11 +325,11 @@ void MenuWindow::ShowAppExplanation()
         "Even when a surface is considered glidable, you might still fail to "
         "achieve the rampslide in CS:GO because that mechanic is inherently "
         "random! It seems like players can do nothing about that fact.\n\n"
-        "Please understand that there could be bugs in this app. If you find "
-        "any, please report them in the \"Issues\" tab on the project's "
-        "website (https://github.com/lacyyy/DZSimulator), where you should "
-        "have downloaded this app from.\nYou can also send me bug reports "
-        "and feedback through my Twitter DMs: https://twitter.com/lacyyycs"
+        "If you find any bugs, please report them in the \"Issues\" tab on "
+        "the project's website (https://github.com/lacyyy/DZSimulator), "
+        "where you should have downloaded this app from.\nYou can also send "
+        "me bug reports and feedback through my Twitter/X DMs: "
+        "https://twitter.com/lacyyycs"
     );
 }
 
