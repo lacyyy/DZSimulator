@@ -23,14 +23,17 @@ Steam and CS:GO must be installed on your machine so that DZSimulator is able to
 
 To install CS:GO, go into your Steam library, right-click on Counter-Strike 2, then go to `Properties` -> `Betas` -> `Beta Participation` and select `Legacy Version of CS:GO`.
 
-DZSimulator can be used by just itself to explore maps, but it can also act as a CS:GO overlay!
-
-If DZSimulator is used as a CS:GO overlay (works only in local server), make sure that:
-- CS:GO is in "Fullscreen Windowed" mode
-- CS:GO was started with the launch option `-netconport 34755`
-- CS:GO loaded a map locally (e.g. with console commands `game_mode 0;game_type 6;map dz_blacksite`) and DZSimulator has the same map loaded
-- In DZSimulator's "Visualizations" menu, "Glidability for player in local CS:GO session" is enabled and you pressed "CONNECT" once CS:GO was started
-- In DZSimulator's "Video Settings" menu, overlay mode is enabled
+That's sufficient to jump around maps in DZSimulator. Optionally, DZSimulator can also act as a CS:GO overlay!
+<details>
+    <summary>Requirements of using DZSimulator as a CS:GO overlay (in local server only)</summary>
+    <ul>
+        <li>CS:GO is in "Fullscreen Windowed" mode</li>
+        <li>CS:GO was started with the launch option "-netconport 34755"</li>
+        <li>CS:GO loaded a map locally (e.g. with console commands "game_mode 0;game_type 6;map dz_blacksite") and DZSimulator has the same map loaded</li>
+        <li>In DZSimulator's "Visualizations" menu, "Glidability for player in local CS:GO session" is enabled and you pressed "CONNECT" once CS:GO was started</li>
+        <li>In DZSimulator's "Video Settings" menu, overlay mode is enabled</li>
+    </ul>
+</details>
 
 To get started with practicing Bump Mines, I recommend watching [this](https://youtu.be/IPWxlnEsLkQ) and [this](https://youtu.be/YblZkx7mXFM) video!
 
@@ -47,12 +50,11 @@ Hence, you can't get VAC-banned for using DZSimulator.
 
 ## <ins>Download</ins>
 
-**Please note that this is a very early version and can contain bugs! If you encounter any, please report them to me through this page's "Issues" tab or through my [Twitter DMs](https://twitter.com/lacyyycs)!**
+**If you encounter any bugs, please report them to me through this page's "Issues" tab or through my [Twitter/X DMs](https://twitter.com/lacyyycs)!**
 
 You can download the newest version of DZSimulator for Windows [**here**](https://github.com/lacyyy/DZSimulator/releases/latest).
 
-Adding a download for GNU/Linux machines is planned in the future!
-Using DZSimulator in the web browser might be possible in the future too!
+Adding a download for GNU/Linux is planned in the future!
 
 ## You can stop reading here if you just want to try out DZSimulator! 
 
@@ -110,7 +112,7 @@ See [BUILDING.md](BUILDING.md)
 
 ### Contributing
 
-Feel free to contribute! If you plan to do so, please message me beforehand (e.g. through [Twitter DMs](https://twitter.com/lacyyycs) or in the "Issues" tab on this repo's webpage)
+Feel free to contribute! If you plan to do so, please message me beforehand (e.g. through [Twitter/X DMs](https://twitter.com/lacyyycs) or in the "Issues" tab on this repo's webpage)
 
 
 
