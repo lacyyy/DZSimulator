@@ -720,8 +720,13 @@ void DZSimApplication::DoCsgoPathSearch(bool show_popup_on_fail)
 
         user_msg += "\n\nIt's required to have Steam and CS:GO installed. "
             "Their installation location must be accessed by this app in order "
-            "to load maps and their assets correctly!\n\nYou can still try to "
-            "partially load '.bsp' files though.";
+            "to load maps and their assets correctly!\nWithout CS:GO installed,"
+            " you can still try to partially load '.bsp' files though.";
+        user_msg += "\n\nTo install CS:GO, go into your Steam library, "
+            "right-click on Counter-Strike 2, then go to 'Properties' -> "
+            "'Betas' -> 'Beta Participation' and select 'Legacy Version of "
+            "CS:GO'.\nAfter CS:GO has finished installing, you can choose a "
+            "map to load from the menu.";
 
         _gui_state.popup.QueueMsgError(user_msg);
     }

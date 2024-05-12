@@ -21,6 +21,8 @@ TODO: Add more images and/or video for demonstration
 
 Steam and CS:GO must be installed on your machine so that DZSimulator is able to load CS:GO maps.
 
+To install CS:GO, go into your Steam library, right-click on Counter-Strike 2, then go to `Properties` -> `Betas` -> `Beta Participation` and select `Legacy Version of CS:GO`.
+
 DZSimulator can be used by just itself to explore maps, but it can also act as a CS:GO overlay!
 
 If DZSimulator is used as a CS:GO overlay (works only in local server), make sure that:
