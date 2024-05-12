@@ -182,7 +182,7 @@ void MenuWindow::Draw()
         if (ImGui::Button("Why is this not a cheat and how does it work?"))
             ShowTechnicalities();
 
-        if (ImGui::Button("How accurately is CS:GO movement simulated?"))
+        if (ImGui::Button("How accurately are CS:GO mechanics recreated?"))
             ShowMovementRecreationDetails();
 
         if (ImGui::Button("Show known bugs"))
@@ -361,12 +361,21 @@ void MenuWindow::ShowTechnicalities()
 void MenuWindow::ShowMovementRecreationDetails()
 {
     _gui_state.popup.QueueMsgInfo(
-        "While this app tries to recreate CS:GO player movement as accurately"
-        "as possible, there are some differences:\n\n"
-        "  - Walking and rampsliding on props can be slightly inaccurate (up to"
-        " 1 unit).\n"
-        "  - ...\n"
-        "  - ...\n"
+        "While this app tries to recreate game mechanics as accurately as "
+        "possible, there are some differences to CS:GO:\n\n"
+        "  - No water movement\n"
+        "  - No ladder climbing\n"
+        "  - No working push triggers\n"
+        "  - Wrong friction and acceleration on some surfaces\n"
+        "  - Forwards exojump boosts are always perfect (as if the player "
+        "crouched and jumped at the exact same time)\n"
+        "  - Getting stuck in displacements behaves differently\n"
+        "  - No accelerated exojump back hopping\n"
+        "  - No stamina reductions (e.g. from jumping or landing)\n"
+        "  - No crouch spamming penalty\n"
+        "  - Inaccurate eye position during crouching/uncrouching\n"
+        "  - Walking and rampsliding on props can be slightly inaccurate (up "
+        "to 1 unit off)"
     );
 }
 
