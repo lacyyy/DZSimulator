@@ -182,11 +182,11 @@ public:
     } gsi;
 
     struct Performance {
-        float OUT_frame_time_mean_ms;
+        float OUT_frame_time_mean_ms = 0.0f;
         Corrade::Containers::String OUT_magnum_profiler_stats;
 
         // Last frame's game simulation calc time (Changes every frame)
-        float OUT_last_sim_calc_time_us;
+        float OUT_last_sim_calc_time_us = 0.0f;
     } perf;
 
     struct MovementDebugging { // Only available in Debug builds
