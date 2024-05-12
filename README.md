@@ -11,7 +11,7 @@ If you don't know what I mean with rampsliding and Bump Mines, watch this: https
 ----
 
 ![Demonstration screenshot 1](docs/media/demo_img_1.png)
-Example of DZSimulator showing the map dz_sirocco and visualizing surfaces that are suitable for rampsliding in green color
+Example of DZSimulator showing the CS:GO map dz_blacksite and visualizing surfaces that are suitable for rampsliding in green color, at a horizontal player speed of 1864 units/sec.
 
 TODO: Add more images and/or video for demonstration
 
