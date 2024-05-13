@@ -88,8 +88,8 @@ public:
         float IN_col_solid_disp_boundary[4] = { 0.000f, 1.000f, 0.750f, 1.000f };
         float IN_col_bump_mine          [4] = { 0.282f, 0.943f, 1.000f, 1.000f };
         float IN_col_slide_success      [4] = { 0.000f, 1.000f, 0.000f, 1.000f };
-        float IN_col_slide_almost_fail  [4] = { 0.800f, 0.400f, 0.150f, 1.000f };
-        float IN_col_slide_fail         [4] = { 0.700f, 0.700f, 0.700f, 1.000f };
+        float IN_col_slide_almost_fail  [4] = { 0.870f, 0.692f, 0.229f, 1.000f };
+        float IN_col_slide_fail         [4] = { 0.900f, 0.900f, 0.900f, 1.000f };
 
         bool IN_display_hori_vel_text = true;
         float IN_hori_vel_text_size = 1.0f;
