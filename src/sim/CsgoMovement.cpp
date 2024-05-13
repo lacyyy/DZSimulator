@@ -929,7 +929,7 @@ void CsgoMovement::FullWalkMove(float frametime)
         //WaterMove();
         //
         //// Redetermine position vars
-        //CategorizePosition();
+        //CategorizePosition(frametime);
         //
         //// If we are on ground, no downward velocity.
         //if (player->GetGroundEntity() != NULL)
@@ -972,7 +972,7 @@ void CsgoMovement::FullWalkMove(float frametime)
 
         // Set final flags.
         bool was_onground_before = m_hGroundEntity;
-        CategorizePosition();
+        CategorizePosition(frametime);
         bool is_onground_now = m_hGroundEntity;
         bool landed_onground_just_now = !was_onground_before && is_onground_now;
 
@@ -1548,7 +1548,7 @@ std::tuple<bool, int16_t> CsgoMovement::TryTouchGroundInQuadrants(const Vector3&
     return { false, -1 };
 }
 
-void CsgoMovement::CategorizePosition(void)
+void CsgoMovement::CategorizePosition(float frametime)
 {
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
@@ -1610,31 +1610,80 @@ void CsgoMovement::CategorizePosition(void)
     }
     else
     {
+        // Decide whether the player should be regarded as "standing on ground"
+        bool put_player_on_ground = false;
+        int16_t ground_surface = -1;
+
         // Try and move down.
         Trace initial_tr = TryTouchGround(bumpOrigin, point, GetPlayerMins(), GetPlayerMaxs());
-
         if (initial_tr.results.DidHit() && initial_tr.results.plane_normal.z() >= g_csgo_game_sim_cfg.sv_standable_normal)
         {
-            SetGroundEntity(true, initial_tr.results.surface);
+            put_player_on_ground = true;
+            ground_surface = initial_tr.results.surface;
         }
         else // Was on ground, but now suddenly am not. If we hit a steep plane, we are not on ground
         {
             // Test four sub-boxes, to see if any of them would have found shallower slope we could actually stand on
             auto [is_ground_standable, standable_ground_surface] = TryTouchGroundInQuadrants(bumpOrigin, point);
-
-            if (is_ground_standable)
-            {
-                SetGroundEntity(true, standable_ground_surface);
+            if (is_ground_standable) {
+                put_player_on_ground = true;
+                ground_surface = standable_ground_surface;
             }
-            else
+            else {
+                put_player_on_ground = false;
+            }
+        }
+
+        // Start of DZSimulator fix:
+        // In some cases, the transition from a flying player to a player
+        // standing on ground is seen as a "random rampslide fail".
+        // If that's undesired, don't let the "rampslide fail" occur by keeping
+        // the player flying in the appropriate cases.
+        if (g_csgo_game_sim_cfg.enable_consistent_rampslides)
+        {
+            // If player was flying through the air and is supposed to be grounded now
+            if (m_MoveType == MOVETYPE_WALK && !m_hGroundEntity && put_player_on_ground)
             {
-                SetGroundEntity(false);
-                // probably want to add a check for a +z velocity too!
-                if ((m_vecVelocity.z() > 0.0f) && m_MoveType != MOVETYPE_NOCLIP)
+                // Assuming the player is kept flying, approximate player velocity in next tick
+                Vector3 vel_next_tick = m_vecVelocity;
+                vel_next_tick.z() -= frametime * g_csgo_game_sim_cfg.sv_gravity;
+                if (vel_next_tick.z() < -g_csgo_game_sim_cfg.sv_maxvelocity)
+                    vel_next_tick.z() = -g_csgo_game_sim_cfg.sv_maxvelocity;
+
+                // Assuming the player is kept flying, do they hit a surface next tick?
+                Vector3 startpos_next_tick = m_vecAbsOrigin;
+                Vector3 endpos_next_tick   = m_vecAbsOrigin + frametime * vel_next_tick;
+                Trace tr_next_tick = TracePlayerBBox(startpos_next_tick, endpos_next_tick);
+                if (tr_next_tick.results.fraction < 1.0f &&
+                    !tr_next_tick.results.startsolid &&
+                    !tr_next_tick.results.allsolid)
                 {
-                    // Allegedly this affects optimal airstrafe mouse movement during subportions of a jump!
-                    m_surfaceFriction = 0.25f;
+                    // Assuming the player is kept flying, clip their velocity against the hit surface
+                    Vector3 clipped_vel;
+                    ClipVelocity(vel_next_tick, tr_next_tick.results.plane_normal, clipped_vel, 1.0f);
+
+                    // Assuming the player is kept flying, is the resulting velocity regarded as "not on ground"?
+                    if (clipped_vel.z() > NON_JUMP_VELOCITY) {
+                        // At this point, it's very likely the player will enter a
+                        // rampslide in the next tick if we don't ground the player now.
+                        // -> Prevent the player from being grounded this tick.
+                        put_player_on_ground = false;
+                    }
                 }
+            }
+        } // End of DZSimulator fix
+
+        // Apply decision (grounding the player or not)
+        if (put_player_on_ground) {
+            SetGroundEntity(true, ground_surface);
+        }
+        else {
+            SetGroundEntity(false);
+            // probably want to add a check for a +z velocity too!
+            if ((m_vecVelocity.z() > 0.0f) && m_MoveType != MOVETYPE_NOCLIP)
+            {
+                // Allegedly this affects optimal airstrafe mouse movement during subportions of a jump!
+                m_surfaceFriction = 0.25f;
             }
         }
     }
@@ -1729,7 +1778,7 @@ bool CsgoMovement::CanUnduck()
 }
 
 // Purpose: Stop ducking
-void CsgoMovement::FinishUnDuck(void)
+void CsgoMovement::FinishUnDuck(float frametime)
 {
     Vector3 newOrigin = m_vecAbsOrigin;
 
@@ -1758,11 +1807,11 @@ void CsgoMovement::FinishUnDuck(void)
     // player->ResetLatched(); // Some kind of animation reset
 
     // Recategorize position since ducking can change origin
-    CategorizePosition();
+    CategorizePosition(frametime);
 }
 
 // Purpose: Finish ducking
-void CsgoMovement::FinishDuck(void)
+void CsgoMovement::FinishDuck(float frametime)
 {
     if (m_fFlags & FL_DUCKING)
         return;
@@ -1792,7 +1841,7 @@ void CsgoMovement::FinishDuck(void)
     //FixPlayerCrouchStuck(true);
 
     // Recategorize position since ducking can change origin
-    CategorizePosition();
+    CategorizePosition(frametime);
 }
 
 void CsgoMovement::SetDuckedEyeOffset(float duckFraction)
@@ -1839,7 +1888,7 @@ void CsgoMovement::HandleDuckingSpeedCrop(void)
 }
 
 // Purpose: See if duck button is pressed and do the appropriate things
-void CsgoMovement::Duck(void)
+void CsgoMovement::Duck(float frametime)
 {
     if (m_MoveType == MOVETYPE_NOCLIP)
         return;
@@ -1883,7 +1932,7 @@ void CsgoMovement::Duck(void)
                 // Finish in duck transition when transition time is over, in "duck", in air.
                 if (flDuckSeconds > TIME_TO_DUCK || bInDuck || bInAir)
                 {
-                    FinishDuck();
+                    FinishDuck(frametime);
                 }
                 else
                 {
@@ -1936,7 +1985,7 @@ void CsgoMovement::Duck(void)
                         // Finish ducking immediately if duck time is over or not on ground
                         if (flDuckSeconds > TIME_TO_UNDUCK || bInAir)
                         {
-                            FinishUnDuck();
+                            FinishUnDuck(frametime);
                         }
                         else
                         {
@@ -2053,7 +2102,7 @@ void CsgoMovement::PlayerMove(float time_delta)
     // Now that we are "unstuck", see where we are (player->GetWaterLevel() and type, player->GetGroundEntity()).
     if (m_MoveType != MOVETYPE_WALK /*|| mv->m_bGameCodeMovedPlayer*/)
     {
-        CategorizePosition();
+        CategorizePosition(time_delta);
     }
     else
     {
@@ -2078,7 +2127,7 @@ void CsgoMovement::PlayerMove(float time_delta)
 
     // If this function slows down the player due to ducking,
     // the SPEED_CROPPED_DUCK flag gets set in m_iSpeedCropped.
-    Duck();
+    Duck(time_delta);
 
     // Slow down player if walk button is pressed AND the ducking speed crop
     // WASN'T applied by the Duck() function.

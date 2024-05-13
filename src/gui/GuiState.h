@@ -153,6 +153,7 @@ public:
             sim::CsgoConfig::GameMode::DANGER_ZONE;
 
         bool IN_enable_consistent_bumpmine_activations = true;
+        bool IN_enable_consistent_rampslides = true;
 
         using Loadout = sim::Entities::Player::Loadout;
         Loadout IN_loadout = Loadout(

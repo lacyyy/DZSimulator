@@ -27,7 +27,8 @@ public:
 
     // ------------- Misc settings -------------
 
-    bool enable_consistent_bumpmine_activations;
+    bool enable_consistent_bumpmine_activations; // DZSimulator fix
+    bool enable_consistent_rampslides;           // DZSimulator fix
 
     // ------------- CSGO ConVars -------------
 

@@ -202,7 +202,7 @@ public:
         Magnum::Vector3& out, float overbounce);
 
     // Determine if player is in water, on ground, etc.
-    void CategorizePosition(void);
+    void CategorizePosition(float frametime);
 
     void CheckParameters(void);
 
@@ -211,10 +211,10 @@ public:
     void CheckFalling(void);
 
     // Ducking
-    void Duck(void);
+    void Duck(float frametime);
     void HandleDuckingSpeedCrop();
-    void FinishUnDuck(void);
-    void FinishDuck(void);
+    void FinishUnDuck(float frametime);
+    void FinishDuck(float frametime);
     bool CanUnduck();
     void SetDuckedEyeOffset(float duckFraction);
 

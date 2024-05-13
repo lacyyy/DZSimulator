@@ -796,14 +796,24 @@ void MenuWindow::DrawGameConfig()
 
     ImGui::Separator();
 
-    ImGui::Checkbox("Enable consistent Bump Mine activations",
+    ImGui::Checkbox("Enable fix for consistent Bump Mine activations",
         &_gui_state.game_cfg.IN_enable_consistent_bumpmine_activations);
     ImGui::SameLine();
     _gui.HelpMarker(
-        ">>>> By default in CS:GO, Bump Mines check for player activations\n"
-        "only 10 times per second. This leads to players sometimes failing\n"
-        "to activate them at higher moving speeds.\n"
-        "Enable this to let Bump Mines check for player activations every tick.");
+        ">>>> By default in CS:GO, Bump Mines check for player activations only\n"
+        "10 times per second. This leads to players sometimes failing to activate\n"
+        "them at higher moving speeds.\n"
+        "Enable this fix to let Bump Mines check for player activations every tick.");
+
+    ImGui::Checkbox("Enable fix for consistent rampslides",
+                    &_gui_state.game_cfg.IN_enable_consistent_rampslides);
+    ImGui::SameLine();
+    _gui.HelpMarker(
+        ">>>> By default in CS:GO, roughly 1 in 10 rampslide attempts (on 64 tick)\n"
+        "randomly fail even when the player has the right speed and impact angle.\n"
+        "Enable this fix to eliminate this source of randomness.\n"
+        "Note that you might still get randomly stuck on uneven surfaces while\n"
+        "rampsliding.");
 
     ImGui::Separator();
 

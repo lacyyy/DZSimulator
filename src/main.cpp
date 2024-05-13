@@ -1060,6 +1060,12 @@ void DZSimApplication::DoUpdate()
         g_csgo_game_sim_cfg.enable_consistent_bumpmine_activations =
             _gui_state.game_cfg.IN_enable_consistent_bumpmine_activations;
     }
+    if (_gui_state.game_cfg.IN_enable_consistent_rampslides !=
+        g_csgo_game_sim_cfg.enable_consistent_rampslides)
+    {
+        g_csgo_game_sim_cfg.enable_consistent_rampslides =
+            _gui_state.game_cfg.IN_enable_consistent_rampslides;
+    }
 
     // Update simulation player loadout if user wants to change it
     if (_csgo_game_sim.HasBeenStarted()) {
