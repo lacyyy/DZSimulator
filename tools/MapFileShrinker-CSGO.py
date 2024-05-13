@@ -22,7 +22,7 @@
 
 # Make sure this is a complete list of all lumps that the current version of
 # DZSimulator makes use of!
-LUMPS_USED_BY_DZSIMULATOR = [ # Lumps used by DZSimulator version 0.0.4
+LUMPS_USED_BY_DZSIMULATOR = [ # Lumps used by DZSimulator version 1.0.0
      0, # LUMP_IDX_ENTITIES
      1, # LUMP_IDX_PLANES
      2, # LUMP_IDX_TEXDATA
