@@ -98,15 +98,20 @@ static void TryParseColor4f(float* dest, const json* src) {
         dest[i] = temp[i]; // Only copy results to output if no error occurred
 }
 
+// Parse user data and write its contents into the given GuiState.
 // The format version of the given user data JSON object must be equal to
 // CURRENT_USER_DATA_FORMAT_VERSION.
-static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
+static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data,
+                                                     const gui::GuiState& base = {})
+{
     if (!user_data.contains("Settings") || !user_data["Settings"].is_object())
         return {};
 
     const json *s = &user_data["Settings"];
 
-    gui::GuiState g; // Default-construct to start off with default settings
+    // Start off by copying the given GuiState.
+    // Then overwrite some settings using the JSON user data.
+    gui::GuiState g = base;
 
     TryParseBool(g.show_intro_msg_on_startup, GetNestedValue(s, "ShowIntroductoryMsgOnStartup"));
 
@@ -569,4 +574,22 @@ void SavedUserDataHandler::SaveUserSettingsToFile(const gui::GuiState& gui_state
     else
         Utility::Debug{} << DEBUG_ID << "Successfully wrote settings to file: \"" << *file_path << "\"";
 #endif
+}
+
+void SavedUserDataHandler::ResetUserSettingsToDefaults(gui::GuiState& gui_state)
+{
+    // Note: We can't just overwrite the GuiState with a default-constructed
+    //       GuiState.
+    //       We're only allowed to overwrite the fields that get saved to file.
+
+    // Create JSON user data with default contents
+    gui::GuiState default_gui_state = {}; // Default-constructed -> Default settings
+    json default_user_data = ConvertUserSettingsToUserDataJson(default_gui_state);
+
+    // Parse the JSON user data into a copy of the target GuiState
+    gui::GuiState result =
+        ParseUserDataFromCurrentVersion(default_user_data, gui_state);
+
+    // Write result back
+    gui_state = std::move(result);
 }

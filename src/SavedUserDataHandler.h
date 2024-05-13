@@ -17,6 +17,10 @@ namespace SavedUserDataHandler {
 
     void SaveUserSettingsToFile(const gui::GuiState& gui_state);
 
+    // Resets all fields of the GuiState, that get saved to file, to their
+    // default values.
+    void ResetUserSettingsToDefaults(gui::GuiState& gui_state);
+
 }
 
 #endif // SAVEDUSERDATAHANDLER_H_

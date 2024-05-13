@@ -151,11 +151,6 @@ void MenuWindow::Draw()
         DrawVideoSettings();
     }
 
-    if (ImGui::CollapsingHeader("Other"))
-    {
-        DrawOther();
-    }
-
     if (sim::ENABLE_MOVEMENT_DEBUGGING) {
         if (ImGui::CollapsingHeader("Movement Debugging (Debug only)")) {
             DrawMovementDebugging();
@@ -198,8 +193,6 @@ void MenuWindow::Draw()
         ImGui::Text("\"Danger Zone Simulator\" version %s (%s)",
             build_info::GetVersionStr(),
             build_info::GetBuildTimeStr());
-
-        ImGui::Text("");
 
         // @PORTING: Make this work not just on Windows
         auto open_webpage = [](const char* url){
@@ -270,10 +263,47 @@ void MenuWindow::Draw()
             ImGui::TreePop();
         }
 
-        ImGui::Text("");
-
         if (ImGui::Button("Show third party legal notices"))
             _gui_state.show_window_legal_notices ^= true;
+
+        { // Settings reset button. Upon pressing, ask user to confirm it once more
+            static bool s_confirming_reset = false;
+            if (!s_confirming_reset) {
+                if (ImGui::Button("Reset all settings"))
+                    s_confirming_reset = true;
+            }
+            else {
+                if (ImGui::Button("   YES   ##reset"))
+                {
+                    // === RESET ALL SETTINGS ===
+
+                    // Some settings shouldn't be reset.
+                    // (To avoid bugs or annoyances to the user.)
+                    auto temp1 = _gui_state.show_intro_msg_on_startup;
+                    auto temp2 = _gui_state.video.IN_window_mode;
+                    auto temp3 = _gui_state.video.IN_selected_display_idx;
+
+                    SavedUserDataHandler::ResetUserSettingsToDefaults(_gui_state);
+
+                    // Restore some settings again
+                    _gui_state.show_intro_msg_on_startup     = temp1;
+                    _gui_state.video.IN_window_mode          = temp2;
+                    _gui_state.video.IN_selected_display_idx = temp3;
+
+                    // Trigger some updates
+                    _gui._gui_scaling_update_required = true;
+
+                    s_confirming_reset = false;
+                }
+                ImGui::SameLine(); if (ImGui::Button("   NO   ##reset")) s_confirming_reset = false;
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.55f, 0.0f, 1.0f });
+                ImGui::Text("Are you sure you want to reset everything? Can't undo!");
+                ImGui::PopStyleColor(1); // ImGuiCol_Text
+            }
+        }
+        ImGui::Separator();
+        ImGui::Separator();
     }
 
     { // Quit button. Upon pressing, ask user to confirm it once more
@@ -285,10 +315,10 @@ void MenuWindow::Draw()
                 s_confirming_quit = true;
         }
         else {
-            if (ImGui::Button("   YES   "))
+            if (ImGui::Button("   YES   ##quit_app"))
                 _gui_state.app_exit_requested = true;
             ImGui::SameLine();
-            if (ImGui::Button("   NO   "))
+            if (ImGui::Button("   NO   ##quit_app"))
                 s_confirming_quit = false;
             ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.55f, 0.0f, 1.0f });
@@ -1150,24 +1180,6 @@ std::string MenuWindow::GetDisplayName(int idx, int w, int h)
 {
     return "Display " + std::to_string(idx)
         + " (" + std::to_string(w) + "x" + std::to_string(h) + ")";
-}
-
-void MenuWindow::DrawOther()
-{
-#ifndef DZSIM_WEB_PORT
-    // @PORTING Replace "Windows Explorer" with something else fitting for
-    //          Unix and Emscripten.
-    if (ImGui::Button("Show user settings file in Windows Explorer"))
-        SavedUserDataHandler::OpenSaveFileDirectoryInFileExplorer();
-
-    ImGui::Text(
-        "You can switch back to default settings with these steps:\n"
-        "1. Show user settings file in Windows Explorer\n"
-        "2. Close DZSimulator\n"
-        "3. Delete user settings file\n"
-        "4. Re-open DZSimulator"
-    );
-#endif
 }
 
 void MenuWindow::DrawMovementDebugging()

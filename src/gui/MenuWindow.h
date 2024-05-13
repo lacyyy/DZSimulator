@@ -35,8 +35,6 @@ namespace gui {
         void DrawVideoSettings();
         std::string GetDisplayName(int idx, int w, int h);
 
-        void DrawOther();
-
         void DrawMovementDebugging();
 
         void DrawCollisionDebugging();
