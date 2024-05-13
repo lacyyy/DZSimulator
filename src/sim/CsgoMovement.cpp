@@ -2079,6 +2079,22 @@ void CsgoMovement::PlayerMove(float time_delta)
     // GENERAL REMINDER: When copying source-sdk-2013 code like `vec1 == vec2`,
     //                   replace it with `SourceSdkVectorEqual(vec1, vec2)`!
 
+    // If user pressed the toggle-noclip button
+    bool toggle_noclip = !(m_nOldButtons & IN_TOGGLE_NOCLIP) &&
+                         (m_nButtons & IN_TOGGLE_NOCLIP);
+    if (toggle_noclip) {
+        if (m_MoveType != MOVETYPE_NOCLIP) {
+            // Enter noclip mode
+            m_MoveType = MOVETYPE_NOCLIP;
+        }
+        else {
+            // Leave noclip mode
+            m_MoveType = MOVETYPE_WALK;
+            // Init ground state correctly for this next walk move
+            CategorizePosition(time_delta);
+        }
+    }
+
     CheckParameters();
 
     // clear output applied velocity

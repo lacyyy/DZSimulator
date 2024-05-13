@@ -123,18 +123,6 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
     // Apply button input
     csgo_mv.m_nButtons = used_input.nButtons;
 
-    // -----------------------------------------------
-
-    // If user pressed the toggle-noclip button
-    if (!(csgo_mv.m_nOldButtons & IN_TOGGLE_NOCLIP) &&
-        (csgo_mv.m_nButtons & IN_TOGGLE_NOCLIP))
-    {
-        if (csgo_mv.m_MoveType != MOVETYPE_NOCLIP)
-            csgo_mv.m_MoveType = MOVETYPE_NOCLIP;
-        else
-            csgo_mv.m_MoveType = MOVETYPE_WALK;
-    }
-
     // If the user scrollwheel jumped, set the jump input for _this_
     // advancement of player movement simulation.
     if (used_input.scrollwheel_jumped && csgo_mv.m_MoveType != MOVETYPE_NOCLIP)
@@ -142,18 +130,6 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
 
 
     // ---- SIMULATE CS:GO GAME ----
-
-    csgo_mv.m_flForwardMove = 0.0f;
-    if (csgo_mv.m_nButtons & IN_FORWARD)
-        csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
-    if (csgo_mv.m_nButtons & IN_BACK)
-        csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
-
-    csgo_mv.m_flSideMove = 0.0f;
-    if (csgo_mv.m_nButtons & IN_MOVERIGHT)
-        csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
-    if (csgo_mv.m_nButtons & IN_MOVELEFT)
-        csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
 
     // Delete detonated Bump Mine projectiles
     std::erase_if(bumpmine_projectiles,
@@ -189,6 +165,18 @@ void WorldState::AdvanceSimulation(SimTimeDur simtime_delta,
 
     // Let movement class know about player's equipment
     csgo_mv.m_loadout = player.loadout;
+
+    csgo_mv.m_flForwardMove = 0.0f;
+    if (csgo_mv.m_nButtons & IN_FORWARD)
+        csgo_mv.m_flForwardMove += g_csgo_game_sim_cfg.cl_forwardspeed;
+    if (csgo_mv.m_nButtons & IN_BACK)
+        csgo_mv.m_flForwardMove -= g_csgo_game_sim_cfg.cl_backspeed;
+
+    csgo_mv.m_flSideMove = 0.0f;
+    if (csgo_mv.m_nButtons & IN_MOVERIGHT)
+        csgo_mv.m_flSideMove += g_csgo_game_sim_cfg.cl_sidespeed;
+    if (csgo_mv.m_nButtons & IN_MOVELEFT)
+        csgo_mv.m_flSideMove -= g_csgo_game_sim_cfg.cl_sidespeed;
 
     // -------- start of source-sdk-2013 code --------
     // (taken and modified from source-sdk-2013/<...>/src/game/shared/gamemovement.cpp)
