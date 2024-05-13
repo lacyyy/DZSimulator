@@ -306,27 +306,10 @@ void MenuWindow::Draw()
         ImGui::Separator();
     }
 
-    { // Quit button. Upon pressing, ask user to confirm it once more
-        static bool s_confirming_quit = false;
-        ImGui::PushStyleColor(ImGuiCol_Button, MENU_ELEM_COLOR);
-        ImGui::Text("");
-        if (!s_confirming_quit) {
-            if (ImGui::Button(" QUIT "))
-                s_confirming_quit = true;
-        }
-        else {
-            if (ImGui::Button("   YES   ##quit_app"))
-                _gui_state.app_exit_requested = true;
-            ImGui::SameLine();
-            if (ImGui::Button("   NO   ##quit_app"))
-                s_confirming_quit = false;
-            ImGui::SameLine();
-            ImGui::PushStyleColor(ImGuiCol_Text, { 1.0f, 0.55f, 0.0f, 1.0f });
-            ImGui::Text("Are you sure you want to quit?");
-            ImGui::PopStyleColor(1); // ImGuiCol_Text
-        }
-        ImGui::PopStyleColor(1); // ImGuiCol_Button
-    }
+    ImGui::Text("");
+    ImGui::PushStyleColor(ImGuiCol_Button, MENU_ELEM_COLOR);
+    if (ImGui::Button(" QUIT ")) _gui_state.app_exit_requested = true;
+    ImGui::PopStyleColor(1); // ImGuiCol_Button
 
     ImGui::PopStyleColor(1); // ImGuiCol_Header
 
