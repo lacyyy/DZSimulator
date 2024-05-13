@@ -19,7 +19,7 @@ public:
     // FIXME TODO Move loadout out of WorldState! Make it a global setting!
     class Loadout {
     public:
-        enum Weapon {
+        enum Weapon { // Don't forget to update save file code when adding weapons!
             Fists = 0,
             Knife,
             BumpMine,

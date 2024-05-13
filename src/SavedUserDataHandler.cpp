@@ -26,10 +26,29 @@ using namespace Corrade;
 using json = nlohmann::json;
 
 // Increment this number each time we change the JSON format of user data.
-// Also make sure previous version can be upgraded to the latest version.
-const int CURRENT_USER_DATA_FORMAT_VERSION = 1;
+// If possible, also try to make sure the previous versions can be upgraded to
+// the latest version (to preserve a user's settings across updates).
+const int CURRENT_USER_DATA_FORMAT_VERSION = 2;
+
+// -----------------------------------------------------------------------------
+
+// History of DZSimulator's handling of saved user data:
+//
+// DZSimulator v0.0.1: Does not save user data
+// DZSimulator v0.0.2: Does not save user data
+// DZSimulator v0.0.3: Does not save user data
+// DZSimulator v0.0.4: Saves user data using UserDataFormat Version 1
+// DZSimulator v1.0.0: Saves user data using UserDataFormat Version 2
+//                     Note: Does _not_ copy/upgrade user data from v0.0.4!
+//                           (To start fresh with new defaults for settings.)
+
+// -----------------------------------------------------------------------------
 
 const char* DEBUG_ID = "[SavedUserData]";
+
+static std::string Color4fToStr(const float *src) {
+    return Utility::format("{:.3f} {:.3f} {:.3f} {:.3f}", src[0], src[1], src[2], src[3]);
+}
 
 // If nested value doesn't exist, nullptr gets returned
 static const json* GetNestedValue(const json *obj, Containers::StringView key1) {
@@ -91,6 +110,8 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
 
     TryParseBool(g.show_intro_msg_on_startup, GetNestedValue(s, "ShowIntroductoryMsgOnStartup"));
 
+    TryParseFloat(g.ctrls.IN_mouse_sensitivity, GetNestedValue(s, "Controls", "mouse-sensitivity"));
+
     TryParseFloat(g.vis.IN_hori_light_angle, GetNestedValue(s, "SunlightDirection"));
 
     TryParseColor4f(g.vis.IN_col_sky,                 GetNestedValue(s, "WorldGeometryColors", "sky"));
@@ -100,7 +121,7 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
     TryParseColor4f(g.vis.IN_col_grenade_clip,        GetNestedValue(s, "WorldGeometryColors", "grenade-clip"));
     TryParseColor4f(g.vis.IN_col_trigger_push,        GetNestedValue(s, "WorldGeometryColors", "push-trigger"));
     TryParseColor4f(g.vis.IN_col_solid_displacements, GetNestedValue(s, "WorldGeometryColors", "solid-displacement"));
-    TryParseColor4f(g.vis.IN_col_solid_xprops,        GetNestedValue(s, "WorldGeometryColors", "solid-static-prop")); // Repurposed to xprops
+    TryParseColor4f(g.vis.IN_col_solid_xprops,        GetNestedValue(s, "WorldGeometryColors", "solid-x-prop"));
     TryParseColor4f(g.vis.IN_col_solid_other_brushes, GetNestedValue(s, "WorldGeometryColors", "other-solid-brush"));
     TryParseColor4f(g.vis.IN_col_bump_mine,           GetNestedValue(s, "WorldGeometryColors", "bump-mine"));
 
@@ -110,6 +131,7 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
     std::string geo_vis_mode = "";
     TryParseString(geo_vis_mode, GetNestedValue(s, "GeometryVisualizationModes", "selected-mode"));
     if (geo_vis_mode.compare("geometry-type") == 0)                 g.vis.IN_geo_vis_mode = g.vis.GEO_TYPE;
+    if (geo_vis_mode.compare("glidability-of-simulation") == 0)     g.vis.IN_geo_vis_mode = g.vis.GLID_OF_SIMULATION;
     if (geo_vis_mode.compare("glidability-at-specific-speed") == 0) g.vis.IN_geo_vis_mode = g.vis.GLID_AT_SPECIFIC_SPEED;
     if (geo_vis_mode.compare("glidability-of-csgo-session") == 0)   g.vis.IN_geo_vis_mode = g.vis.GLID_OF_CSGO_SESSION;
 
@@ -125,6 +147,44 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
     TryParseColor4f(g.vis.IN_col_hori_vel_text,     GetNestedValue(s, "PlayerSpeedDisplay", "color"));
     TryParseFloat  (g.vis.IN_hori_vel_text_pos.x(), GetNestedValue(s, "PlayerSpeedDisplay", "position_x"));
     TryParseFloat  (g.vis.IN_hori_vel_text_pos.y(), GetNestedValue(s, "PlayerSpeedDisplay", "position_y"));
+
+    TryParseColor4f(g.vis.IN_crosshair_col,       GetNestedValue(s, "Crosshair", "color"));
+    TryParseFloat  (g.vis.IN_crosshair_scale,     GetNestedValue(s, "Crosshair", "scale"));
+    TryParseFloat  (g.vis.IN_crosshair_length,    GetNestedValue(s, "Crosshair", "length"));
+    TryParseFloat  (g.vis.IN_crosshair_thickness, GetNestedValue(s, "Crosshair", "thickness"));
+    TryParseFloat  (g.vis.IN_crosshair_gap,       GetNestedValue(s, "Crosshair", "gap"));
+
+    std::string gamecfg_game_mode = "";
+    TryParseString(gamecfg_game_mode, GetNestedValue(s, "GameConfig", "game-mode"));
+    if (gamecfg_game_mode == "csgo-danger-zone") g.game_cfg.IN_game_mode = sim::CsgoConfig::GameMode::DANGER_ZONE;
+    if (gamecfg_game_mode == "csgo-competitive") g.game_cfg.IN_game_mode = sim::CsgoConfig::GameMode::COMPETITIVE;
+
+    TryParseBool(g.game_cfg.IN_enable_consistent_bumpmine_activations, GetNestedValue(s, "GameConfig", "enable-bump-activation-fix"));
+    TryParseBool(g.game_cfg.IN_enable_consistent_rampslides,           GetNestedValue(s, "GameConfig", "enable-rampslide-fix"));
+
+    TryParseBool(g.game_cfg.IN_loadout.has_exojump, GetNestedValue(s, "GameConfig", "PlayerEquipment", "exojump"));
+
+    using Weapon = sim::Entities::Player::Loadout::Weapon;
+    std::string active_weapon = "";
+    TryParseString(active_weapon, GetNestedValue(s, "GameConfig", "PlayerEquipment", "active-weapon"));
+    if (active_weapon == "fists"    ) g.game_cfg.IN_loadout.active_weapon = Weapon::Fists;
+    if (active_weapon == "knife"    ) g.game_cfg.IN_loadout.active_weapon = Weapon::Knife;
+    if (active_weapon == "bump-mine") g.game_cfg.IN_loadout.active_weapon = Weapon::BumpMine;
+    if (active_weapon == "taser"    ) g.game_cfg.IN_loadout.active_weapon = Weapon::Taser;
+    if (active_weapon == "xm1014"   ) g.game_cfg.IN_loadout.active_weapon = Weapon::XM1014;
+
+    bool nonactive_fists    = false; TryParseBool(nonactive_fists,    GetNestedValue(s, "GameConfig", "PlayerEquipment", "non_active_fists"));
+    bool nonactive_knife    = false; TryParseBool(nonactive_knife,    GetNestedValue(s, "GameConfig", "PlayerEquipment", "non_active_knife"));
+    bool nonactive_bumpmine = false; TryParseBool(nonactive_bumpmine, GetNestedValue(s, "GameConfig", "PlayerEquipment", "non_active_bump-mine"));
+    bool nonactive_taser    = false; TryParseBool(nonactive_taser,    GetNestedValue(s, "GameConfig", "PlayerEquipment", "non_active_taser"));
+    bool nonactive_xm1014   = false; TryParseBool(nonactive_xm1014,   GetNestedValue(s, "GameConfig", "PlayerEquipment", "non_active_xm1014"));
+    g.game_cfg.IN_loadout.non_active_weapons.set(Weapon::Fists,    nonactive_fists);
+    g.game_cfg.IN_loadout.non_active_weapons.set(Weapon::Knife,    nonactive_knife);
+    g.game_cfg.IN_loadout.non_active_weapons.set(Weapon::BumpMine, nonactive_bumpmine);
+    g.game_cfg.IN_loadout.non_active_weapons.set(Weapon::Taser,    nonactive_taser);
+    g.game_cfg.IN_loadout.non_active_weapons.set(Weapon::XM1014,   nonactive_xm1014);
+    // Non-active weapon list must not include the active weapon
+    g.game_cfg.IN_loadout.non_active_weapons.set(g.game_cfg.IN_loadout.active_weapon, false);
 
     std::string window_mode = "";
     TryParseString(window_mode, GetNestedValue(s, "VideoSettings", "WindowSettings", "selected-mode"));
@@ -151,23 +211,136 @@ static gui::GuiState ParseUserDataFromCurrentVersion(const json& user_data) {
     return g;
 }
 
+// Returns the JSON object that will be stored under the "UserData" key in the
+// save file.
+static json ConvertUserSettingsToUserDataJson(const gui::GuiState& gui_state) {
+    json user_data = json::object();
+
+    user_data["Settings"] = json::object();
+    json& settings = user_data["Settings"];
+
+    settings["ShowIntroductoryMsgOnStartup"] = gui_state.show_intro_msg_on_startup;
+
+    settings["Controls"]["mouse-sensitivity"] = gui_state.ctrls.IN_mouse_sensitivity;
+
+    settings["SunlightDirection"] = gui_state.vis.IN_hori_light_angle;
+
+    settings["WorldGeometryColors"]["sky"               ] = Color4fToStr(gui_state.vis.IN_col_sky);
+    settings["WorldGeometryColors"]["water"             ] = Color4fToStr(gui_state.vis.IN_col_water);
+    settings["WorldGeometryColors"]["ladder"            ] = Color4fToStr(gui_state.vis.IN_col_ladders);
+    settings["WorldGeometryColors"]["player-clip"       ] = Color4fToStr(gui_state.vis.IN_col_player_clip);
+    settings["WorldGeometryColors"]["grenade-clip"      ] = Color4fToStr(gui_state.vis.IN_col_grenade_clip);
+    settings["WorldGeometryColors"]["push-trigger"      ] = Color4fToStr(gui_state.vis.IN_col_trigger_push);
+    settings["WorldGeometryColors"]["solid-displacement"] = Color4fToStr(gui_state.vis.IN_col_solid_displacements);
+    settings["WorldGeometryColors"]["solid-x-prop"      ] = Color4fToStr(gui_state.vis.IN_col_solid_xprops);
+    settings["WorldGeometryColors"]["other-solid-brush" ] = Color4fToStr(gui_state.vis.IN_col_solid_other_brushes);
+    settings["WorldGeometryColors"]["bump-mine"         ] = Color4fToStr(gui_state.vis.IN_col_bump_mine);
+
+    settings["DisplacementEdges"]["show" ] = gui_state.vis.IN_draw_displacement_edges;
+    settings["DisplacementEdges"]["color"] = Color4fToStr(gui_state.vis.IN_col_solid_disp_boundary);
+
+    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GEO_TYPE)
+        settings["GeometryVisualizationModes"]["selected-mode"] = "geometry-type";
+    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GLID_OF_SIMULATION)
+        settings["GeometryVisualizationModes"]["selected-mode"] = "glidability-of-simulation";
+    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GLID_AT_SPECIFIC_SPEED)
+        settings["GeometryVisualizationModes"]["selected-mode"] = "glidability-at-specific-speed";
+    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GLID_OF_CSGO_SESSION)
+        settings["GeometryVisualizationModes"]["selected-mode"] = "glidability-of-csgo-session";
+
+    settings["GeometryVisualizationModes"]["ModeSpecificSettings"] = json::object();
+    json& geo_mode_specific = settings["GeometryVisualizationModes"]["ModeSpecificSettings"];
+    geo_mode_specific["glidability-at-specific-speed"]["SimulatedHoriSpeed"] = gui_state.vis.IN_specific_glid_vis_hori_speed;
+
+    settings["SlidabilityColors"]["slide-success"    ] = Color4fToStr(gui_state.vis.IN_col_slide_success);
+    settings["SlidabilityColors"]["slide-almost-fail"] = Color4fToStr(gui_state.vis.IN_col_slide_almost_fail);
+    settings["SlidabilityColors"]["slide-fail"       ] = Color4fToStr(gui_state.vis.IN_col_slide_fail);
+
+    settings["PlayerSpeedDisplay"]["show"      ] = gui_state.vis.IN_display_hori_vel_text;
+    settings["PlayerSpeedDisplay"]["size"      ] = gui_state.vis.IN_hori_vel_text_size;
+    settings["PlayerSpeedDisplay"]["color"     ] = Color4fToStr(gui_state.vis.IN_col_hori_vel_text);
+    settings["PlayerSpeedDisplay"]["position_x"] = gui_state.vis.IN_hori_vel_text_pos.x();
+    settings["PlayerSpeedDisplay"]["position_y"] = gui_state.vis.IN_hori_vel_text_pos.y();
+
+    settings["Crosshair"]["color"    ] = Color4fToStr(gui_state.vis.IN_crosshair_col);
+    settings["Crosshair"]["scale"    ] = gui_state.vis.IN_crosshair_scale;
+    settings["Crosshair"]["length"   ] = gui_state.vis.IN_crosshair_length;
+    settings["Crosshair"]["thickness"] = gui_state.vis.IN_crosshair_thickness;
+    settings["Crosshair"]["gap"      ] = gui_state.vis.IN_crosshair_gap;
+
+    if (gui_state.game_cfg.IN_game_mode == sim::CsgoConfig::GameMode::DANGER_ZONE) settings["GameConfig"]["game-mode"] = "csgo-danger-zone";
+    if (gui_state.game_cfg.IN_game_mode == sim::CsgoConfig::GameMode::COMPETITIVE) settings["GameConfig"]["game-mode"] = "csgo-competitive";
+
+    settings["GameConfig"]["enable-bump-activation-fix"] = gui_state.game_cfg.IN_enable_consistent_bumpmine_activations;
+    settings["GameConfig"]["enable-rampslide-fix"      ] = gui_state.game_cfg.IN_enable_consistent_rampslides;
+
+    using Weapon = sim::Entities::Player::Loadout::Weapon;
+    const sim::Entities::Player::Loadout& player_loadout = gui_state.game_cfg.IN_loadout;
+    settings["GameConfig"]["PlayerEquipment"]["exojump"] = player_loadout.has_exojump;
+    if (player_loadout.active_weapon == Weapon::Fists   ) settings["GameConfig"]["PlayerEquipment"]["active-weapon"] = "fists";
+    if (player_loadout.active_weapon == Weapon::Knife   ) settings["GameConfig"]["PlayerEquipment"]["active-weapon"] = "knife";
+    if (player_loadout.active_weapon == Weapon::BumpMine) settings["GameConfig"]["PlayerEquipment"]["active-weapon"] = "bump-mine";
+    if (player_loadout.active_weapon == Weapon::Taser   ) settings["GameConfig"]["PlayerEquipment"]["active-weapon"] = "taser";
+    if (player_loadout.active_weapon == Weapon::XM1014  ) settings["GameConfig"]["PlayerEquipment"]["active-weapon"] = "xm1014";
+    settings["GameConfig"]["PlayerEquipment"]["non_active_fists"    ] = player_loadout.non_active_weapons[Weapon::Fists];
+    settings["GameConfig"]["PlayerEquipment"]["non_active_knife"    ] = player_loadout.non_active_weapons[Weapon::Knife];
+    settings["GameConfig"]["PlayerEquipment"]["non_active_bump-mine"] = player_loadout.non_active_weapons[Weapon::BumpMine];
+    settings["GameConfig"]["PlayerEquipment"]["non_active_taser"    ] = player_loadout.non_active_weapons[Weapon::Taser];
+    settings["GameConfig"]["PlayerEquipment"]["non_active_xm1014"   ] = player_loadout.non_active_weapons[Weapon::XM1014];
+
+    settings["VideoSettings"] = json::object();
+    json& video_settings = settings["VideoSettings"];
+
+    if (gui_state.video.IN_window_mode == gui_state.video.WINDOWED)
+        video_settings["WindowSettings"]["selected-mode"] = "windowed";
+    if (gui_state.video.IN_window_mode == gui_state.video.FULLSCREEN_WINDOWED)
+        video_settings["WindowSettings"]["selected-mode"] = "fullscreen-windowed";
+
+    video_settings["WindowSettings"]["ModeSpecificSettings"] = json::object();
+    json& window_mode_specific = video_settings["WindowSettings"]["ModeSpecificSettings"];
+    window_mode_specific["fullscreen-windowed"]["selected-display-index"] = gui_state.video.IN_selected_display_idx;
+
+    video_settings["FPSLimit"]["enable-vsync"] = gui_state.video.IN_vsync_enabled;
+    video_settings["FPSLimit"]["min-loop-period-when-vsync-disabled"] = gui_state.video.IN_min_loop_period;
+
+    video_settings["CustomFOV"]["use-custom-fov"     ] = gui_state.video.IN_use_custom_fov;
+    video_settings["CustomFOV"]["custom-vertical-fov"] = gui_state.video.IN_custom_vert_fov_degrees;
+
+#ifndef DZSIM_WEB_PORT
+    video_settings["OverlayMode"]["enable"      ] = gui_state.video.IN_overlay_mode_enabled;
+    video_settings["OverlayMode"]["transparency"] = gui_state.video.IN_overlay_transparency;
+#endif
+
+    video_settings["GUI"]["size"] = gui_state.video.IN_user_gui_scaling_factor_pct;
+
+    return user_data;
+}
+
 // Make sure we can read older versions of user data
 static json UpgradeUserDataFromOlderToCurrentVersion(const json& older_user_data, int older_version) {
     assert(older_version <= CURRENT_USER_DATA_FORMAT_VERSION);
 
     json upgraded_user_data = older_user_data;
 
-    if (older_version == CURRENT_USER_DATA_FORMAT_VERSION) {
-        return upgraded_user_data;
-    }
-    
+    if (older_version == CURRENT_USER_DATA_FORMAT_VERSION)
+        return older_user_data; // No conversion needed
+
     // TODO Everytime the user data format changes, perform incremental
     //      user data conversions here!
 
-    // For example: We need to upgrade user data v1 to v4.
-    // Step 1: Upgrade user data v1 to v2
-    // Step 2: Upgrade user data v2 to v3
-    // Step 3: Upgrade user data v3 to v4
+    // For example: We need to upgrade user data v2 to v5.
+    // Step 1: Upgrade user data v2 to v3
+    // Step 2: Upgrade user data v3 to v4
+    // Step 3: Upgrade user data v4 to v5
+
+    if (older_version == 1) // If upgrading version 1 to version 2
+    {
+        // DZSimulator doesn't upgrade from version 1 to version 2!
+        // (To start fresh with new defaults for settings.)
+        // -> Just return user data v2 with default values.
+        gui::GuiState default_settings_v2; // Default-construct
+        upgraded_user_data = ConvertUserSettingsToUserDataJson(default_settings_v2);
+    }
 
     return upgraded_user_data;
 }
@@ -205,7 +378,7 @@ void SavedUserDataHandler::OpenSaveFileDirectoryInFileExplorer()
     auto path_for_winapi = Utility::Unicode::widen(Containers::StringView(native_dir_path));
     auto operation_str_for_winapi = Utility::Unicode::widen("open");
     ShellExecuteW(NULL, operation_str_for_winapi, path_for_winapi, NULL, NULL,
-        SW_SHOWDEFAULT);
+                  SW_SHOWDEFAULT);
 #endif
 }
 
@@ -240,14 +413,14 @@ gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
     Containers::Optional<Containers::String> file_path = GetAbsoluteSaveFilePath();
     if (!file_path) {
         Utility::Debug{} << DEBUG_ID << "Default user settings are used since "
-            "save file location could not be found.";
+                                        "save file location could not be found.";
         return {}; // loading failed -> use default settings
     }
 
     json save_file_root = LoadJsonFromFile(*file_path);
     if (save_file_root.is_null()) {
         Utility::Debug{} << DEBUG_ID << "Default user settings are used since "
-            "loading the save file failed.";
+                                        "loading the save file failed.";
         return {}; // loading failed -> use default settings
     }
 
@@ -278,7 +451,7 @@ gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
 
     if (latest_compatible_user_data == nullptr) { // No compatible user data found
         Utility::Debug{} << DEBUG_ID << "No compatible user data found. "
-            "Default user settings are used.";
+                                        "Default user settings are used.";
         return {}; // loading failed -> use default settings
     }
 
@@ -294,85 +467,6 @@ gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
         return ParseUserDataFromCurrentVersion(*latest_compatible_user_data);
     }
 #endif
-}
-
-static std::string Color4fToStr(const float *src) {
-    return Utility::format("{:.3f} {:.3f} {:.3f} {:.3f}", src[0], src[1], src[2], src[3]);
-}
-
-// Returns the JSON object that will be stored under the "UserData" key in the
-// save file.
-static json ConvertUserSettingsToUserDataJson(const gui::GuiState& gui_state) {
-    json user_data = json::object();
-
-    user_data["Settings"] = json::object();
-    json& settings = user_data["Settings"];
-
-    settings["ShowIntroductoryMsgOnStartup"] = gui_state.show_intro_msg_on_startup;
-
-    settings["SunlightDirection"] = gui_state.vis.IN_hori_light_angle;
-
-    settings["WorldGeometryColors"]["sky"               ] = Color4fToStr(gui_state.vis.IN_col_sky);
-    settings["WorldGeometryColors"]["water"             ] = Color4fToStr(gui_state.vis.IN_col_water);
-    settings["WorldGeometryColors"]["ladder"            ] = Color4fToStr(gui_state.vis.IN_col_ladders);
-    settings["WorldGeometryColors"]["player-clip"       ] = Color4fToStr(gui_state.vis.IN_col_player_clip);
-    settings["WorldGeometryColors"]["grenade-clip"      ] = Color4fToStr(gui_state.vis.IN_col_grenade_clip);
-    settings["WorldGeometryColors"]["push-trigger"      ] = Color4fToStr(gui_state.vis.IN_col_trigger_push);
-    settings["WorldGeometryColors"]["solid-displacement"] = Color4fToStr(gui_state.vis.IN_col_solid_displacements);
-    settings["WorldGeometryColors"]["solid-static-prop" ] = Color4fToStr(gui_state.vis.IN_col_solid_xprops); // Repurposed to xprops
-    settings["WorldGeometryColors"]["other-solid-brush" ] = Color4fToStr(gui_state.vis.IN_col_solid_other_brushes);
-    settings["WorldGeometryColors"]["bump-mine"         ] = Color4fToStr(gui_state.vis.IN_col_bump_mine);
-
-    settings["DisplacementEdges"]["show" ] = gui_state.vis.IN_draw_displacement_edges;
-    settings["DisplacementEdges"]["color"] = Color4fToStr(gui_state.vis.IN_col_solid_disp_boundary);
-
-    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GEO_TYPE)
-        settings["GeometryVisualizationModes"]["selected-mode"] = "geometry-type";
-    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GLID_AT_SPECIFIC_SPEED)
-        settings["GeometryVisualizationModes"]["selected-mode"] = "glidability-at-specific-speed";
-    if (gui_state.vis.IN_geo_vis_mode == gui_state.vis.GLID_OF_CSGO_SESSION)
-        settings["GeometryVisualizationModes"]["selected-mode"] = "glidability-of-csgo-session";
-
-    settings["GeometryVisualizationModes"]["ModeSpecificSettings"] = json::object();
-    json& geo_mode_specific = settings["GeometryVisualizationModes"]["ModeSpecificSettings"];
-    geo_mode_specific["glidability-at-specific-speed"]["SimulatedHoriSpeed"] = gui_state.vis.IN_specific_glid_vis_hori_speed;
-
-    settings["SlidabilityColors"]["slide-success"    ] = Color4fToStr(gui_state.vis.IN_col_slide_success);
-    settings["SlidabilityColors"]["slide-almost-fail"] = Color4fToStr(gui_state.vis.IN_col_slide_almost_fail);
-    settings["SlidabilityColors"]["slide-fail"       ] = Color4fToStr(gui_state.vis.IN_col_slide_fail);
-
-    settings["PlayerSpeedDisplay"]["show"      ] = gui_state.vis.IN_display_hori_vel_text;
-    settings["PlayerSpeedDisplay"]["size"      ] = gui_state.vis.IN_hori_vel_text_size;
-    settings["PlayerSpeedDisplay"]["color"     ] = Color4fToStr(gui_state.vis.IN_col_hori_vel_text);
-    settings["PlayerSpeedDisplay"]["position_x"] = gui_state.vis.IN_hori_vel_text_pos.x();
-    settings["PlayerSpeedDisplay"]["position_y"] = gui_state.vis.IN_hori_vel_text_pos.y();
-
-    settings["VideoSettings"] = json::object();
-    json& video_settings = settings["VideoSettings"];
-
-    if (gui_state.video.IN_window_mode == gui_state.video.WINDOWED)
-        video_settings["WindowSettings"]["selected-mode"] = "windowed";
-    if (gui_state.video.IN_window_mode == gui_state.video.FULLSCREEN_WINDOWED)
-        video_settings["WindowSettings"]["selected-mode"] = "fullscreen-windowed";
-
-    video_settings["WindowSettings"]["ModeSpecificSettings"] = json::object();
-    json& window_mode_specific = video_settings["WindowSettings"]["ModeSpecificSettings"];
-    window_mode_specific["fullscreen-windowed"]["selected-display-index"] = gui_state.video.IN_selected_display_idx;
-
-    video_settings["FPSLimit"]["enable-vsync"] = gui_state.video.IN_vsync_enabled;
-    video_settings["FPSLimit"]["min-loop-period-when-vsync-disabled"] = gui_state.video.IN_min_loop_period;
-
-    video_settings["CustomFOV"]["use-custom-fov"     ] = gui_state.video.IN_use_custom_fov;
-    video_settings["CustomFOV"]["custom-vertical-fov"] = gui_state.video.IN_custom_vert_fov_degrees;
-
-#ifndef DZSIM_WEB_PORT
-    video_settings["OverlayMode"]["enable"      ] = gui_state.video.IN_overlay_mode_enabled;
-    video_settings["OverlayMode"]["transparency"] = gui_state.video.IN_overlay_transparency;
-#endif
-
-    video_settings["GUI"]["size"] = gui_state.video.IN_user_gui_scaling_factor_pct;
-
-    return user_data;
 }
 
 void SavedUserDataHandler::SaveUserSettingsToFile(const gui::GuiState& gui_state)

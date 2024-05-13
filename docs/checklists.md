@@ -2,6 +2,7 @@
 
 ### Releasing a new major/minor/patch update
 1. Ensure that dev features are disabled (e.g. collision benchmarks)
+1. Add any new user settings to the save file (and increase save file version if you added anything)
 1. Commit all changes into Git that need to go into the release
 1. Make sure your working tree is clean, i.e. `git status` shows no untracked files or unstaged changes
     - You can use `git stash` to temporarily remove working directory changes that shouldn't be included in the next release

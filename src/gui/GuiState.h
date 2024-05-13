@@ -147,7 +147,6 @@ public:
         unsigned int IN_min_loop_period = 8; // Default FPS limit = 1000ms / 8ms = 125
     } video;
 
-    // TODO This struct should be saved to file
     struct GameConfiguration {
         sim::CsgoConfig::GameMode IN_game_mode =
             sim::CsgoConfig::GameMode::DANGER_ZONE;
