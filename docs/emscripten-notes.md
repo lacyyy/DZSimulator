@@ -11,6 +11,7 @@
     ```
     - NOTE: Displacement collision code gradually creates more caches during gameplay
 - Figure out a good way of grabbing the mouse ([this?](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API))
+- [KeyboardEvent.code](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code) is probably the best way to get consistent WASD keyboard input
 - Add more build info
     - MAGNUM_TARGET_WEBGL
     - [Emscripten version](https://github.com/emscripten-core/emscripten/pull/17883)
