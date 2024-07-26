@@ -331,7 +331,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
         cur_fullscreen_display = available_displays[selected_display_idx];
 
     std::string window_title =
-        "Danger Zone Simulator v" + std::string(build_info::GetVersionStr());
+        "Danger Zone Simulator [for CSCO] v" + std::string(build_info::GetVersionStr());
 
     // Don't add WindowFlag::Borderless to this config! It breaks window
     // transparency for unknown reasons.
@@ -552,7 +552,7 @@ DZSimApplication::DZSimApplication(const Arguments& arguments)
     ConfigureExtraKeyBindings();
 
 #ifndef DZSIM_WEB_PORT
-    _update_checker.StartAsyncUpdateAndMotdCheck();
+    //_update_checker.StartAsyncUpdateAndMotdCheck();
 #endif
 
     // Load embedded map on startup (if it exists)
@@ -1139,7 +1139,7 @@ void DZSimApplication::DoUpdate()
         _gui_state.IN_open_downloads_page_in_browser = false;
         GitHubChecker::OpenDZSimUpdatePageInBrowser();
     }
-    if (!_update_checker.IsAsyncUpdateAndMotdCheckFinished()) {
+    /*if (!_update_checker.IsAsyncUpdateAndMotdCheckFinished()) {
         _gui_state.OUT_dzsim_update_available = false;
     }
     else {
@@ -1176,7 +1176,7 @@ void DZSimApplication::DoUpdate()
                 break;
             }
         }
-    }
+    }*/
 
 #ifndef DZSIM_WEB_PORT
     float wanted_transparency = 0.0f;

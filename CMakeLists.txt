@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20) 
 
 # Project version MUST have format: X.Y.Z
-set(DZSIM_VERSION 1.0.0) # Increase this on each release
+set(DZSIM_VERSION 1.0.0.1) # Increase this on each release
 
 # How much memory the web version can use.
 # Currently, it needs at least 16.5 MiB with a very small embedded map (wrong?).

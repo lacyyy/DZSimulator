@@ -190,7 +190,7 @@ void MenuWindow::Draw()
 
         ImGui::Separator();
 
-        ImGui::Text("\"Danger Zone Simulator\" version %s (%s)",
+        ImGui::Text("\"Danger Zone Simulator\" [for CSCO] version %s (%s)",
             build_info::GetVersionStr(),
             build_info::GetBuildTimeStr());
 
