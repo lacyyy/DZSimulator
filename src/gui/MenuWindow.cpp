@@ -473,7 +473,7 @@ void MenuWindow::DrawMapSelection()
             if (ImGui::Selectable(rel_map_path.c_str(), false)) {
                 _gui_state.map_select.IN_new_abs_map_path_load =
                     Corrade::Utility::Path::join(
-                        { _gui_state.map_select.OUT_csgo_path, "maps/", rel_map_path });
+                        { _gui_state.map_select.OUT_csgo_path, "../csco/csgo/maps/", rel_map_path });
                 s_map_load_box_preview = rel_map_path;
             }
             if (highlighted) {

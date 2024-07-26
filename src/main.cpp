@@ -875,7 +875,7 @@ void DZSimApplication::_debug_LoadEveryMap() {
     for (const std::string& map_path : csgo_parsing::AssetFinder::GetMapFileList())
     {
         std::string abs_map_path = Corrade::Utility::Path::join(
-            { csgo_parsing::AssetFinder::GetCsgoPath(), "maps/", map_path });
+            { csgo_parsing::AssetFinder::GetCsgoPath(), "../csco/csgo/maps/", map_path });
         bool success = LoadBspMap(abs_map_path, false);
         if (!success) {
             Error{} << "_debug_LoadEveryMap() was aborted early due to error.";

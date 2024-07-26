@@ -45,7 +45,7 @@ namespace CorrPath = Corrade::Utility::Path;
 // library folders
 #define STEAM_DIR_LIBRARYFOLDERS_VDF_PATH "steamapps/libraryfolders.vdf"
 // Sub-path in a Steam library folder leading to CSGO's install dir
-#define STEAM_LIB_FOLDER_CSGO_PATH "steamapps/common/Counter-Strike Global Offensive/"
+#define STEAM_LIB_FOLDER_CSGO_PATH "steamapps/common/Classic Offensive/"
 #endif
 
 // ---- INTERNAL VARIABLES ----
@@ -466,7 +466,7 @@ void AssetFinder::RefreshMapFileList()
 
     Debug{} << "[AssetFinder] Refreshing map file list...";
 
-    Containers::String maps_dir = CorrPath::join(GetCsgoPath(), "maps/");
+    Containers::String maps_dir = CorrPath::join(GetCsgoPath(), "../csco/csgo/maps/");
     std::vector<Containers::String> rel_file_list =
         ListFilePathsRecursively(maps_dir);
 
@@ -504,11 +504,29 @@ utils::RetCode AssetFinder::RefreshVpkArchiveIndex(
 
     // Indexing CSGO's VPK archives takes some time ( 100ms and more )
     Debug{} << "[AssetFinder] Refreshing VPK archive index...";
-    auto archive =
-        fsal::OpenVpkArchive(fs, GetCsgoPath(), "pak01_%s.vpk", file_ext_filter);
 
-    if (!fs.MountArchive(archive))
-        return { utils::RetCode::ERROR_VPK_PARSING_FAILED };
+    std::vector<std::string> archive_paths = {
+        // 'Classic Offensive/csgo/' VPK archives
+        "vpks/csgo_base_materials_%s.vpk",
+        "vpks/csgo_base_models_%s.vpk",
+        "vpks/csgo_miscs_%s.vpk",
+        "vpks/csgo_props_materials_%s.vpk",
+        "vpks/csgo_props_models_%s.vpk",
+        "vpks/csgo_sounds_%s.vpk",
+        // 'Classic Offensive/csco/' VPK archives
+        "../csco/csgo/vpks/csco_base_assets_%s.vpk",
+        "../csco/csgo/vpks/csco_map_assets_%s.vpk",
+        "../csco/csgo/vpks/csco_miscs_%s.vpk",
+        "../csco/csgo/vpks/csco_sounds_%s.vpk"
+    };
+
+    for (const std::string& archive_path : archive_paths) {
+        auto archive =
+            fsal::OpenVpkArchive(fs, GetCsgoPath(), archive_path, file_ext_filter);
+
+        if (!fs.MountArchive(archive))
+            return { utils::RetCode::ERROR_VPK_PARSING_FAILED };
+    }
 
     Debug{} << "[AssetFinder] Refreshing VPK archive index DONE";
 
