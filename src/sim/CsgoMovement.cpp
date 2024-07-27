@@ -2222,6 +2222,7 @@ void CsgoMovement::PlayerMove(float time_delta)
 void CsgoMovement::FullNoClipMove(float frametime)
 {
     bool slow_noclip = m_nButtons & IN_SPEED;
+    slow_noclip = !slow_noclip;
     float NOCLIP_SPEED      = slow_noclip ?   5.0f :    7.0f;
     float NOCLIP_ACCELERATE = slow_noclip ?   5.0f :    5.0f;
     float NOCLIP_MAXSPEED   = slow_noclip ? 400.0f : 3000.0f;
