@@ -4,6 +4,10 @@
 ![Latest Release Date](https://img.shields.io/github/release-date/lacyyy/DZSimulator)
 ![Total Downloads](https://img.shields.io/github/downloads/lacyyy/DZSimulator/total?label=total%20downloads)
 
+----
+IMPORTANT NOTE: This git branch contains a custom version of DZSimulator that was rudimentarily fixed up, just to load "Counter-Strike Classic Offensive" maps. For the normal version of DZSimulator, switch to the 'main' branch.
+----
+
 A standalone app that partially loads maps from Counter-Strike: Global Offensive and makes practicing rampsliding and using "Bump Mines" in CS:GO's "Danger Zone" gamemode much easier!
 
 If you don't know what I mean with rampsliding and Bump Mines, watch this: https://youtu.be/xmAYeyYd4AE
