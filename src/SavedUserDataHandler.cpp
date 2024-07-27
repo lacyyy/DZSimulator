@@ -412,6 +412,7 @@ static json LoadJsonFromFile(Containers::StringView file_path) {
 
 gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
 {
+    return {}; // Don't load from file
 #ifdef DZSIM_WEB_PORT
     return {};
 #else
@@ -477,6 +478,7 @@ gui::GuiState SavedUserDataHandler::LoadUserSettingsFromFile()
 void SavedUserDataHandler::SaveUserSettingsToFile(const gui::GuiState& gui_state)
 {
     ZoneScoped;
+    return; // Don't save to file
 #ifdef DZSIM_WEB_PORT
     return;
 #else
