@@ -582,6 +582,10 @@ void MenuWindow::DrawVisualizations()
     ImGui::SameLine(); _gui.HelpMarker(
         ">>>> Grenade clips are solid to thrown Bump Mines, but not to players!\n"
         "They are rarely present in Danger Zone maps though.");
+    ImGui::ColorEdit4("Player Clip Color",
+        (float*)&cols.IN_col_player_clip, picker_flags);
+    ImGui::SameLine(); _gui.HelpMarker(
+        ">>>> Player clips are solid to players, but not to thrown Bump Mines!");
 
     // Light angle
     ImGui::SliderFloat("Sunlight Direction",
@@ -777,10 +781,6 @@ void MenuWindow::DrawVisualizations()
                           (float*)&cols.IN_col_solid_xprops, picker_flags);
         ImGui::ColorEdit3("Other Solid Brush Color",
                           (float*)&cols.IN_col_solid_other_brushes, picker_flags);
-        ImGui::ColorEdit4("Player Clip Color",
-                          (float*)&cols.IN_col_player_clip, picker_flags);
-        ImGui::SameLine(); _gui.HelpMarker(
-            ">>>> Player clips are solid to players, but not to thrown Bump Mines!");
     }
 }
 
