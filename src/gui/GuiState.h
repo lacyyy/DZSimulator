@@ -79,7 +79,7 @@ public:
         float IN_col_sky                [4] = { 0.422f, 0.645f, 1.000f, 1.000f };
         float IN_col_water              [4] = { 0.000f, 0.644f, 1.000f, 0.258f };
         float IN_col_ladders            [4] = { 1.000f, 0.000f, 1.000f, 1.000f };
-        float IN_col_player_clip        [4] = { 0.407f, 0.570f, 0.000f, 0.869f };
+        float IN_col_player_clip        [4] = { 0.407f, 0.570f, 0.000f, 0.500f };
         float IN_col_grenade_clip       [4] = { 1.000f, 1.000f, 1.000f, 0.500f };
         float IN_col_trigger_push       [4] = { 0.400f, 0.000f, 1.000f, 0.500f };
         float IN_col_solid_displacements[4] = { 0.747f, 0.621f, 0.244f, 1.000f };
@@ -107,7 +107,7 @@ public:
             GLID_OF_SIMULATION, // glidability for player in simulated game
             GLID_AT_SPECIFIC_SPEED, // glidability at specific player speed
             GLID_OF_CSGO_SESSION  // glidability for player in local csgo session
-        } IN_geo_vis_mode = GLID_OF_SIMULATION;
+        } IN_geo_vis_mode = GEO_TYPE;
 
         // Only used in GLID_AT_SPECIFIC_SPEED mode
         int IN_specific_glid_vis_hori_speed = 1150; // Horizontal speed of common single bump mine jump
@@ -149,16 +149,16 @@ public:
 
     struct GameConfiguration {
         sim::CsgoConfig::GameMode IN_game_mode =
-            sim::CsgoConfig::GameMode::DANGER_ZONE;
+            sim::CsgoConfig::GameMode::COMPETITIVE;
 
         bool IN_enable_consistent_bumpmine_activations = true;
         bool IN_enable_consistent_rampslides = true;
 
         using Loadout = sim::Entities::Player::Loadout;
         Loadout IN_loadout = Loadout(
-            true, // Exojump equipped?
-            Loadout::Weapon::BumpMine, // Active weapon
-            {Loadout::Weapon::Fists, Loadout::Weapon::Knife} // Non-active weapons
+            false, // Exojump equipped?
+            Loadout::Weapon::Knife, // Active weapon
+            {} // Non-active weapons
         );
     } game_cfg;
 
