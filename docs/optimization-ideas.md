@@ -23,6 +23,7 @@
 	- https://x.com/SebAaltonen/status/1731317041032770018?s=20
 - Reduce triangle count: Combine triangles/quads that are connected and have the same normals, if possible
 	- https://github.com/zeux/meshoptimizer ??
+        - https://doc.magnum.graphics/magnum/classMagnum_1_1Trade_1_1MeshOptimizerSceneConverter.html
 - Move trajectory calculations from the vertex shader to the fragment shader?
 - Some form of occlusion culling?
     - Only worth it for big complex props?
