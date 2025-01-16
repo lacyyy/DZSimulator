@@ -50,7 +50,7 @@ Hence, you can't get VAC-banned for using DZSimulator.
 
 ## <ins>Download</ins>
 
-**If you encounter any bugs, please report them to me through this page's "Issues" tab or through my [Twitter/X DMs](https://twitter.com/lacyyycs)!**
+**If you encounter any bugs, please report them to me through this page's "Issues" tab or through my [Bluesky DMs](https://bsky.app/profile/lacyyy.bsky.social)!**
 
 You can download the newest version of DZSimulator for Windows [**here**](https://github.com/lacyyy/DZSimulator/releases/latest).
 
@@ -112,7 +112,7 @@ See [BUILDING.md](BUILDING.md)
 
 ### Contributing
 
-Feel free to contribute! If you plan to do so, please message me beforehand (e.g. through [Twitter/X DMs](https://twitter.com/lacyyycs) or in the "Issues" tab on this repo's webpage)
+Feel free to contribute! If you plan to do so, please message me beforehand (e.g. through [Bluesky DMs](https://bsky.app/profile/lacyyy.bsky.social) or in the "Issues" tab on this repo's webpage)
 
 
 

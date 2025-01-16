@@ -15,8 +15,8 @@ Everything else in this repository falls into one of two categories:
        as taken from source-sdk-2013 is available solely under the MIT License
        as displayed below.
 
-Please contact lacyyy at lacyyycs[at]gmail[dot]com if you need further details
-about which category certain parts of the source code belong to.
+Please contact lacyyy at "lacyyy (a t) posteo (d o t) com" if you need further
+details about which category certain parts of the source code belong to.
 
 
 
